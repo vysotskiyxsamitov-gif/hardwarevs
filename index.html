@@ -149,6 +149,77 @@
         .reviews-btn:hover { border-color: #f59e0b; box-shadow: 0 0 14px rgba(245, 158, 11, 0.5); }
         .reviews-btn:focus-visible { outline: 2px solid #a855f7; outline-offset: 3px; }
 
+        /* КНОПКА «ПРЕДЛОЖИТЬ» — слева от кнопки отзывов */
+        .suggest-btn {
+            position: fixed; top: 20px; right: 128px; z-index: 50;
+            width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
+            background: var(--panel-bg); color: #06b6d4; font-size: 22px; line-height: 1; cursor: pointer;
+            border: 1px solid var(--panel-border); border-radius: 50%;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.4s, opacity 0.3s ease;
+        }
+        .suggest-btn:hover { border-color: #06b6d4; box-shadow: 0 0 14px rgba(6, 182, 212, 0.5); }
+        .suggest-btn:focus-visible { outline: 2px solid #a855f7; outline-offset: 3px; }
+        html.leaving .suggest-btn { opacity: 0; pointer-events: none; }
+
+        /* ОКНО ПРЕДЛОЖЕНИЯ */
+        .modal-overlay {
+            position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px;
+            background: rgba(6, 2, 11, 0.65); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+            opacity: 0; visibility: hidden; transition: opacity 0.25s ease, visibility 0.25s;
+        }
+        .modal-overlay.open { opacity: 1; visibility: visible; }
+        .modal {
+            width: 100%; max-width: 380px; padding: 20px; box-sizing: border-box;
+            background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 12px; color: var(--panel-text);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45); transform: translateY(10px) scale(0.97); transition: transform 0.25s ease;
+        }
+        .modal-overlay.open .modal { transform: none; }
+        .modal-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .modal-title { margin: 0; font-size: 18px; }
+        .modal-close { background: none; border: 0; padding: 4px 8px; font-size: 24px; line-height: 1; color: var(--panel-muted); cursor: pointer; }
+        .modal-close:hover { color: #a855f7; }
+        .modal-label { margin: 0 0 8px; font-size: 13px; color: var(--panel-muted); }
+        .kind-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 16px; }
+        .kind-option {
+            padding: 11px 0; background: var(--option-bg); color: var(--panel-text);
+            border: 1px solid transparent; border-radius: 6px; cursor: pointer;
+            font-family: inherit; font-size: 13px; font-weight: 600;
+            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+        .kind-option:hover { border-color: #a855f7; }
+        .kind-option[aria-pressed="true"] {
+            background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%);
+            border-color: #a855f7; color: #fff; box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+        }
+        .modal-input {
+            width: 100%; box-sizing: border-box; padding: 12px; border-radius: 8px;
+            background: var(--option-bg); color: var(--panel-text); border: 1px solid var(--panel-border);
+            font: inherit; user-select: text; -webkit-user-select: text;
+        }
+        .modal-hint { margin: 6px 0 0; font-size: 12px; color: var(--panel-muted); }
+        .modal-send {
+            width: 100%; margin-top: 16px; padding: 12px 0; border: 0; border-radius: 8px; cursor: pointer;
+            background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; font-weight: 700; font-size: 14px;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+        }
+        .modal-send:disabled { opacity: 0.5; cursor: not-allowed; }
+        .modal-msg { margin-top: 10px; min-height: 18px; font-size: 13px; }
+        .modal-msg.err { color: #f87171; }
+        .modal-msg.ok { color: #4ade80; }
+        .modal-need-login { text-align: center; line-height: 1.7; }
+        .modal-need-login a { color: #a855f7; font-weight: 600; }
+        .kind-option:focus-visible, .modal-input:focus-visible, .modal-send:focus-visible, .modal-close:focus-visible { outline: 2px solid #a855f7; outline-offset: 2px; }
+
+        /* Телефоны: кнопки чуть меньше, чтобы все три поместились рядом с аккаунтом */
+        @media (max-width: 480px) {
+            .gear-btn, .reviews-btn, .suggest-btn { width: 40px; height: 40px; }
+            .settings { top: 16px; right: 16px; }
+            .reviews-btn { top: 16px; right: 64px; }
+            .suggest-btn { top: 16px; right: 112px; }
+            .account { top: 16px; left: 16px; min-height: 40px; max-width: calc(100% - 175px); }
+        }
+
         .settings-panel {
             position: absolute; top: 54px; right: 0; width: 220px; padding: 14px;
             background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 10px;
@@ -180,7 +251,7 @@
 
 
         /* АККАУНТ (слева сверху) — справа оставляем место под две круглые кнопки */
-        .account { position: fixed; top: 20px; left: 20px; z-index: 50; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 160px);
+        .account { position: fixed; top: 20px; left: 20px; z-index: 50; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 214px);
             min-height: 44px; padding: 0 14px; background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 22px;
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 13px; transition: opacity .3s ease; }
         .account:empty { display: none; }
@@ -222,6 +293,19 @@
 
 <!-- Отзывы: слева от шестерёнки -->
 <a class="reviews-btn" href="https://vysotskiyxsamitov-gif.github.io/hardwarevs/reviews.html" aria-label="Отзывы" title="Отзывы">⭐</a>
+
+<!-- Предложить добавить процессор или видеокарту: слева от кнопки отзывов -->
+<button class="suggest-btn" id="suggest-btn" type="button" aria-label="Предложить добавить" aria-haspopup="dialog" title="Предложить добавить">💡</button>
+
+<div class="modal-overlay" id="suggest-overlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="suggest-title">
+        <div class="modal-head">
+            <h2 class="modal-title" id="suggest-title">Предложить добавить</h2>
+            <button class="modal-close" id="suggest-close" type="button" aria-label="Закрыть">×</button>
+        </div>
+        <div id="suggest-body"></div>
+    </div>
+</div>
 
 <!-- Шестерёнка и маленькое окно выбора темы -->
 <div class="settings" id="settings">
@@ -303,6 +387,95 @@
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape') { setPanel(false); gearBtn.focus(); }
     });
+
+    /* ---------- ПРЕДЛОЖЕНИЕ: что добавить на сайт ---------- */
+    const sugBtn = document.getElementById('suggest-btn');
+    const sugOverlay = document.getElementById('suggest-overlay');
+    const sugBody = document.getElementById('suggest-body');
+    const SUG_HINTS = {
+        cpu: 'Например: Ryzen 7 7800X3D',
+        gpu: 'Например: GeForce RTX 4070 Super'
+    };
+
+    function sugMsg(text, type) {
+        const el = document.getElementById('suggest-msg');
+        if (el) { el.textContent = text; el.className = 'modal-msg ' + (type || ''); }
+    }
+
+    async function renderSuggest() {
+        if (!window.HW_AUTH) {
+            sugBody.textContent = 'Сервис временно недоступен. Попробуйте позже.';
+            return;
+        }
+        const user = await window.HW_AUTH.getUser();
+
+        if (!user) {
+            sugBody.innerHTML = '<div class="modal-need-login">🔒 Чтобы отправить предложение, нужно войти в аккаунт.<br>' +
+                '<a href="login.html?next=index.html">Войти</a> · <a href="register.html?next=index.html">Регистрация</a></div>';
+            return;
+        }
+
+        sugBody.innerHTML =
+            '<p class="modal-label">Что вы хотите добавить?</p>' +
+            '<div class="kind-switch">' +
+                '<button class="kind-option" type="button" data-kind="cpu" aria-pressed="false">💻 Процессор</button>' +
+                '<button class="kind-option" type="button" data-kind="gpu" aria-pressed="false">🎮 Видеокарта</button>' +
+            '</div>' +
+            '<p class="modal-label">Точное название</p>' +
+            '<input class="modal-input" id="suggest-name" type="text" maxlength="100" autocomplete="off" placeholder="Сначала выберите, что добавить">' +
+            '<p class="modal-hint">Пишите полное название вместе с серией, как на коробке или в магазине.</p>' +
+            '<button class="modal-send" id="suggest-send" type="button">Отправить предложение</button>' +
+            '<div class="modal-msg" id="suggest-msg" role="status"></div>';
+
+        let kind = '';
+        const input = document.getElementById('suggest-name');
+        const send = document.getElementById('suggest-send');
+        const options = sugBody.querySelectorAll('.kind-option');
+
+        options.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                kind = btn.dataset.kind;
+                options.forEach(function (b) { b.setAttribute('aria-pressed', b === btn ? 'true' : 'false'); });
+                input.placeholder = SUG_HINTS[kind];
+                input.focus();
+            });
+        });
+
+        async function submit() {
+            const name = input.value.replace(/\s+/g, ' ').trim();
+            if (!kind) return sugMsg('Выберите: процессор или видеокарта.', 'err');
+            if (name.length < 2) return sugMsg('Введите точное название.', 'err');
+
+            send.disabled = true;
+            sugMsg('Отправляю…');
+            const res = await window.HW_AUTH.client.from('suggestions').insert({ user_id: user.id, kind: kind, name: name });
+            send.disabled = false;
+
+            if (res.error) {
+                sugMsg(res.error.code === '23505' ? 'Вы уже предлагали это.' : 'Ошибка: ' + res.error.message, 'err');
+                return;
+            }
+            input.value = '';
+            sugMsg('Спасибо! Предложение отправлено.', 'ok');
+        }
+        send.addEventListener('click', submit);
+        input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+    }
+
+    function openSuggest() {
+        setPanel(false);
+        sugOverlay.classList.add('open');
+        renderSuggest();
+    }
+    function closeSuggest() {
+        if (!sugOverlay.classList.contains('open')) return;
+        sugOverlay.classList.remove('open');
+        sugBtn.focus();
+    }
+    sugBtn.addEventListener('click', function (e) { e.stopPropagation(); openSuggest(); });
+    document.getElementById('suggest-close').addEventListener('click', closeSuggest);
+    sugOverlay.addEventListener('click', function (e) { if (e.target === sugOverlay) closeSuggest(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSuggest(); });
 
     /* ---------- ПЛАВНЫЙ ПЕРЕХОД МЕЖДУ СТРАНИЦАМИ ---------- */
     document.querySelectorAll('a.btn-style, a.reviews-btn').forEach(function (link) {
