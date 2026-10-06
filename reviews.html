@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HardwareVS — Отзывы</title>
+
+<script>
+  try {
+    var t = localStorage.getItem('hardwarevs-theme');
+    if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
+
+<style>
+  :root, :root[data-theme="dark"] {
+    --bg:#06020b; --text:#fff; --panel-bg:rgba(19,13,51,.92); --panel-border:#442a7a;
+    --panel-text:#e9d5ff; --panel-muted:#9aa0a6; --input-bg:#24194f; --star-off:#4b3f78; color-scheme:dark;
+  }
+  :root[data-theme="light"] {
+    --bg:#f3f0fa; --text:#1b1233; --panel-bg:rgba(255,255,255,.92); --panel-border:#d4c4f2;
+    --panel-text:#2a1a5e; --panel-muted:#6b6485; --input-bg:#ece6fa; --star-off:#c9bfe6; color-scheme:light;
+  }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',sans-serif; min-height:100vh; }
+  body::before { content:''; position:fixed; inset:0; pointer-events:none;
+    background:radial-gradient(circle at 15% 10%, rgba(168,85,247,.18), transparent 40%),
+               radial-gradient(circle at 85% 90%, rgba(6,182,212,.12), transparent 40%); }
+
+  .account { position:fixed; top:20px; left:20px; z-index:50; display:flex; align-items:center; gap:8px;
+    min-height:44px; padding:0 14px; background:var(--panel-bg); border:1px solid var(--panel-border);
+    border-radius:22px; font-size:13px; max-width:calc(100% - 40px); backdrop-filter:blur(8px); }
+  .account:empty { display:none; }
+  .acc-mail { color:var(--panel-muted); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+  .acc-link { background:none; border:0; padding:4px 2px; cursor:pointer; font:inherit; font-weight:600; color:var(--panel-text); text-decoration:none; white-space:nowrap; }
+  .acc-link:hover { color:#a855f7; }
+  .acc-link + .acc-link { margin-left:4px; padding-left:10px; border-left:1px solid var(--panel-border); }
+
+  .wrap { position:relative; max-width:640px; margin:0 auto; padding:90px 16px 40px; }
+  .back { display:inline-block; margin-bottom:16px; color:var(--panel-text); text-decoration:none; font-weight:600; }
+  .back:hover { color:#a855f7; }
+  h1 { margin:0 0 20px; font-size:38px; font-weight:900; letter-spacing:1px;
+    background:linear-gradient(90deg,#a855f7,#06b6d4,#f59e0b); -webkit-background-clip:text;
+    background-clip:text; -webkit-text-fill-color:transparent; color:transparent; }
+
+  .card { background:var(--panel-bg); border:1px solid var(--panel-border); border-radius:12px;
+    padding:18px; margin-bottom:14px; color:var(--panel-text); }
+  .card h2 { margin:0 0 12px; font-size:16px; }
+  .card a { color:#a855f7; font-weight:600; }
+
+  .stars { display:flex; gap:4px; margin-bottom:12px; }
+  .star-btn { background:none; border:0; padding:0; cursor:pointer; font-size:36px; line-height:1;
+    color:var(--star-off); transition:transform .15s, color .15s; }
+  .star-btn.on { color:#f59e0b; text-shadow:0 0 10px rgba(245,158,11,.55); }
+  .star-btn:hover { transform:scale(1.15); }
+  .star-btn:focus-visible, textarea:focus-visible, .send:focus-visible { outline:2px solid #a855f7; outline-offset:2px; border-radius:6px; }
+
+  textarea { width:100%; min-height:110px; resize:vertical; padding:12px; border-radius:8px;
+    background:var(--input-bg); color:var(--panel-text); border:1px solid var(--panel-border); font:inherit; }
+  .row { display:flex; justify-content:space-between; align-items:center; margin-top:10px; gap:10px; }
+  .counter { font-size:12px; color:var(--panel-muted); }
+  .send { background:linear-gradient(135deg,#a855f7,#6d28d9); color:#fff; border:0; border-radius:8px;
+    padding:11px 24px; font-weight:700; cursor:pointer; box-shadow:0 4px 15px rgba(168,85,247,.3); }
+  .send:disabled { opacity:.5; cursor:not-allowed; }
+  .msg { margin-top:10px; font-size:13px; min-height:18px; }
+  .msg.err { color:#f87171; } .msg.ok { color:#4ade80; }
+  .need-login { text-align:center; line-height:1.7; }
+
+  .summary { display:flex; align-items:center; gap:10px; margin:22px 2px 14px; color:var(--panel-text); }
+  .summary b { font-size:30px; }
+  .summary .st { color:#f59e0b; letter-spacing:2px; }
+  .rv-top { display:flex; justify-content:space-between; gap:10px; align-items:baseline; }
+  .rv-name { font-weight:700; }
+  .rv-date { font-size:12px; color:var(--panel-muted); white-space:nowrap; }
+  .rv-stars { color:#f59e0b; letter-spacing:2px; margin:4px 0 8px; }
+  .rv-text { white-space:pre-wrap; word-break:break-word; line-height:1.5; }
+  .rv-del { background:none; border:0; color:#f87171; cursor:pointer; font-size:12px; margin-top:10px; padding:0; }
+  .rv-del:hover { text-decoration:underline; }
+
+  @media (max-width:480px) { h1 { font-size:30px; } .star-btn { font-size:32px; } }
+</style>
+</head>
+<body>
+
+<div class="account" id="account"></div>
+
+<div class="wrap">
+  <a class="back" href="index.html">← На главную</a>
+  <h1>Отзывы</h1>
+
+  <div class="card" id="form-card"></div>
+  <div class="summary" id="summary"></div>
+  <div id="list"></div>
+</div>
+
+<script>
+(function () {
+  var formCard = document.getElementById('form-card');
+  var listEl = document.getElementById('list');
+  var summaryEl = document.getElementById('summary');
+
+  function note(el, text) {
+    el.innerHTML = '';
+    var d = document.createElement('div');
+    d.className = 'card';
+    d.textContent = text;
+    el.appendChild(d);
+  }
+
+  if (!window.HW_AUTH || !window.HW_AUTH.client) {
+    note(formCard, 'Не удалось подключиться к Supabase. Проверьте, что файл auth.js лежит рядом с этой страницей.');
+    return;
+  }
+
+  var sb = window.HW_AUTH.client;
+  window.HW_AUTH.mountAccount(document.getElementById('account'));
+
+  var currentUser = null;
+  var rating = 0;
+
+  function stars(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
+
+  function userName(user) {
+    var m = user.user_metadata || {};
+    return String(m.name || m.full_name || (user.email || 'Пользователь').split('@')[0]).slice(0, 60);
+  }
+
+  function setMsg(text, type) {
+    var el = document.getElementById('msg');
+    if (el) { el.textContent = text; el.className = 'msg ' + (type || ''); }
+  }
+
+  /* ---------- Форма ---------- */
+  function renderForm() {
+    formCard.innerHTML = '';
+    rating = 0;
+
+    if (!currentUser) {
+      formCard.className = 'card need-login';
+      formCard.innerHTML = '🔒 Чтобы оставить отзыв, нужно войти в аккаунт.<br>' +
+        '<a href="login.html?next=reviews.html">Войти</a> · <a href="register.html?next=reviews.html">Регистрация</a>';
+      return;
+    }
+
+    formCard.className = 'card';
+    formCard.innerHTML =
+      '<h2>Ваш отзыв</h2>' +
+      '<div class="stars" id="stars" role="radiogroup" aria-label="Оценка"></div>' +
+      '<textarea id="text" maxlength="1000" placeholder="Что вам понравилось или не понравилось на сайте?"></textarea>' +
+      '<div class="row"><span class="counter" id="counter">0 / 1000</span>' +
+      '<button class="send" id="send" type="button">Отправить</button></div>' +
+      '<div class="msg" id="msg" role="status"></div>';
+
+    var box = document.getElementById('stars');
+    function paint() {
+      box.querySelectorAll('.star-btn').forEach(function (el, idx) {
+        el.classList.toggle('on', idx < rating);
+        el.setAttribute('aria-checked', idx + 1 === rating ? 'true' : 'false');
+      });
+    }
+    for (var i = 1; i <= 5; i++) {
+      (function (n) {
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'star-btn';
+        b.textContent = '★';
+        b.setAttribute('role', 'radio');
+        b.setAttribute('aria-label', n + ' из 5');
+        b.addEventListener('click', function () { rating = n; paint(); });
+        box.appendChild(b);
+      })(i);
+    }
+    paint();
+
+    var text = document.getElementById('text');
+    var counter = document.getElementById('counter');
+    text.addEventListener('input', function () { counter.textContent = text.value.length + ' / 1000'; });
+    document.getElementById('send').addEventListener('click', submitReview);
+  }
+
+  async function submitReview() {
+    var text = document.getElementById('text');
+    var btn = document.getElementById('send');
+    var message = text.value.trim();
+
+    if (!currentUser) return setMsg('Сначала войдите в аккаунт.', 'err');
+    if (rating < 1 || rating > 5) return setMsg('Поставьте оценку от 1 до 5 звёзд.', 'err');
+    if (!message) return setMsg('Напишите текст отзыва.', 'err');
+
+    btn.disabled = true;
+    setMsg('Отправляю…');
+
+    var res = await sb.from('reviews').insert({
+      user_id: currentUser.id,
+      author_name: userName(currentUser),
+      rating: rating,
+      message: message
+    });
+
+    btn.disabled = false;
+    if (res.error) {
+      setMsg(res.error.code === '23505' ? 'Вы уже оставляли отзыв.' : 'Ошибка: ' + res.error.message, 'err');
+      return;
+    }
+    renderForm();
+    setMsg('Спасибо! Отзыв опубликован.', 'ok');
+    loadReviews();
+  }
+
+  /* ---------- Список ---------- */
+  async function loadReviews() {
+    var res = await sb.from('reviews')
+      .select('id, user_id, author_name, rating, message, created_at')
+      .order('created_at', { ascending: false })
+      .limit(100);
+
+    if (res.error) {
+      summaryEl.textContent = '';
+      note(listEl, 'Не удалось загрузить отзывы: ' + res.error.message);
+      return;
+    }
+
+    var data = res.data || [];
+    listEl.innerHTML = '';
+
+    if (!data.length) {
+      summaryEl.textContent = '';
+      note(listEl, 'Пока нет отзывов. Будьте первым!');
+      return;
+    }
+
+    var avg = data.reduce(function (s, r) { return s + r.rating; }, 0) / data.length;
+    summaryEl.innerHTML = '<b></b><span class="st"></span><span></span>';
+    summaryEl.children[0].textContent = avg.toFixed(1);
+    summaryEl.children[1].textContent = stars(Math.round(avg));
+    summaryEl.children[2].textContent = '(' + data.length + ')';
+
+    data.forEach(function (r) {
+      var card = document.createElement('div');
+      card.className = 'card';
+
+      var top = document.createElement('div'); top.className = 'rv-top';
+      var name = document.createElement('span'); name.className = 'rv-name'; name.textContent = r.author_name;
+      var date = document.createElement('span'); date.className = 'rv-date';
+      date.textContent = new Date(r.created_at).toLocaleDateString('ru-RU');
+      top.appendChild(name); top.appendChild(date);
+
+      var st = document.createElement('div'); st.className = 'rv-stars'; st.textContent = stars(r.rating);
+      var tx = document.createElement('div'); tx.className = 'rv-text'; tx.textContent = r.message;
+
+      card.appendChild(top); card.appendChild(st); card.appendChild(tx);
+
+      if (currentUser && currentUser.id === r.user_id) {
+        var del = document.createElement('button');
+        del.className = 'rv-del'; del.type = 'button'; del.textContent = 'Удалить мой отзыв';
+        del.addEventListener('click', async function () {
+          if (!confirm('Удалить отзыв?')) return;
+          await sb.from('reviews').delete().eq('id', r.id);
+          loadReviews();
+        });
+        card.appendChild(del);
+      }
+      listEl.appendChild(card);
+    });
+  }
+
+  /* ---------- Старт ---------- */
+  var lastUserId;
+  function onUser(user) {
+    var id = user ? user.id : null;
+    currentUser = user;
+    // Форму перерисовываем только при входе/выходе, чтобы не стереть набранный текст
+    if (id !== lastUserId) { lastUserId = id; renderForm(); }
+    loadReviews();
+  }
+
+  window.HW_AUTH.getUser().then(onUser);
+  sb.auth.onAuthStateChange(function (_e, session) { onUser(session ? session.user : null); });
+})();
+</script>
+</body>
+</html>
