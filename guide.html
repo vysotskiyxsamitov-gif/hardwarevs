@@ -4,222 +4,221 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HardwareVS - Интерактивный гайд</title>
-    <!-- Библиотека анимаций GSAP -->
-    <script src="https://cloudflare.com"></script>
+    <!-- Библиотека анимаций GSAP (исправлена ссылка) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
     <!-- СТИЛИ И ОФОРМЛЕНИЕ ИНТЕРФЕЙСА -->
     <style>
-        * { 
-            box-sizing: border-box; 
-            margin: 0; 
-            padding: 0; 
-            font-family: 'Segoe UI', Roboto, sans-serif; 
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, sans-serif;
         }
-        body { 
-            background: #0b071e; 
-            color: #fff; 
-            overflow: hidden; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            height: 100vh; 
+        html, body { height: 100%; }
+        body {
+            background: #0b071e;
+            color: #fff;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
-        #video-viewport { 
-            width: 1280px; 
-            height: 720px; 
-            background: #060412; 
-            border: 4px solid #3d2475; 
-            position: relative; 
-            overflow: hidden; 
-            border-radius: 12px; 
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8); 
+        #video-viewport {
+            width: 1280px;
+            height: 720px;
+            flex: none;
+            background: #060412;
+            border: 4px solid #3d2475;
+            position: relative;
+            overflow: hidden;
+            border-radius: 12px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            transform-origin: center center;
         }
-        .page { 
-            position: absolute; 
-            width: 100%; 
-            height: 100%; 
-            top: 0; 
-            left: 0; 
-            display: none; 
-            opacity: 0; 
-            padding: 40px; 
-            flex-direction: column; 
-            align-items: center; 
-            justify-content: center; 
+        .page {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            display: none;
+            opacity: 0;
+            padding: 40px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
         }
-        .active-page { 
-            display: flex; 
+        .active-page {
+            display: flex;
         }
-        #virtual-cursor { 
-            width: 24px; 
-            height: 24px; 
-            background: rgba(255,255,255,0.8); 
-            border: 2px solid #000; 
-            border-radius: 50%; 
-            position: absolute; 
-            top: 85%; 
-            left: 50%; 
-            z-index: 9999; 
-            pointer-events: none; 
-            transform: translate(-50%, -50%); 
-            box-shadow: 0 0 10px rgba(255,255,255,0.5); 
+        /* Центрирование курсора делается через GSAP (xPercent/yPercent), без CSS-transform */
+        #virtual-cursor {
+            width: 24px;
+            height: 24px;
+            background: rgba(255,255,255,0.8);
+            border: 2px solid #000;
+            border-radius: 50%;
+            position: absolute;
+            top: 85%;
+            left: 50%;
+            z-index: 9999;
+            pointer-events: none;
+            box-shadow: 0 0 10px rgba(255,255,255,0.5);
         }
-        #virtual-cursor::after { 
-            content: ''; 
-            position: absolute; 
-            width: 100%; 
-            height: 100%; 
-            border: 2px solid #a855f7; 
-            border-radius: 50%; 
-            top: -2px; 
-            left: -2px; 
-            opacity: 0; 
-            transform: scale(1); 
+        /* Настоящий элемент вместо псевдоэлемента ::after, чтобы GSAP мог его анимировать */
+        #virtual-cursor .pulse {
+            position: absolute;
+            inset: -4px;
+            border: 2px solid #a855f7;
+            border-radius: 50%;
+            opacity: 0;
         }
-        .logo { 
-            font-size: 54px; 
-            font-weight: 800; 
-            margin-bottom: 40px; 
-            background: linear-gradient(45deg, #38bdf8, #facc15); 
-            -webkit-background-clip: text; 
-            -webkit-text-fill-color: transparent; 
+        .logo {
+            font-size: 54px;
+            font-weight: 800;
+            margin-bottom: 40px;
+            background: linear-gradient(45deg, #38bdf8, #facc15);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
         }
-        .btn { 
-            width: 320px; 
-            padding: 16px; 
-            margin: 10px 0; 
-            border: none; 
-            border-radius: 8px; 
-            font-size: 16px; 
-            font-weight: bold; 
-            color: #fff; 
-            text-transform: uppercase; 
-            cursor: pointer; 
-            letter-spacing: 1px; 
-            display: flex; 
-            align-items: center; 
-            justify-content: center; 
-            gap: 10px; 
+        .btn {
+            width: 320px;
+            padding: 16px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            color: #fff;
+            text-transform: uppercase;
+            cursor: pointer;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
         }
         .btn-cpu { background: #a855f7; }
         .btn-gpu { background: #c084fc; }
         .btn-guide { background: #06b6d4; }
-        .page-title { 
-            font-size: 36px; 
-            color: #c084fc; 
-            margin-bottom: 30px; 
-            font-weight: bold; 
-            text-align: center; 
+        .page-title {
+            font-size: 36px;
+            color: #c084fc;
+            margin-bottom: 30px;
+            font-weight: bold;
+            text-align: center;
         }
-        .select-container { 
-            display: flex; 
-            gap: 20px; 
-            align-items: center; 
-            margin-bottom: 25px; 
-            background: #130d33; 
-            padding: 15px 30px; 
-            border-radius: 10px; 
-            border: 1px solid #2e1a53; 
+        .select-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            margin-bottom: 25px;
+            background: #130d33;
+            padding: 15px 30px;
+            border-radius: 10px;
+            border: 1px solid #2e1a53;
         }
-        .dropdown { 
-            background: #24194f; 
-            color: #fff; 
-            border: 1px solid #442a7a; 
-            padding: 10px 15px; 
-            border-radius: 6px; 
-            font-size: 14px; 
-            width: 220px; 
+        .dropdown {
+            background: #24194f;
+            color: #fff;
+            border: 1px solid #442a7a;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-size: 14px;
+            width: 260px;
         }
-        .vs-label { 
-            font-weight: bold; 
-            color: #a855f7; 
+        .vs-label {
+            font-weight: bold;
+            color: #a855f7;
         }
-        .btn-compare { 
-            background: #d946ef; 
-            width: 500px; 
-            padding: 14px; 
-            border: none; 
-            border-radius: 8px; 
-            font-weight: bold; 
-            color: #fff; 
-            font-size: 16px; 
-            margin-bottom: 30px; 
+        .btn-compare {
+            background: #d946ef;
+            width: 500px;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            color: #fff;
+            font-size: 16px;
+            margin-bottom: 30px;
         }
-        .stat-block { 
-            width: 560px; 
-            background: #130d3a; 
-            border-radius: 8px; 
-            border: 1px solid #23154c; 
-            padding: 15px; 
-            margin-bottom: 15px; 
+        .stat-block {
+            width: 560px;
+            background: #130d3a;
+            border-radius: 8px;
+            border: 1px solid #23154c;
+            padding: 15px;
+            margin-bottom: 15px;
         }
-        .stat-title { 
-            font-size: 15px; 
-            font-weight: bold; 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
-            margin-bottom: 10px; 
+        .stat-title {
+            font-size: 15px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
         }
-        .item-label { 
-            font-size: 12px; 
-            color: #9aa0a6; 
-            margin-top: 5px; 
+        .item-label {
+            font-size: 12px;
+            color: #9aa0a6;
+            margin-top: 5px;
         }
-        .bar-wrapper { 
-            width: 100%; 
-            height: 24px; 
-            background: #1f1547; 
-            border-radius: 4px; 
-            overflow: hidden; 
-            margin-bottom: 8px; 
-            position: relative; 
+        .bar-wrapper {
+            width: 100%;
+            height: 24px;
+            background: #1f1547;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            position: relative;
         }
-        .bar { 
-            height: 100%; 
-            width: 0%; 
-            display: flex; 
-            align-items: center; 
-            padding-left: 10px; 
-            font-size: 12px; 
-            font-weight: bold; 
-            color: #fff; 
+        .bar {
+            height: 100%;
+            width: 0%;
+            display: flex;
+            align-items: center;
+            padding-left: 10px;
+            font-size: 12px;
+            font-weight: bold;
+            color: #fff;
+            white-space: nowrap;
         }
         .bar-blue { background: #3b82f6; }
         .bar-red { background: #ef4444; }
         .bar-green { background: #22c55e; }
-        .result-box { 
-            width: 560px; 
-            background: #1a0f47; 
-            border-left: 5px solid #a855f7; 
-            border-radius: 4px; 
-            padding: 15px; 
-            font-size: 14px; 
-            line-height: 1.4; 
+        .result-box {
+            width: 560px;
+            background: #1a0f47;
+            border-left: 5px solid #a855f7;
+            border-radius: 4px;
+            padding: 15px;
+            font-size: 14px;
+            line-height: 1.4;
         }
-        .back-link { 
-            position: absolute; 
-            top: 30px; 
-            left: 30px; 
-            color: #9aa0a6; 
-            text-decoration: none; 
-            font-size: 14px; 
+        .back-link {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            color: #9aa0a6;
+            text-decoration: none;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
-       <div id="video-viewport">
+    <div id="video-viewport">
         <!-- Автоматический курсор для имитации кликов -->
-        <div id="virtual-cursor"></div>
+        <div id="virtual-cursor"><div class="pulse"></div></div>
 
         <!-- СЦЕНА 1: ГЛАВНЫЙ ЭКРАН -->
         <div id="page-index" class="page active-page">
             <h1 class="logo">HardwareVS</h1>
             <button class="btn btn-cpu" id="mock-btn-cpu">💻 СРАВНИТЬ ПРОЦЕССОРЫ</button>
             <button class="btn btn-gpu" id="mock-btn-gpu">🔮 СРАВНИТЬ ВИДЕОКАРТЫ</button>
-            <button class="btn btn-guide">■ ПОШАГОВЫЙ ГАЙД</button>
+            <button class="btn btn-guide">📖 ПОШАГОВЫЙ ГАЙД</button>
         </div>
-
 
         <!-- СЦЕНА 2: СРАВНЕНИЕ ПРОЦЕССОРОВ -->
         <div id="page-cpu" class="page">
@@ -261,7 +260,7 @@
             </div>
         </div>
 
-        <!-- СЦЕНА 4: СРАВНЕНИЕ ВИДЕОКАРТ -->
+        <!-- СЦЕНА 3: СРАВНЕНИЕ ВИДЕОКАРТ -->
         <div id="page-gpu" class="page">
             <a href="#" class="back-link" id="mock-back-gpu">← На главную</a>
             <h2 class="page-title">Сравнение видеокарт</h2>
@@ -301,20 +300,36 @@
             </div>
         </div>
     </div> <!-- Закрываем контейнер видео-плеера -->
-    <script>
-        // Инициализация бесконечной таймлайн-ленты анимаций
-        const tl = gsap.timeline({ repeat: -1, repeatDelay: 1.5 });
-        const cursor = document.getElementById('virtual-cursor');
-        const viewport = document.getElementById('video-viewport');
 
-        // Функция вычисления точного центра нужного элемента для клика
+    <script>
+        const cursor = document.getElementById('virtual-cursor');
+        const pulse = cursor.querySelector('.pulse');
+        const viewport = document.getElementById('video-viewport');
+        const PAGES = ['#page-index', '#page-cpu', '#page-gpu'];
+
+        // Центрирование курсора средствами GSAP (вместо CSS-transform)
+        gsap.set(cursor, { xPercent: -50, yPercent: -50 });
+        gsap.set(pulse, { opacity: 0, scale: 1 });
+
+        // Масштабирование ролика под размер окна
+        function fitViewport() {
+            const s = Math.min(1, window.innerWidth / 1288, window.innerHeight / 728);
+            viewport.style.transform = `scale(${s})`;
+        }
+        fitViewport();
+        window.addEventListener('resize', fitViewport);
+
+        // Точный центр элемента внутри viewport (с учётом масштаба).
+        // Вызывается в момент выполнения, когда нужная страница уже показана.
         function getCoords(elementId) {
             const el = document.getElementById(elementId);
             const elRect = el.getBoundingClientRect();
             const viewRect = viewport.getBoundingClientRect();
+            const scale = viewRect.width / viewport.offsetWidth || 1;
+            const border = viewport.clientLeft; // рамка viewport
             return {
-                x: elRect.left - viewRect.left + (elRect.width / 2),
-                y: elRect.top - viewRect.top + (elRect.height / 2)
+                x: (elRect.left - viewRect.left) / scale - border + (elRect.width / scale) / 2,
+                y: (elRect.top - viewRect.top) / scale - border + (elRect.height / scale) / 2
             };
         }
 
@@ -322,9 +337,9 @@
         function playClick() {
             return gsap.timeline()
                 .to(cursor, { scale: 0.7, duration: 0.1 })
-                .to('#virtual-cursor::after', { opacity: 1, scale: 1.8, duration: 0.2 })
+                .to(pulse, { opacity: 1, scale: 1.8, duration: 0.2 }, "<")
                 .to(cursor, { scale: 1, duration: 0.1 })
-                .to('#virtual-cursor::after', { opacity: 0, scale: 1, duration: 0.1 });
+                .to(pulse, { opacity: 0, scale: 1, duration: 0.1 });
         }
 
         // Плавная смена экранов (один затухает, второй проявляется)
@@ -342,78 +357,78 @@
             const bars = document.querySelectorAll(`${pageId} .bar`);
             const t = gsap.timeline();
             bars.forEach(bar => {
-                const w = bar.getAttribute('data-width');
-                t.to(bar, { width: w, duration: 0.8, ease: "power2.out" }, "-=0.6");
+                t.to(bar, { width: bar.getAttribute('data-width'), duration: 0.8, ease: "power2.out" }, "-=0.6");
             });
-            t.from(`${pageId} .result-box`, { opacity: 0, y: 15, duration: 0.3 }, "-=0.2");
+            t.to(`${pageId} .result-box`, { opacity: 1, y: 0, duration: 0.3 }, "-=0.2");
             return t;
+        }
+
+        // Полный сброс состояния в начале каждого цикла
+        function resetAll() {
+            PAGES.forEach((id, i) => {
+                const page = document.querySelector(id);
+                page.classList.toggle('active-page', i === 0);
+                gsap.set(page, { opacity: 0 });
+            });
+            gsap.set('.bar', { width: '0%' });
+            gsap.set('.result-box', { opacity: 0, y: 15 });
+            gsap.set(cursor, { left: '50%', top: '85%', scale: 1 });
+            gsap.set(pulse, { opacity: 0, scale: 1 });
+        }
+
+        // Движение курсора к элементу: координаты считаются в момент запуска,
+        // а не при построении таймлайна
+        function moveTo(tl, elementId, duration) {
+            tl.call(() => {
+                const c = getCoords(elementId);
+                gsap.to(cursor, { left: c.x, top: c.y, duration: duration, ease: "power2.inOut", overwrite: "auto" });
+            });
+            tl.to({}, { duration: duration });
         }
 
         // ------------------------------------------
         //         РЕЖИССУРА КЛИКОВ И ТАЙМИНГОВ
         // ------------------------------------------
-        
-        // Старт: Проявляем главное меню
+        const tl = gsap.timeline({ repeat: -1, repeatDelay: 1.5 });
+
+        tl.call(resetAll);
+
+        // Старт: проявляем главное меню
         tl.to('#page-index', { opacity: 1, duration: 0.4 });
 
-        // ШАГ 1: Перемещаем мышь на процессоры и кликаем
-        tl.to(cursor, { 
-            left: () => getCoords('mock-btn-cpu').x, 
-            top: () => getCoords('mock-btn-cpu').y, 
-            duration: 1.2, ease: "power2.inOut" 
-        });
+        // ШАГ 1: мышь на «Процессоры» и клик
+        moveTo(tl, 'mock-btn-cpu', 1.2);
         tl.add(playClick());
         tl.add(changeScene('#page-index', '#page-cpu'));
 
-        // ШАГ 2: Курсор движется к кнопке запуска теста CPU
-        tl.to(cursor, { 
-            left: () => getCoords('mock-compare-cpu').x, 
-            top: () => getCoords('mock-compare-cpu').y, 
-            duration: 0.7, ease: "power2.inOut" 
-        });
+        // ШАГ 2: кнопка запуска сравнения CPU
+        moveTo(tl, 'mock-compare-cpu', 0.7);
         tl.add(playClick());
         tl.add(runBars('#page-cpu'));
-        tl.to({}, { duration: 2.5 }); // Пауза для просмотра результатов CPU
+        tl.to({}, { duration: 2.5 }); // пауза для просмотра результатов
 
-        // ШАГ 3: Возвращаемся обратно на главную
-        tl.to('#page-cpu .bar', { width: '0%', duration: 0.1 }); // Очищаем шкалы для повтора
-        tl.to(cursor, { 
-            left: () => getCoords('mock-back-cpu').x, 
-            top: () => getCoords('mock-back-cpu').y, 
-            duration: 0.8, ease: "power2.inOut" 
-        });
+        // ШАГ 3: возврат на главную
+        tl.set('#page-cpu .bar', { width: '0%' });
+        moveTo(tl, 'mock-back-cpu', 0.8);
         tl.add(playClick());
         tl.add(changeScene('#page-cpu', '#page-index'));
 
-        // ШАГ 4: Перемещаем курсор к видеокартам
-        tl.to(cursor, { 
-            left: () => getCoords('mock-btn-gpu').x, 
-            top: () => getCoords('mock-btn-gpu').y, 
-            duration: 1.0, ease: "power2.inOut" 
-        });
+        // ШАГ 4: курсор к «Видеокартам»
+        moveTo(tl, 'mock-btn-gpu', 1.0);
         tl.add(playClick());
         tl.add(changeScene('#page-index', '#page-gpu'));
 
-        // ШАГ 5: Кликаем на кнопку сравнения видеокарт
-        tl.to(cursor, { 
-            left: () => getCoords('mock-compare-gpu').x, 
-            top: () => getCoords('mock-compare-gpu').y, 
-            duration: 0.7, ease: "power2.inOut" 
-        });
+        // ШАГ 5: кнопка сравнения видеокарт
+        moveTo(tl, 'mock-compare-gpu', 0.7);
         tl.add(playClick());
         tl.add(runBars('#page-gpu'));
-        tl.to({}, { duration: 2.5 }); // Пауза для просмотра результатов GPU
+        tl.to({}, { duration: 2.5 }); // пауза для просмотра результатов
 
-        // ШАГ 6: Клик "На главную" и сброс ролика в начало
-        tl.to('#page-gpu .bar', { width: '0%', duration: 0.1 });
-        tl.to(cursor, { 
-            left: () => getCoords('mock-back-gpu').x, 
-            top: () => getCoords('mock-back-gpu').y, 
-            duration: 0.8, ease: "power2.inOut" 
-        });
+        // ШАГ 6: «На главную» и конец цикла
+        tl.set('#page-gpu .bar', { width: '0%' });
+        moveTo(tl, 'mock-back-gpu', 0.8);
         tl.add(playClick());
         tl.add(changeScene('#page-gpu', '#page-index'));
     </script>
 </body>
 </html>
-
