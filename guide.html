@@ -528,7 +528,7 @@
         tl.to({}, { duration: 2.5 }); // пауза для просмотра результатов
 
         // ШАГ 3: возврат на главную
-        tl.set('#page-cpu .bar', { width: '0%' });
+        // Шкалы не сбрасываем: их обнуляет resetAll в начале следующего показа
         moveTo(tl, 'mock-back-cpu', 0.8);
         tl.add(playClick());
         tl.add(changeScene('#page-cpu', '#page-index'));
@@ -545,7 +545,7 @@
         tl.to({}, { duration: 2.5 }); // пауза для просмотра результатов
 
         // ШАГ 6: «На главную» и конец цикла
-        tl.set('#page-gpu .bar', { width: '0%' });
+        // Шкалы не сбрасываем: их обнуляет resetAll при повторном просмотре
         moveTo(tl, 'mock-back-gpu', 0.8);
         tl.add(playClick());
         tl.add(changeScene('#page-gpu', '#page-index'));
