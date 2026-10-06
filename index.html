@@ -75,7 +75,7 @@
         }
         /* Плавный уход со страницы при нажатии на кнопку */
         html.leaving .main-wrapper { opacity: 0; transform: scale(0.96) translateY(-8px); filter: blur(8px); }
-        html.leaving .settings { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        html.leaving .settings, html.leaving .reviews-btn { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
 
         .main-container { text-align: center; width: 90%; max-width: 380px; pointer-events: auto; padding: 20px 0; }
 
@@ -137,6 +137,18 @@
         .gear-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
         .gear-btn:focus-visible { outline: 2px solid #a855f7; outline-offset: 3px; }
 
+        /* КНОПКА «ОТЗЫВЫ» — слева от шестерёнки (20px отступ + 44px шестерёнка + 10px зазор) */
+        .reviews-btn {
+            position: fixed; top: 20px; right: 74px; z-index: 50;
+            width: 44px; height: 44px; display: flex; align-items: center; justify-content: center;
+            background: var(--panel-bg); color: #f59e0b; text-decoration: none; font-size: 22px; line-height: 1;
+            border: 1px solid var(--panel-border); border-radius: 50%;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.4s, opacity 0.3s ease;
+        }
+        .reviews-btn:hover { border-color: #f59e0b; box-shadow: 0 0 14px rgba(245, 158, 11, 0.5); }
+        .reviews-btn:focus-visible { outline: 2px solid #a855f7; outline-offset: 3px; }
+
         .settings-panel {
             position: absolute; top: 54px; right: 0; width: 220px; padding: 14px;
             background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 10px;
@@ -167,8 +179,8 @@
         .theme-option:focus-visible { outline: 2px solid #a855f7; outline-offset: 2px; }
 
 
-        /* АККАУНТ (слева сверху) */
-        .account { position: fixed; top: 20px; left: 20px; z-index: 50; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 100px);
+        /* АККАУНТ (слева сверху) — справа оставляем место под две круглые кнопки */
+        .account { position: fixed; top: 20px; left: 20px; z-index: 50; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 160px);
             min-height: 44px; padding: 0 14px; background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 22px;
             backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 13px; transition: opacity .3s ease; }
         .account:empty { display: none; }
@@ -207,6 +219,9 @@
 
 <!-- Вход / регистрация / профиль -->
 <div class="account" id="account"></div>
+
+<!-- Отзывы: слева от шестерёнки -->
+<a class="reviews-btn" href="https://vysotskiyxsamitov-gif.github.io/hardwarevs/reviews.html" aria-label="Отзывы" title="Отзывы">⭐</a>
 
 <!-- Шестерёнка и маленькое окно выбора темы -->
 <div class="settings" id="settings">
@@ -290,7 +305,7 @@
     });
 
     /* ---------- ПЛАВНЫЙ ПЕРЕХОД МЕЖДУ СТРАНИЦАМИ ---------- */
-    document.querySelectorAll('a.btn-style').forEach(function (link) {
+    document.querySelectorAll('a.btn-style, a.reviews-btn').forEach(function (link) {
         link.addEventListener('click', function (e) {
             // Не мешаем открытию в новой вкладке (Ctrl/Cmd/Shift + клик, средняя кнопка)
             if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
