@@ -19,6 +19,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
     <script src="auth.js"></script>
+    <script src="cookies.js"></script>
 
     <style>
         :root, :root[data-theme="dark"] {
@@ -203,6 +204,17 @@
         @media (prefers-reduced-motion: reduce) {
             .app { animation: none; }
         }
+
+        /* Закрытый доступ: только VIP */
+        .vip-gate { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--bg); }
+        .vip-gate[hidden] { display: none; }
+        .vip-card { width: 100%; max-width: 380px; padding: 28px 22px; text-align: center; background: var(--panel); border: 1px solid var(--border-strong); border-radius: 14px; }
+        .vip-card h2 { font-size: 22px; margin: 8px 0; }
+        .vip-card p { color: var(--muted); font-size: 14px; line-height: 1.5; margin-bottom: 18px; }
+        .vip-actions { display: flex; flex-direction: column; gap: 8px; }
+        .vip-btn { display: block; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 700; color: #fff; background: linear-gradient(135deg, #f59e0b, #b45309); }
+        .vip-btn.ghost { background: var(--card); color: var(--text); border: 1px solid var(--border); font-weight: 600; }
+        .vip-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     </style>
 </head>
 <body>
@@ -277,6 +289,15 @@
             </div>
         </div>
     </main>
+</div>
+
+<div class="vip-gate" id="vipGate" role="dialog" aria-modal="true" aria-labelledby="vipGateTitle">
+    <div class="vip-card">
+        <div style="font-size:40px">👑</div>
+        <h2 id="vipGateTitle">3D-конфигуратор для VIP</h2>
+        <p id="vipGateText">Проверяем доступ…</p>
+        <div class="vip-actions" id="vipGateActions"></div>
+    </div>
 </div>
 
 <div class="modal" id="modal" hidden>
@@ -1577,6 +1598,32 @@ try {
 } catch (e) {}
 requestAnimationFrame(frame);
 
+})();
+</script>
+<script>
+(function () {
+    const gate = document.getElementById('vipGate'), text = document.getElementById('vipGateText'), box = document.getElementById('vipGateActions');
+    const C = window.HW_COOKIES;
+    function show(msg, links) {
+        text.textContent = msg; box.textContent = '';
+        links.forEach(function (l) {
+            const a = document.createElement('a');
+            a.href = l.href; a.className = 'vip-btn' + (l.ghost ? ' ghost' : ''); a.textContent = l.label;
+            box.appendChild(a);
+        });
+        gate.hidden = false;
+    }
+    const HOME = { href: 'index.html', label: '← На главную', ghost: true };
+    // Если проверить VIP нельзя, доступ остаётся закрытым
+    if (!C) { show('Не удалось проверить VIP-статус. Обновите страницу.', [HOME]); return; }
+    C.onChange(function (w) {
+        if (w === undefined) show('Не удалось проверить VIP-статус. Обновите страницу.', [HOME]);
+        else if (w === null) show('Конфигуратор доступен только с VIP. Войдите в аккаунт, чтобы продолжить.', [
+            { href: 'login.html?next=builder.html', label: 'Войти' }, { href: 'register.html?next=builder.html', label: 'Регистрация', ghost: true }, HOME]);
+        else if (!w.vip_active) show('Нужен VIP: ' + w.vip_price + ' 🍪 на ' + w.vip_days + ' дней. У вас ' + w.cookies + ' 🍪.', [{ href: 'index.html', label: 'Перейти в магазин' }]);
+        else gate.hidden = true;
+    });
+    C.refresh();
 })();
 </script>
 </body>
