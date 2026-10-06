@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HardwareVS - Интерактивный гайд</title>
+    <!-- Библиотека анимаций GSAP -->
+    <script src="https://cloudflare.com"></script>
+
+    <!-- СТИЛИ И ОФОРМЛЕНИЕ ИНТЕРФЕЙСА -->
+    <style>
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0; 
+            font-family: 'Segoe UI', Roboto, sans-serif; 
+        }
+        body { 
+            background: #0b071e; 
+            color: #fff; 
+            overflow: hidden; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            height: 100vh; 
+        }
+        #video-viewport { 
+            width: 1280px; 
+            height: 720px; 
+            background: #060412; 
+            border: 4px solid #3d2475; 
+            position: relative; 
+            overflow: hidden; 
+            border-radius: 12px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.8); 
+        }
+        .page { 
+            position: absolute; 
+            width: 100%; 
+            height: 100%; 
+            top: 0; 
+            left: 0; 
+            display: none; 
+            opacity: 0; 
+            padding: 40px; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        .active-page { 
+            display: flex; 
+        }
+        #virtual-cursor { 
+            width: 24px; 
+            height: 24px; 
+            background: rgba(255,255,255,0.8); 
+            border: 2px solid #000; 
+            border-radius: 50%; 
+            position: absolute; 
+            top: 85%; 
+            left: 50%; 
+            z-index: 9999; 
+            pointer-events: none; 
+            transform: translate(-50%, -50%); 
+            box-shadow: 0 0 10px rgba(255,255,255,0.5); 
+        }
+        #virtual-cursor::after { 
+            content: ''; 
+            position: absolute; 
+            width: 100%; 
+            height: 100%; 
+            border: 2px solid #a855f7; 
+            border-radius: 50%; 
+            top: -2px; 
+            left: -2px; 
+            opacity: 0; 
+            transform: scale(1); 
+        }
+        .logo { 
+            font-size: 54px; 
+            font-weight: 800; 
+            margin-bottom: 40px; 
+            background: linear-gradient(45deg, #38bdf8, #facc15); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+        }
+        .btn { 
+            width: 320px; 
+            padding: 16px; 
+            margin: 10px 0; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 16px; 
+            font-weight: bold; 
+            color: #fff; 
+            text-transform: uppercase; 
+            cursor: pointer; 
+            letter-spacing: 1px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            gap: 10px; 
+        }
+        .btn-cpu { background: #a855f7; }
+        .btn-gpu { background: #c084fc; }
+        .btn-guide { background: #06b6d4; }
+        .page-title { 
+            font-size: 36px; 
+            color: #c084fc; 
+            margin-bottom: 30px; 
+            font-weight: bold; 
+            text-align: center; 
+        }
+        .select-container { 
+            display: flex; 
+            gap: 20px; 
+            align-items: center; 
+            margin-bottom: 25px; 
+            background: #130d33; 
+            padding: 15px 30px; 
+            border-radius: 10px; 
+            border: 1px solid #2e1a53; 
+        }
+        .dropdown { 
+            background: #24194f; 
+            color: #fff; 
+            border: 1px solid #442a7a; 
+            padding: 10px 15px; 
+            border-radius: 6px; 
+            font-size: 14px; 
+            width: 220px; 
+        }
+        .vs-label { 
+            font-weight: bold; 
+            color: #a855f7; 
+        }
+        .btn-compare { 
+            background: #d946ef; 
+            width: 500px; 
+            padding: 14px; 
+            border: none; 
+            border-radius: 8px; 
+            font-weight: bold; 
+            color: #fff; 
+            font-size: 16px; 
+            margin-bottom: 30px; 
+        }
+        .stat-block { 
+            width: 560px; 
+            background: #130d3a; 
+            border-radius: 8px; 
+            border: 1px solid #23154c; 
+            padding: 15px; 
+            margin-bottom: 15px; 
+        }
+        .stat-title { 
+            font-size: 15px; 
+            font-weight: bold; 
+            display: flex; 
+            align-items: center; 
+            gap: 8px; 
+            margin-bottom: 10px; 
+        }
+        .item-label { 
+            font-size: 12px; 
+            color: #9aa0a6; 
+            margin-top: 5px; 
+        }
+        .bar-wrapper { 
+            width: 100%; 
+            height: 24px; 
+            background: #1f1547; 
+            border-radius: 4px; 
+            overflow: hidden; 
+            margin-bottom: 8px; 
+            position: relative; 
+        }
+        .bar { 
+            height: 100%; 
+            width: 0%; 
+            display: flex; 
+            align-items: center; 
+            padding-left: 10px; 
+            font-size: 12px; 
+            font-weight: bold; 
+            color: #fff; 
+        }
+        .bar-blue { background: #3b82f6; }
+        .bar-red { background: #ef4444; }
+        .bar-green { background: #22c55e; }
+        .result-box { 
+            width: 560px; 
+            background: #1a0f47; 
+            border-left: 5px solid #a855f7; 
+            border-radius: 4px; 
+            padding: 15px; 
+            font-size: 14px; 
+            line-height: 1.4; 
+        }
+        .back-link { 
+            position: absolute; 
+            top: 30px; 
+            left: 30px; 
+            color: #9aa0a6; 
+            text-decoration: none; 
+            font-size: 14px; 
+        }
+    </style>
+</head>
+<body>
+      <div id="video-viewport">
+        <!-- Автоматический курсор для имитации кликов -->
+        <div id="virtual-cursor"></div>
+
+        <!-- СЦЕНА 1: ГЛАВНЫЙ ЭКРАН ХАБАРОВСКА -->
+        <div id="page-index" class="page active-page">
+            <h1 class="logo">HardwareVS</h1>
+            <button class="btn btn-cpu" id="mock-btn-cpu">💻 СРАВНИТЬ ПРОЦЕССОРЫ</button>
+            <button class="btn btn-gpu" id="mock-btn-gpu">🔮 СРАВНИТЬ ВИДЕОКАРТЫ</button>
+            <button class="btn btn-guide">■ ПОШАГОВЫЙ ГАЙД</button>
+        </div>
+        <!-- СЦЕНА 2: СРАВНЕНИЕ ПРОЦЕССОРОВ -->
+        <div id="page-cpu" class="page">
+            <a href="#" class="back-link" id="mock-back-cpu">← На главную</a>
+            <h2 class="page-title">Сравнение процессоров</h2>
+            <div class="select-container">
+                <div class="dropdown">Intel Core i3-540 (1 Gen)</div>
+                <span class="vs-label">VS</span>
+                <div class="dropdown">Intel Core i3-3220 (3 Gen)</div>
+            </div>
+            <button class="btn btn-compare" id="mock-compare-cpu">Сравнить процессоры!</button>
+
+            <div class="stat-block">
+                <div class="stat-title">📊 Ядра / Потоки:</div>
+                <div class="item-label">Intel Core i3-540 (1 Gen)</div>
+                <div class="bar-wrapper"><div class="bar bar-blue" data-width="40%">2/4</div></div>
+                <div class="item-label">Intel Core i3-3220 (3 Gen)</div>
+                <div class="bar-wrapper"><div class="bar bar-blue" data-width="40%">2/4</div></div>
+            </div>
+
+            <div class="stat-block">
+                <div class="stat-title">⚡ Тепловыделение (TDP Ватт):</div>
+                <div class="item-label">Intel Core i3-540 (1 Gen)</div>
+                <div class="bar-wrapper"><div class="bar bar-red" data-width="73%">73 W</div></div>
+                <div class="item-label">Intel Core i3-3220 (3 Gen)</div>
+                <div class="bar-wrapper"><div class="bar bar-red" data-width="55%">55 W</div></div>
+            </div>
+
+            <div class="stat-block">
+                <div class="stat-title">🚀 Чистая мощность (Баллы PassMark):</div>
+                <div class="item-label">Intel Core i3-540 (1 Gen)</div>
+                <div class="bar-wrapper"><div class="bar bar-green" data-width="45%">1500 pts</div></div>
+                <div class="item-label">Intel Core i3-3220 (3 Gen)</div>
+                <div class="bar-wrapper"><div class="bar bar-green" data-width="70%">2200 pts</div></div>
+            </div>
+
+            <div class="result-box">
+                Процессор <strong>Intel Core i3-3220 (3 Gen)</strong> мощнее в тестах ровно на <span style="color: #22c55e; font-weight: bold;">700 баллов!</span>
+            </div>
+        </div>
+
+        <!-- СЦЕНА 4: СРАВНЕНИЕ ВИДЕОКАРТ -->
+        <div id="page-gpu" class="page">
+            <a href="#" class="back-link" id="mock-back-gpu">← На главную</a>
+            <h2 class="page-title">Сравнение видеокарт</h2>
+            <div class="select-container">
+                <div class="dropdown">NVIDIA GeForce RTX 4060 8GB</div>
+                <span class="vs-label">VS</span>
+                <div class="dropdown">NVIDIA GeForce RTX 4080 Super 16GB</div>
+            </div>
+            <button class="btn btn-compare" id="mock-compare-gpu">Сравнить видеокарты!</button>
+
+            <div class="stat-block">
+                <div class="stat-title">💾 Объем видеопамяти:</div>
+                <div class="item-label">NVIDIA GeForce RTX 4060 8GB GDDR6</div>
+                <div class="bar-wrapper"><div class="bar bar-blue" data-width="40%">8 ГБ</div></div>
+                <div class="item-label">NVIDIA GeForce RTX 4080 Super 16GB</div>
+                <div class="bar-wrapper"><div class="bar bar-blue" data-width="85%">16 ГБ</div></div>
+            </div>
+
+            <div class="stat-block">
+                <div class="stat-title">⚡ Потребление энергии (Ватты):</div>
+                <div class="item-label">NVIDIA GeForce RTX 4060 8GB GDDR6</div>
+                <div class="bar-wrapper"><div class="bar bar-red" data-width="35%">115 W</div></div>
+                <div class="item-label">NVIDIA GeForce RTX 4080 Super 16GB</div>
+                <div class="bar-wrapper"><div class="bar bar-red" data-width="90%">320 W</div></div>
+            </div>
+
+            <div class="stat-block">
+                <div class="stat-title">🚀 Мощность (Чистые баллы PassMark):</div>
+                <div class="item-label">NVIDIA GeForce RTX 4060 8GB GDDR6</div>
+                <div class="bar-wrapper"><div class="bar bar-green" data-width="50%">15984 pts</div></div>
+                <div class="item-label">NVIDIA GeForce RTX 4080 Super 16GB</div>
+                <div class="bar-wrapper"><div class="bar bar-green" data-width="95%">30144 pts</div></div>
+            </div>
+
+            <div class="result-box">
+                Модель <strong>NVIDIA GeForce RTX 4080 Super 16GB</strong> мощнее в тестах ровно на <span style="color: #22c55e; font-weight: bold;">14160 баллов!</span>
+            </div>
+        </div>
+    </div> <!-- Закрываем контейнер видео-плеера -->
+    <script>
+        // Инициализация бесконечной таймлайн-ленты анимаций
+        const tl = gsap.timeline({ repeat: -1, repeatDelay: 1.5 });
+        const cursor = document.getElementById('virtual-cursor');
+        const viewport = document.getElementById('video-viewport');
+
+        // Функция вычисления точного центра нужного элемента для клика
+        function getCoords(elementId) {
+            const el = document.getElementById(elementId);
+            const elRect = el.getBoundingClientRect();
+            const viewRect = viewport.getBoundingClientRect();
+            return {
+                x: elRect.left - viewRect.left + (elRect.width / 2),
+                y: elRect.top - viewRect.top + (elRect.height / 2)
+            };
+        }
+
+        // Анимация щелчка мыши (сжатие + радиальный импульс)
+        function playClick() {
+            return gsap.timeline()
+                .to(cursor, { scale: 0.7, duration: 0.1 })
+                .to('#virtual-cursor::after', { opacity: 1, scale: 1.8, duration: 0.2 })
+                .to(cursor, { scale: 1, duration: 0.1 })
+                .to('#virtual-cursor::after', { opacity: 0, scale: 1, duration: 0.1 });
+        }
+
+        // Плавная смена экранов (один затухает, второй проявляется)
+        function changeScene(hideId, showId) {
+            return gsap.timeline()
+                .to(hideId, { opacity: 0, duration: 0.3, onComplete: () => {
+                    document.querySelector(hideId).classList.remove('active-page');
+                    document.querySelector(showId).classList.add('active-page');
+                }})
+                .to(showId, { opacity: 1, duration: 0.3 });
+        }
+
+        // Анимация плавного заполнения инфо-шкал
+        function runBars(pageId) {
+            const bars = document.querySelectorAll(`${pageId} .bar`);
+            const t = gsap.timeline();
+            bars.forEach(bar => {
+                const w = bar.getAttribute('data-width');
+                t.to(bar, { width: w, duration: 0.8, ease: "power2.out" }, "-=0.6");
+            });
+            t.from(`${pageId} .result-box`, { opacity: 0, y: 15, duration: 0.3 }, "-=0.2");
+            return t;
+        }
+
+        // ------------------------------------------
+        //         РЕЖИССУРА КЛИКОВ И ТАЙМИНГОВ
+        // ------------------------------------------
+        
+        // Старт: Проявляем главное меню
+        tl.to('#page-index', { opacity: 1, duration: 0.4 });
+
+        // ШАГ 1: Перемещаем мышь на процессоры и кликаем
+        tl.to(cursor, { 
+            left: () => getCoords('mock-btn-cpu').x, 
+            top: () => getCoords('mock-btn-cpu').y, 
+            duration: 1.2, ease: "power2.inOut" 
+        });
+        tl.add(playClick());
+        tl.add(changeScene('#page-index', '#page-cpu'));
+
+        // ШАГ 2: Курсор движется к кнопке запуска теста CPU
+        tl.to(cursor, { 
+            left: () => getCoords('mock-compare-cpu').x, 
+            top: () => getCoords('mock-compare-cpu').y, 
+            duration: 0.7, ease: "power2.inOut" 
+        });
+        tl.add(playClick());
+        tl.add(runBars('#page-cpu'));
+        tl.to({}, { duration: 2.5 }); // Пауза для просмотра результатов CPU
+
+        // ШАГ 3: Возвращаемся обратно на главную
+        tl.to('#page-cpu .bar', { width: '0%', duration: 0.1 }); // Очищаем шкалы для повтора
+        tl.to(cursor, { 
+            left: () => getCoords('mock-back-cpu').x, 
+            top: () => getCoords('mock-back-cpu').y, 
+            duration: 0.8, ease: "power2.inOut" 
+        });
+        tl.add(playClick());
+        tl.add(changeScene('#page-cpu', '#page-index'));
+
+        // ШАГ 4: Перемещаем курсор к видеокартам
+        tl.to(cursor, { 
+            left: () => getCoords('mock-btn-gpu').x, 
+            top: () => getCoords('mock-btn-gpu').y, 
+            duration: 1.0, ease: "power2.inOut" 
+        });
+        tl.add(playClick());
+        tl.add(changeScene('#page-index', '#page-gpu'));
+
+        // ШАГ 5: Кликаем на кнопку сравнения видеокарт
+        tl.to(cursor, { 
+            left: () => getCoords('mock-compare-gpu').x, 
+            top: () => getCoords('mock-compare-gpu').y, 
+            duration: 0.7, ease: "power2.inOut" 
+        });
+        tl.add(playClick());
+        tl.add(runBars('#page-gpu'));
+        tl.to({}, { duration: 2.5 }); // Пауза для просмотра результатов GPU
+
+        // ШАГ 6: Клик "На главную" и сброс ролика в начало
+        tl.to('#page-gpu .bar', { width: '0%', duration: 0.1 });
+        tl.to(cursor, { 
+            left: () => getCoords('mock-back-gpu').x, 
+            top: () => getCoords('mock-back-gpu').y, 
+            duration: 0.8, ease: "power2.inOut" 
+        });
+        tl.add(playClick());
+        tl.add(changeScene('#page-gpu', '#page-index'));
+    </script>
+</body>
+</html>
+
