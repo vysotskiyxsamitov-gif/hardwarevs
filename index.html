@@ -15,6 +15,9 @@
         } catch (e) {}
     </script>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="auth.js"></script>
+
     <style>
         /* ТЕМЫ: все цвета вынесены в переменные */
         :root, :root[data-theme="dark"] {
@@ -163,6 +166,19 @@
         }
         .theme-option:focus-visible { outline: 2px solid #a855f7; outline-offset: 2px; }
 
+
+        /* АККАУНТ (слева сверху) */
+        .account { position: fixed; top: 20px; left: 20px; z-index: 50; display: flex; align-items: center; gap: 8px; max-width: calc(100% - 100px);
+            min-height: 44px; padding: 0 14px; background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 22px;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 13px; transition: opacity .3s ease; }
+        .account:empty { display: none; }
+        .acc-mail { color: var(--panel-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+        .acc-link { background: none; border: 0; padding: 4px 2px; cursor: pointer; font: inherit; font-weight: 600; color: var(--panel-text); text-decoration: none; white-space: nowrap; }
+        .acc-link:hover { color: #a855f7; }
+        .acc-link:focus-visible { outline: 2px solid #a855f7; outline-offset: 2px; border-radius: 4px; }
+        .acc-link + .acc-link { margin-left: 4px; padding-left: 10px; border-left: 1px solid var(--panel-border); }
+        html.leaving .account { opacity: 0; pointer-events: none; }
+
         /* ЭЛЕМЕНТЫ МЯГКОГО НЕОНОВОГО ШЛЕЙФА */
         .magic-dot {
             position: fixed; width: 6px; height: 6px; background-color: #a855f7; border-radius: 50%;
@@ -188,6 +204,9 @@
     <div class="bg-glow"></div>
     <div class="bg-glow-2"></div>
 </div>
+
+<!-- Вход / регистрация / профиль -->
+<div class="account" id="account"></div>
 
 <!-- Шестерёнка и маленькое окно выбора темы -->
 <div class="settings" id="settings">
@@ -223,6 +242,7 @@
 <script>
 (function () {
     const root = document.documentElement;
+    if (window.HW_AUTH) window.HW_AUTH.mountAccount(document.getElementById('account'));
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     /* ---------- ТЕМА ---------- */
