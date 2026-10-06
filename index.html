@@ -1,33 +1,89 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HardwareVS — Главная</title>
+
+    <!-- Применяем сохранённую тему ДО отрисовки страницы, чтобы не было мигания -->
+    <script>
+        try {
+            var savedTheme = localStorage.getItem('hardwarevs-theme');
+            if (savedTheme === 'light' || savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            }
+        } catch (e) {}
+    </script>
+
     <style>
-        /* Полный сброс и космический темный фон */
+        /* ТЕМЫ: все цвета вынесены в переменные */
+        :root, :root[data-theme="dark"] {
+            --bg: #06020b;
+            --text: #ffffff;
+            --glow-1: rgba(168, 85, 247, 0.18);
+            --glow-2: rgba(6, 182, 212, 0.12);
+            --panel-bg: rgba(19, 13, 51, 0.92);
+            --panel-border: #442a7a;
+            --panel-text: #e9d5ff;
+            --panel-muted: #9aa0a6;
+            --option-bg: #24194f;
+            --h1-shadow: rgba(168, 85, 247, 0.4);
+            color-scheme: dark;
+        }
+        :root[data-theme="light"] {
+            --bg: #f3f0fa;
+            --text: #1b1233;
+            --glow-1: rgba(168, 85, 247, 0.28);
+            --glow-2: rgba(6, 182, 212, 0.22);
+            --panel-bg: rgba(255, 255, 255, 0.92);
+            --panel-border: #d4c4f2;
+            --panel-text: #2a1a5e;
+            --panel-muted: #6b6485;
+            --option-bg: #ece6fa;
+            --h1-shadow: rgba(109, 40, 217, 0.18);
+            color-scheme: light;
+        }
+
+        /* Полный сброс и фон */
         html, body {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: #06020b; font-family: 'Segoe UI', sans-serif;
-            color: #fff; overflow: hidden; user-select: none;
+            background-color: var(--bg); font-family: 'Segoe UI', sans-serif;
+            color: var(--text); overflow-x: hidden; user-select: none;
+            transition: background-color 0.4s ease, color 0.4s ease;
         }
+        body { overflow-y: auto; }
 
         /* Задний неоновый свет на фоне */
         .bg-glow-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; }
-        .bg-glow { position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, rgba(168, 85, 247, 0.18) 0%, rgba(0,0,0,0) 70%); top: 15%; left: 15%; border-radius: 50%; filter: blur(50px); animation: floatGlow 8s infinite alternate ease-in-out; }
-        .bg-glow-2 { position: absolute; width: 350px; height: 350px; background: radial-gradient(circle, rgba(6, 182, 212, 0.12) 0%, rgba(0,0,0,0) 70%); bottom: 15%; right: 15%; border-radius: 50%; filter: blur(60px); animation: floatGlow 12s infinite alternate-reverse ease-in-out; }
+        .bg-glow { position: absolute; width: 300px; height: 300px; background: radial-gradient(circle, var(--glow-1) 0%, rgba(0,0,0,0) 70%); top: 15%; left: 15%; border-radius: 50%; filter: blur(50px); animation: floatGlow 8s infinite alternate ease-in-out; }
+        .bg-glow-2 { position: absolute; width: 350px; height: 350px; background: radial-gradient(circle, var(--glow-2) 0%, rgba(0,0,0,0) 70%); bottom: 15%; right: 15%; border-radius: 50%; filter: blur(60px); animation: floatGlow 12s infinite alternate-reverse ease-in-out; }
         @keyframes floatGlow { 0% { transform: translate(0, 0) scale(1); } 100% { transform: translate(30px, 20px) scale(1.1); } }
 
         /* Выравнивание интерфейса строго по центру */
-        .main-wrapper { position: relative; z-index: 10; width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; pointer-events: none; }
-        .main-container { text-align: center; width: 90%; max-width: 380px; pointer-events: auto; }
+        .main-wrapper {
+            position: relative; z-index: 10; width: 100%; min-height: 100%;
+            display: flex; justify-content: center; align-items: center; pointer-events: none;
+            /* Плавное появление страницы */
+            animation: pageIn 0.6s ease backwards;
+            transition: opacity 0.45s ease, transform 0.45s ease, filter 0.45s ease;
+        }
+        @keyframes pageIn {
+            from { opacity: 0; transform: translateY(12px) scale(0.98); filter: blur(6px); }
+        }
+        /* Плавный уход со страницы при нажатии на кнопку */
+        html.leaving .main-wrapper { opacity: 0; transform: scale(0.96) translateY(-8px); filter: blur(8px); }
+        html.leaving .settings { opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+
+        .main-container { text-align: center; width: 90%; max-width: 380px; pointer-events: auto; padding: 20px 0; }
 
         /* Переливающийся неоновый заголовок */
         h1 {
             font-size: 46px; font-weight: 900; margin-top: 0; margin-bottom: 35px; letter-spacing: 2px;
             background: linear-gradient(90deg, #a855f7, #06b6d4, #f59e0b, #a855f7); background-size: 300% auto;
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: textShine 6s linear infinite;
-            filter: drop-shadow(0 0 15px rgba(168, 85, 247, 0.4));
+            -webkit-background-clip: text; background-clip: text;
+            -webkit-text-fill-color: transparent; color: transparent;
+            animation: textShine 6s linear infinite;
+            filter: drop-shadow(0 0 15px var(--h1-shadow));
         }
         @keyframes textShine { 0% { background-position: 0% 50%; } 100% { background-position: 300% 50%; } }
 
@@ -42,6 +98,8 @@
         }
         .btn-style::after { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); transition: all 0.5s ease; }
         .btn-style:hover::after { left: 100%; }
+        .btn-style:active { transform: translateY(0) scale(0.98); }
+        .btn-style:focus-visible { outline: 2px solid #a855f7; outline-offset: 3px; }
 
         /* Стили геймерских градиентов */
         .btn-purple { background: linear-gradient(135deg, #a855f7 0%, #6d28d9 100%); box-shadow: 0 4px 15px rgba(168, 85, 247, 0.25); }
@@ -56,6 +114,51 @@
         .btn-style i { font-style: normal; transition: transform 0.3s ease; }
         .btn-style:hover i { transform: scale(1.2); }
 
+        /* ШЕСТЕРЕНКА И ОКНО НАСТРОЕК */
+        .settings { position: fixed; top: 20px; right: 20px; z-index: 50; transition: opacity 0.3s ease; }
+
+        .gear-btn {
+            width: 44px; height: 44px; padding: 0; display: flex; align-items: center; justify-content: center;
+            background: var(--panel-bg); color: var(--panel-text);
+            border: 1px solid var(--panel-border); border-radius: 50%; cursor: pointer;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            transition: border-color 0.2s, box-shadow 0.2s, background-color 0.4s, color 0.4s;
+        }
+        .gear-btn svg { width: 22px; height: 22px; transition: transform 0.6s ease; }
+        .gear-btn:hover { border-color: #a855f7; box-shadow: 0 0 14px rgba(168, 85, 247, 0.4); }
+        .gear-btn:hover svg { transform: rotate(60deg); }
+        .gear-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+        .gear-btn:focus-visible { outline: 2px solid #a855f7; outline-offset: 3px; }
+
+        .settings-panel {
+            position: absolute; top: 54px; right: 0; width: 220px; padding: 14px;
+            background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 10px;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+            opacity: 0; visibility: hidden; transform: translateY(-8px) scale(0.97); transform-origin: top right;
+            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
+        }
+        .settings-panel.open { opacity: 1; visibility: visible; transform: none; }
+
+        .settings-title {
+            font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+            color: var(--panel-muted); margin-bottom: 10px;
+        }
+        .theme-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .theme-option {
+            display: flex; align-items: center; justify-content: center; gap: 6px; padding: 10px 0;
+            background: var(--option-bg); color: var(--panel-text);
+            border: 1px solid transparent; border-radius: 6px; cursor: pointer;
+            font-family: inherit; font-size: 13px; font-weight: 600;
+            transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s, color 0.2s;
+        }
+        .theme-option:hover { border-color: #a855f7; }
+        .theme-option[aria-pressed="true"] {
+            background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%);
+            border-color: #a855f7; color: #fff; box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+        }
+        .theme-option:focus-visible { outline: 2px solid #a855f7; outline-offset: 2px; }
+
         /* ЭЛЕМЕНТЫ МЯГКОГО НЕОНОВОГО ШЛЕЙФА */
         .magic-dot {
             position: fixed; width: 6px; height: 6px; background-color: #a855f7; border-radius: 50%;
@@ -67,6 +170,12 @@
             0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
             100% { opacity: 0; transform: translate(-50%, -50%) scale(0); }
         }
+
+        /* Уважаем настройку «уменьшить анимацию» в системе */
+        @media (prefers-reduced-motion: reduce) {
+            .main-wrapper, .bg-glow, .bg-glow-2, h1 { animation: none; }
+            .main-wrapper, .settings-panel, .gear-btn svg { transition: none; }
+        }
     </style>
 </head>
 <body>
@@ -76,49 +185,144 @@
     <div class="bg-glow-2"></div>
 </div>
 
-<div class="main-wrapper">
-    <div class="main-container">
-        <h1>HardwareVS</h1>
-        
-        <div class="buttons-stack">
-            <a href="cpu.html" class="btn-style btn-purple"><i>💻</i> Сравнить процессоры</a>
-            <a href="gpu.html" class="btn-style btn-purple"><i>🎮</i> Сравнить видеокарты</a>
-            <a href="guide.html" class="btn-style btn-guide"><i>📖</i> Пошаговый Гайд</a>
+<!-- Шестерёнка и маленькое окно выбора темы -->
+<div class="settings" id="settings">
+    <button class="gear-btn" id="gear-btn" type="button" aria-label="Настройки" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings-panel">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+    </button>
+
+    <div class="settings-panel" id="settings-panel" role="dialog" aria-label="Тема оформления">
+        <div class="settings-title">Тема оформления</div>
+        <div class="theme-switch">
+            <button class="theme-option" type="button" data-theme-value="dark" aria-pressed="true">🌙 Тёмная</button>
+            <button class="theme-option" type="button" data-theme-value="light" aria-pressed="false">☀️ Светлая</button>
         </div>
     </div>
 </div>
-    <script>
-    // Железная защита от F12
-    document.addEventListener('contextmenu', e => e.preventDefault());
-    document.onkeydown = function(e) {
-        if (e.keyCode == 123 || (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74)) || (e.ctrlKey && e.keyCode == 85)) return false;
-    };
 
-    // УЛЬТРА-ЛЕГКИЙ И НАДЕЖНЫЙ СЦЕНАРИЙ ЛИНИЙ МЫШКИ
-    const colorsList = ['#a855f7', '#06b6d4', '#f59e0b']; // Набор неоновых цветов
+<div class="main-wrapper">
+    <div class="main-container">
+        <h1>HardwareVS</h1>
 
-    document.addEventListener('mousemove', function(event) {
-        const dot = document.createElement('div');
-        dot.className = 'magic-dot';
-        
-        // Передаем координаты мышки напрямую в стили элемента
-        dot.style.left = event.clientX + 'px';
-        dot.style.top = event.clientY + 'px';
-        
-        // Задаем случайный цвет шлейфа из палитры сайта HardwareVS
-        const pickedColor = colorsList[Math.floor(Math.random() * colorsList.length)];
-        dot.style.backgroundColor = pickedColor;
-        dot.style.boxShadow = `0 0 8px ${pickedColor}, 0 0 16px ${pickedColor}`;
-        
-        document.body.appendChild(dot);
-        
-        // Безопасное авто-удаление элемента из памяти, чтобы страница никогда не лагала
-        setTimeout(() => {
-            dot.remove();
-        }, 600);
+        <div class="buttons-stack">
+            <a href="https://vysotskiyxsamitov-gif.github.io/hardwarevs/cpu.html" class="btn-style btn-purple"><i>💻</i> Сравнить процессоры</a>
+            <a href="https://vysotskiyxsamitov-gif.github.io/hardwarevs/gpu.html" class="btn-style btn-gold"><i>🎮</i> Сравнить видеокарты</a>
+            <a href="https://vysotskiyxsamitov-gif.github.io/hardwarevs/guide.html" class="btn-style btn-guide"><i>📖</i> Пошаговый Гайд</a>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const root = document.documentElement;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    /* ---------- ТЕМА ---------- */
+    const THEME_KEY = 'hardwarevs-theme';
+    const themeButtons = document.querySelectorAll('.theme-option');
+
+    function applyTheme(theme) {
+        root.setAttribute('data-theme', theme);
+        themeButtons.forEach(function (btn) {
+            btn.setAttribute('aria-pressed', btn.dataset.themeValue === theme ? 'true' : 'false');
+        });
+    }
+    function saveTheme(theme) {
+        try { localStorage.setItem(THEME_KEY, theme); } catch (e) {}
+    }
+
+    applyTheme(root.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+
+    themeButtons.forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            applyTheme(btn.dataset.themeValue);
+            saveTheme(btn.dataset.themeValue);
+        });
     });
+
+    /* ---------- ОКНО НАСТРОЕК ---------- */
+    const gearBtn = document.getElementById('gear-btn');
+    const panel = document.getElementById('settings-panel');
+    const settings = document.getElementById('settings');
+
+    function setPanel(open) {
+        panel.classList.toggle('open', open);
+        gearBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    gearBtn.addEventListener('click', function (e) {
+        e.stopPropagation();
+        setPanel(!panel.classList.contains('open'));
+    });
+    // Закрытие по клику вне окна и по Escape
+    document.addEventListener('click', function (e) {
+        if (!settings.contains(e.target)) setPanel(false);
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { setPanel(false); gearBtn.focus(); }
+    });
+
+    /* ---------- ПЛАВНЫЙ ПЕРЕХОД МЕЖДУ СТРАНИЦАМИ ---------- */
+    document.querySelectorAll('a.btn-style').forEach(function (link) {
+        link.addEventListener('click', function (e) {
+            // Не мешаем открытию в новой вкладке (Ctrl/Cmd/Shift + клик, средняя кнопка)
+            if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+            e.preventDefault();
+            setPanel(false);
+            root.classList.add('leaving');
+            const href = link.getAttribute('href');
+            setTimeout(function () { window.location.href = href; }, reduceMotion ? 0 : 450);
+        });
+    });
+    // Если пользователь вернулся кнопкой «Назад», убираем состояние ухода
+    window.addEventListener('pageshow', function (e) {
+        if (e.persisted) root.classList.remove('leaving');
+    });
+
+    /* ---------- ЗАЩИТА ОТ F12 (косметическая) ---------- */
+    document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+    document.addEventListener('keydown', function (e) {
+        const k = e.key.toLowerCase();
+        if (e.key === 'F12' || (e.ctrlKey && e.shiftKey && (k === 'i' || k === 'j')) || (e.ctrlKey && k === 'u')) {
+            e.preventDefault();
+        }
+    });
+
+    /* ---------- НЕОНОВЫЙ ШЛЕЙФ ЗА МЫШКОЙ ---------- */
+    if (!reduceMotion) {
+        const colorsList = ['#a855f7', '#06b6d4', '#f59e0b'];
+        let lastX = 0, lastY = 0, ticking = false;
+
+        function spawnDot(x, y) {
+            const dot = document.createElement('div');
+            dot.className = 'magic-dot';
+            dot.style.left = x + 'px';
+            dot.style.top = y + 'px';
+            const color = colorsList[Math.floor(Math.random() * colorsList.length)];
+            dot.style.backgroundColor = color;
+            dot.style.boxShadow = '0 0 8px ' + color + ', 0 0 16px ' + color;
+            document.body.appendChild(dot);
+            // Удаляем элемент сразу после окончания анимации
+            dot.addEventListener('animationend', function () { dot.remove(); });
+        }
+
+        // Не чаще одного кружка за кадр, чтобы страница не лагала
+        document.addEventListener('mousemove', function (e) {
+            lastX = e.clientX;
+            lastY = e.clientY;
+            if (!ticking) {
+                ticking = true;
+                requestAnimationFrame(function () {
+                    spawnDot(lastX, lastY);
+                    ticking = false;
+                });
+            }
+        });
+    }
+})();
 </script>
 
 </body>
 </html>
-
