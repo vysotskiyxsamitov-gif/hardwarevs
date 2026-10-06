@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HardwareVS — Вход</title>
+<script>try{var t=localStorage.getItem("hardwarevs-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+<link rel="stylesheet" href="auth.css">
+</head>
+<body>
+<div class="wrap">
+    <a class="logo" href="index.html">HardwareVS</a>
+    <form class="card" id="form" novalidate>
+        <h2>Вход</h2>
+        <p class="sub">Войдите, чтобы сохранять сборки и открывать их с любого устройства.</p>
+        <label for="email">Почта</label>
+        <input id="email" type="email" autocomplete="email" required>
+        <label for="password">Пароль</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+        <button class="btn" id="submit" type="submit">Войти</button>
+        <div class="msg" id="msg" role="alert" hidden></div>
+        <div class="row">
+            <button class="linkbtn" id="forgot" type="button">Забыли пароль?</button>
+            <a id="toReg" href="register.html">Создать аккаунт</a>
+        </div>
+    </form>
+    <a class="back" href="index.html">← На главную</a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
+<script>
+(function () {
+    var A = window.HW_AUTH, $ = function (id) { return document.getElementById(id); };
+    var msg = $('msg'), btn = $('submit');
+    function show(text, ok) { msg.textContent = text; msg.className = 'msg ' + (ok ? 'ok' : 'err'); msg.hidden = false; }
+    if (!A) { show('Не удалось загрузить сервис входа. Проверьте интернет и обновите страницу.'); btn.disabled = true; return; }
+
+    // Сохраняем ?next= для ссылки на регистрацию
+    var q = location.search; if (q) $('toReg').href = 'register.html' + q;
+
+    A.getUser().then(function (u) { if (u) location.replace(A.safeNext()); });
+
+    $('form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = $('email').value.trim(), pass = $('password').value;
+        if (!email || !pass) { show('Введите почту и пароль.'); return; }
+        btn.disabled = true; msg.hidden = true;
+        A.client.auth.signInWithPassword({ email: email, password: pass }).then(function (r) {
+            if (r.error) { show(A.ruError(r.error)); btn.disabled = false; return; }
+            location.href = A.safeNext();
+        }).catch(function (err) { show(A.ruError(err)); btn.disabled = false; });
+    });
+
+    $('forgot').addEventListener('click', function () {
+        var email = $('email').value.trim();
+        if (!email) { show('Введите почту выше, и мы пришлём ссылку для смены пароля.'); $('email').focus(); return; }
+        A.client.auth.resetPasswordForEmail(email, { redirectTo: A.base + 'reset.html' }).then(function (r) {
+            if (r.error) show(A.ruError(r.error));
+            else show('Если такой аккаунт есть, мы отправили письмо со ссылкой для смены пароля.', true);
+        }).catch(function (err) { show(A.ruError(err)); });
+    });
+})();
+</script>
+</body>
+</html>
