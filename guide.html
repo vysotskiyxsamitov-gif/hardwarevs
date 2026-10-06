@@ -205,12 +205,106 @@
             text-decoration: none;
             font-size: 14px;
         }
+        /* Кнопка выхода на главный экран сайта (всегда в углу) */
+        .exit-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 9000;
+            padding: 11px 22px;
+            background: linear-gradient(180deg, #1c1245 0%, #130d33 100%);
+            color: #e9d5ff;
+            border: 1px solid #442a7a;
+            border-bottom: 2px solid #a855f7;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            cursor: pointer;
+            text-decoration: none;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+        .exit-btn:hover {
+            background: linear-gradient(180deg, #2a1a66 0%, #1c1245 100%);
+            border-color: #a855f7;
+            box-shadow: 0 0 14px rgba(168, 85, 247, 0.35);
+        }
+        /* Финальное окно с вопросом */
+        .end-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 9500;
+            background: rgba(6, 4, 18, 0.88);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+        }
+        .end-overlay h2 {
+            font-size: 34px;
+            color: #c084fc;
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 800px;
+        }
+        .end-overlay h2 {
+            font-size: 28px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            line-height: 1.35;
+        }
+        .end-buttons { display: flex; gap: 16px; }
+        .end-buttons .btn {
+            width: 280px;
+            margin: 0;
+            padding: 15px 20px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 1.5px;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+        /* Основная кнопка */
+        .btn-exit {
+            background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%);
+            border: 1px solid #a855f7;
+            color: #fff;
+        }
+        .btn-exit:hover {
+            background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%);
+            box-shadow: 0 0 18px rgba(168, 85, 247, 0.45);
+        }
+        /* Второстепенная кнопка */
+        .btn-replay {
+            background: #130d33;
+            border: 1px solid #442a7a;
+            color: #e9d5ff;
+        }
+        .btn-replay:hover {
+            background: #1c1245;
+            border-color: #a855f7;
+            box-shadow: 0 0 14px rgba(168, 85, 247, 0.3);
+        }
     </style>
 </head>
 <body>
     <div id="video-viewport">
         <!-- Автоматический курсор для имитации кликов -->
         <div id="virtual-cursor"><div class="pulse"></div></div>
+
+        <!-- Кнопка выхода на главный экран сайта -->
+        <a href="https://vysotskiyxsamitov-gif.github.io/hardwarevs/index.html" class="exit-btn" id="exit-btn">На главный экран сайта</a>
+
+        <!-- Вопрос после окончания анимации -->
+        <div id="end-overlay" class="end-overlay">
+            <h2>Хотите ли вы выйти на главный экран или посмотреть ещё раз?</h2>
+            <div class="end-buttons">
+                <button class="btn btn-exit" id="end-exit">Выйти на главный экран</button>
+                <button class="btn btn-replay" id="end-replay">Посмотреть ещё раз</button>
+            </div>
+        </div>
 
         <!-- СЦЕНА 1: ГЛАВНЫЙ ЭКРАН -->
         <div id="page-index" class="page active-page">
@@ -389,7 +483,33 @@
         // ------------------------------------------
         //         РЕЖИССУРА КЛИКОВ И ТАЙМИНГОВ
         // ------------------------------------------
-        const tl = gsap.timeline({ repeat: -1, repeatDelay: 1.5 });
+        // Адрес главного экрана сайта — при необходимости замените на свой
+        const MAIN_SITE_URL = 'https://vysotskiyxsamitov-gif.github.io/hardwarevs/index.html';
+        document.getElementById('exit-btn').setAttribute('href', MAIN_SITE_URL);
+
+        const endOverlay = document.getElementById('end-overlay');
+
+        function showEndQuestion() {
+            endOverlay.style.display = 'flex';
+            gsap.to(endOverlay, { opacity: 1, duration: 0.4 });
+        }
+
+        function hideEndQuestion() {
+            gsap.to(endOverlay, { opacity: 0, duration: 0.2, onComplete: () => {
+                endOverlay.style.display = 'none';
+            }});
+        }
+
+        // Анимация проигрывается один раз, затем появляется вопрос
+        const tl = gsap.timeline({ onComplete: showEndQuestion });
+
+        document.getElementById('end-exit').addEventListener('click', () => {
+            window.location.href = MAIN_SITE_URL;
+        });
+        document.getElementById('end-replay').addEventListener('click', () => {
+            hideEndQuestion();
+            tl.restart();
+        });
 
         tl.call(resetAll);
 
