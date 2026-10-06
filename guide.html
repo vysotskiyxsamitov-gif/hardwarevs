@@ -4,289 +4,136 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HardwareVS - Интерактивный гайд</title>
-    <!-- Библиотека анимаций GSAP (исправлена ссылка) -->
+    <!-- Библиотека анимаций GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
     <!-- СТИЛИ И ОФОРМЛЕНИЕ ИНТЕРФЕЙСА -->
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Segoe UI', Roboto, sans-serif;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
         html, body { height: 100%; }
-        body {
-            background: #0b071e;
-            color: #fff;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
+        body { background: #0b071e; color: #fff; overflow: hidden; display: flex; justify-content: center; align-items: center; }
         #video-viewport {
-            width: 1280px;
-            height: 720px;
-            flex: none;
-            background: #060412;
-            border: 4px solid #3d2475;
-            position: relative;
-            overflow: hidden;
-            border-radius: 12px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            width: 1280px; height: 720px; flex: none; background: #060412; border: 4px solid #3d2475;
+            position: relative; overflow: hidden; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
             transform-origin: center center;
         }
-        .page {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            display: none;
-            opacity: 0;
-            padding: 40px;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-        }
-        .active-page {
-            display: flex;
-        }
+        .page { position: absolute; width: 100%; height: 100%; top: 0; left: 0; display: none; opacity: 0; padding: 40px;
+            flex-direction: column; align-items: center; justify-content: center; }
+        .active-page { display: flex; }
         /* Центрирование курсора делается через GSAP (xPercent/yPercent), без CSS-transform */
-        #virtual-cursor {
-            width: 24px;
-            height: 24px;
-            background: rgba(255,255,255,0.8);
-            border: 2px solid #000;
-            border-radius: 50%;
-            position: absolute;
-            top: 85%;
-            left: 50%;
-            z-index: 9999;
-            pointer-events: none;
-            box-shadow: 0 0 10px rgba(255,255,255,0.5);
-        }
-        /* Настоящий элемент вместо псевдоэлемента ::after, чтобы GSAP мог его анимировать */
-        #virtual-cursor .pulse {
-            position: absolute;
-            inset: -4px;
-            border: 2px solid #a855f7;
-            border-radius: 50%;
-            opacity: 0;
-        }
-        .logo {
-            font-size: 54px;
-            font-weight: 800;
-            margin-bottom: 40px;
-            background: linear-gradient(45deg, #38bdf8, #facc15);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .btn {
-            width: 320px;
-            padding: 16px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: bold;
-            color: #fff;
-            text-transform: uppercase;
-            cursor: pointer;
-            letter-spacing: 1px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
+        #virtual-cursor { width: 24px; height: 24px; background: rgba(255,255,255,0.8); border: 2px solid #000; border-radius: 50%;
+            position: absolute; top: 85%; left: 50%; z-index: 9999; pointer-events: none; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+        #virtual-cursor .pulse { position: absolute; inset: -4px; border: 2px solid #a855f7; border-radius: 50%; opacity: 0; }
+        .logo { font-size: 54px; font-weight: 800; margin-bottom: 40px; background: linear-gradient(45deg, #38bdf8, #facc15);
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        .btn { width: 320px; padding: 16px; margin: 10px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; color: #fff;
+            text-transform: uppercase; cursor: pointer; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 10px; }
         .btn-cpu { background: #a855f7; }
         .btn-gpu { background: #c084fc; }
         .btn-guide { background: #06b6d4; }
-        .page-title {
-            font-size: 36px;
-            color: #c084fc;
-            margin-bottom: 30px;
-            font-weight: bold;
-            text-align: center;
-        }
-        .select-container {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            margin-bottom: 25px;
-            background: #130d33;
-            padding: 15px 30px;
-            border-radius: 10px;
-            border: 1px solid #2e1a53;
-        }
-        .dropdown {
-            background: #24194f;
-            color: #fff;
-            border: 1px solid #442a7a;
-            padding: 10px 15px;
-            border-radius: 6px;
-            font-size: 14px;
-            width: 260px;
-        }
-        .vs-label {
-            font-weight: bold;
-            color: #a855f7;
-        }
-        .btn-compare {
-            background: #d946ef;
-            width: 500px;
-            padding: 14px;
-            border: none;
-            border-radius: 8px;
-            font-weight: bold;
-            color: #fff;
-            font-size: 16px;
-            margin-bottom: 30px;
-        }
-        .stat-block {
-            width: 560px;
-            background: #130d3a;
-            border-radius: 8px;
-            border: 1px solid #23154c;
-            padding: 15px;
-            margin-bottom: 15px;
-        }
-        .stat-title {
-            font-size: 15px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 10px;
-        }
-        .item-label {
-            font-size: 12px;
-            color: #9aa0a6;
-            margin-top: 5px;
-        }
-        .bar-wrapper {
-            width: 100%;
-            height: 24px;
-            background: #1f1547;
-            border-radius: 4px;
-            overflow: hidden;
-            margin-bottom: 8px;
-            position: relative;
-        }
-        .bar {
-            height: 100%;
-            width: 0%;
-            display: flex;
-            align-items: center;
-            padding-left: 10px;
-            font-size: 12px;
-            font-weight: bold;
-            color: #fff;
-            white-space: nowrap;
-        }
+        .btn-build { background: #ec4899; }
+        .page-title { font-size: 36px; color: #c084fc; margin-bottom: 30px; font-weight: bold; text-align: center; }
+        .select-container { display: flex; gap: 20px; align-items: center; margin-bottom: 25px; background: #130d33; padding: 15px 30px;
+            border-radius: 10px; border: 1px solid #2e1a53; }
+        .dropdown { background: #24194f; color: #fff; border: 1px solid #442a7a; padding: 10px 15px; border-radius: 6px; font-size: 14px; width: 260px; }
+        .vs-label { font-weight: bold; color: #a855f7; }
+        .btn-compare { background: #d946ef; width: 500px; padding: 14px; border: none; border-radius: 8px; font-weight: bold; color: #fff; font-size: 16px; margin-bottom: 30px; }
+        .stat-block { width: 560px; background: #130d3a; border-radius: 8px; border: 1px solid #23154c; padding: 15px; margin-bottom: 15px; }
+        .stat-title { font-size: 15px; font-weight: bold; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+        .item-label { font-size: 12px; color: #9aa0a6; margin-top: 5px; }
+        .bar-wrapper { width: 100%; height: 24px; background: #1f1547; border-radius: 4px; overflow: hidden; margin-bottom: 8px; position: relative; }
+        .bar { height: 100%; width: 0%; display: flex; align-items: center; padding-left: 10px; font-size: 12px; font-weight: bold; color: #fff; white-space: nowrap; }
         .bar-blue { background: #3b82f6; }
         .bar-red { background: #ef4444; }
         .bar-green { background: #22c55e; }
-        .result-box {
-            width: 560px;
-            background: #1a0f47;
-            border-left: 5px solid #a855f7;
-            border-radius: 4px;
-            padding: 15px;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-        .back-link {
-            position: absolute;
-            top: 30px;
-            left: 30px;
-            color: #9aa0a6;
-            text-decoration: none;
-            font-size: 14px;
-        }
+        .result-box { width: 560px; background: #1a0f47; border-left: 5px solid #a855f7; border-radius: 4px; padding: 15px; font-size: 14px; line-height: 1.4; }
+        .back-link { position: absolute; top: 30px; left: 30px; color: #9aa0a6; text-decoration: none; font-size: 14px; }
+
+        /* Блок аккаунта на главной (слева сверху, как на настоящем сайте) */
+        .acc-mock { position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 16px;
+            border: 1px solid #442a7a; border-radius: 22px; background: rgba(19,13,51,.92); font-size: 13px; color: #e9d5ff; font-weight: 600; }
+        .acc-mock .sep { color: #442a7a; }
+        .acc-mock .mail { color: #9aa0a6; font-weight: 400; }
+        #acc-user { display: none; align-items: center; gap: 10px; }
+        #acc-guest { display: flex; align-items: center; gap: 10px; }
+
         /* Кнопка выхода на главный экран сайта (всегда в углу) */
-        .exit-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 9000;
-            padding: 11px 22px;
-            background: linear-gradient(180deg, #1c1245 0%, #130d33 100%);
-            color: #e9d5ff;
-            border: 1px solid #442a7a;
-            border-bottom: 2px solid #a855f7;
-            border-radius: 6px;
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            cursor: pointer;
-            text-decoration: none;
-            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-        }
-        .exit-btn:hover {
-            background: linear-gradient(180deg, #2a1a66 0%, #1c1245 100%);
-            border-color: #a855f7;
-            box-shadow: 0 0 14px rgba(168, 85, 247, 0.35);
-        }
+        .exit-btn { position: absolute; top: 20px; right: 20px; z-index: 9000; padding: 11px 22px;
+            background: linear-gradient(180deg, #1c1245 0%, #130d33 100%); color: #e9d5ff; border: 1px solid #442a7a; border-bottom: 2px solid #a855f7;
+            border-radius: 6px; font-size: 12px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; text-decoration: none;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s; }
+        .exit-btn:hover { background: linear-gradient(180deg, #2a1a66 0%, #1c1245 100%); border-color: #a855f7; box-shadow: 0 0 14px rgba(168, 85, 247, 0.35); }
+
         /* Финальное окно с вопросом */
-        .end-overlay {
-            position: absolute;
-            inset: 0;
-            z-index: 9500;
-            background: rgba(6, 4, 18, 0.88);
-            display: none;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-        }
-        .end-overlay h2 {
-            font-size: 34px;
-            color: #c084fc;
-            margin-bottom: 30px;
-            text-align: center;
-            max-width: 800px;
-        }
-        .end-overlay h2 {
-            font-size: 28px;
-            font-weight: 600;
-            letter-spacing: 0.3px;
-            line-height: 1.35;
-        }
+        .end-overlay { position: absolute; inset: 0; z-index: 9500; background: rgba(6, 4, 18, 0.88); display: none; flex-direction: column;
+            align-items: center; justify-content: center; opacity: 0; }
+        .end-overlay h2 { font-size: 28px; font-weight: 600; letter-spacing: 0.3px; line-height: 1.35; color: #c084fc; margin-bottom: 30px; text-align: center; max-width: 800px; }
         .end-buttons { display: flex; gap: 16px; }
-        .end-buttons .btn {
-            width: 280px;
-            margin: 0;
-            padding: 15px 20px;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            letter-spacing: 1.5px;
-            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
-        }
-        /* Основная кнопка */
-        .btn-exit {
-            background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%);
-            border: 1px solid #a855f7;
-            color: #fff;
-        }
-        .btn-exit:hover {
-            background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%);
-            box-shadow: 0 0 18px rgba(168, 85, 247, 0.45);
-        }
-        /* Второстепенная кнопка */
-        .btn-replay {
-            background: #130d33;
-            border: 1px solid #442a7a;
-            color: #e9d5ff;
-        }
-        .btn-replay:hover {
-            background: #1c1245;
-            border-color: #a855f7;
-            box-shadow: 0 0 14px rgba(168, 85, 247, 0.3);
-        }
+        .end-buttons .btn { width: 280px; margin: 0; padding: 15px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 1.5px;
+            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s; }
+        .btn-exit { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); border: 1px solid #a855f7; color: #fff; }
+        .btn-exit:hover { background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%); box-shadow: 0 0 18px rgba(168, 85, 247, 0.45); }
+        .btn-replay { background: #130d33; border: 1px solid #442a7a; color: #e9d5ff; }
+        .btn-replay:hover { background: #1c1245; border-color: #a855f7; box-shadow: 0 0 14px rgba(168, 85, 247, 0.3); }
+
+        /* ---------- СЦЕНА: КОНФИГУРАТОР ПК ---------- */
+        .bld { display: grid; grid-template-columns: 340px 820px; width: 1160px; height: 570px; border: 1px solid #2e1a53; border-radius: 12px; overflow: hidden; background: #0e0820; }
+        .bld-side { padding: 16px 18px; border-right: 1px solid #2e1a53; display: flex; flex-direction: column; }
+        .bld-h { font-size: 20px; font-weight: 800; margin-bottom: 14px; background: linear-gradient(90deg, #a855f7, #06b6d4, #f59e0b);
+            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+        .bld-stepper { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin-bottom: 14px; }
+        .bchip { position: relative; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; background: #150d33; border: 1px solid #2e1a53; border-radius: 7px; font-size: 15px; }
+        .bchip.active { border-color: #a855f7; box-shadow: 0 0 10px rgba(168,85,247,.5); }
+        .bchip.done::after { content: '✓'; position: absolute; top: -5px; right: -5px; width: 15px; height: 15px; border-radius: 50%; background: #22c55e; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+        .bld-eyebrow { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #9aa0a6; }
+        .bld-step { font-size: 22px; margin: 2px 0 10px; }
+        .bld-opts { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+        .bopt { padding: 10px 12px; background: #150d33; border: 1px solid #2e1a53; border-radius: 10px; }
+        .bopt.sel { border-color: #a855f7; box-shadow: 0 0 0 1px #a855f7, 0 0 16px rgba(168,85,247,.3); }
+        .bopt-top { display: flex; justify-content: space-between; gap: 8px; }
+        .bopt-n { font-weight: 700; font-size: 13px; }
+        .bopt-p { font-size: 12px; color: #06b6d4; font-weight: 600; white-space: nowrap; }
+        .bopt-s { font-size: 11px; color: #9aa0a6; margin-top: 3px; }
+        .bld-done { padding: 12px 14px; border: 1px solid #22c55e; border-radius: 10px; background: rgba(34,197,94,.08); font-size: 13px; line-height: 1.45; }
+        .bld-done b { color: #22c55e; }
+        .bld-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid #2e1a53; }
+        .bld-tl { font-size: 11px; letter-spacing: 1.5px; color: #9aa0a6; }
+        .bld-total { font-size: 20px; font-weight: 800; }
+        .bld-save { padding: 10px 14px; border-radius: 6px; border: 1px solid #a855f7; background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); color: #fff; font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+        .bld-view { position: relative; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 40%, rgba(168,85,247,.12), transparent 65%); }
+        .bld-hint { position: absolute; color: #9aa0a6; font-size: 16px; text-align: center; padding: 20px; }
+        .bld-toast { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 18px; border-radius: 8px; background: rgba(14,8,32,.92); border: 1px solid #f59e0b; font-size: 13px; opacity: 0; white-space: nowrap; }
+        .bld-toast.ok { border-color: #22c55e; }
+        .pc { position: relative; width: 440px; height: 480px; }
+        .part { position: absolute; opacity: 0; }
+        #part-0 { inset: 0; border: 3px solid #7c3aed; border-radius: 12px; background: linear-gradient(160deg, #120a2a, #0a0618); box-shadow: 0 0 30px rgba(124,58,237,.35); }
+        #part-0 i { position: absolute; right: 12px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #06b6d4; box-shadow: 0 0 8px #06b6d4; }
+        #part-1 { left: 60px; top: 34px; width: 270px; height: 250px; border: 1px solid #6d4aa8; border-radius: 6px; background: #1a1040; }
+        #part-1 span { position: absolute; right: 10px; bottom: 8px; font-size: 12px; color: #c084fc; font-weight: 700; }
+        #part-2 { left: 150px; top: 86px; width: 56px; height: 56px; border-radius: 6px; background: #cfd3da; color: #222; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+        #part-3 { left: 120px; top: 12px; width: 200px; height: 26px; border: 2px solid #06b6d4; border-radius: 6px; background: #0e2a33; box-shadow: 0 0 12px rgba(6,182,212,.5); }
+        #part-3 b { position: absolute; left: 24px; top: 62px; width: 64px; height: 64px; border-radius: 50%; border: 3px solid #06b6d4; background: rgba(6,182,212,.14); box-shadow: 0 0 14px rgba(6,182,212,.6); }
+        #part-4 { left: 236px; top: 56px; display: flex; gap: 6px; }
+        #part-4 i { width: 12px; height: 110px; background: #e8e9ef; border-radius: 2px; border-top: 6px solid #a855f7; }
+        #part-5 { left: 56px; top: 200px; width: 300px; height: 58px; background: #0c0c12; border: 2px solid #76b900; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; box-shadow: 0 0 14px rgba(118,185,0,.35); }
+        #part-5 i { width: 38px; height: 38px; border-radius: 50%; border: 3px solid #06b6d4; background: #16141f; box-shadow: 0 0 8px #06b6d4; }
+        #part-6 { left: 120px; top: 164px; width: 76px; height: 12px; background: #22303a; border: 1px solid #22c55e; border-radius: 2px; }
+        #part-7 { left: 16px; top: 392px; width: 200px; height: 76px; background: #1a1a26; border: 2px solid #5b6b86; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; font-weight: 800; color: #9aa0a6; }
+        #part-7 i { width: 46px; height: 46px; border-radius: 50%; border: 3px solid #5b6b86; background: #11111a; }
+
+        /* ---------- СЦЕНА: РЕГИСТРАЦИЯ ---------- */
+        .reg-card { width: 400px; background: rgba(19,13,51,.92); border: 1px solid #442a7a; border-radius: 14px; padding: 24px; box-shadow: 0 12px 30px rgba(0,0,0,.3); }
+        .reg-card h3 { font-size: 22px; margin-bottom: 6px; }
+        .reg-sub { color: #9aa0a6; font-size: 13px; line-height: 1.45; margin-bottom: 6px; }
+        .reg-lbl { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #9aa0a6; margin: 12px 0 6px; }
+        .fld { height: 44px; background: #150d33; border: 1px solid #442a7a; border-radius: 8px; display: flex; align-items: center; padding: 0 14px; font-size: 15px; }
+        .fld.focus { border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,.25); }
+        .caret { display: none; width: 1px; height: 18px; background: #fff; margin-left: 2px; }
+        .fld.focus .caret { display: inline-block; animation: blink 1s steps(1) infinite; }
+        @keyframes blink { 50% { opacity: 0; } }
+        .reg-btn { width: 100%; margin-top: 18px; padding: 13px; border: 1px solid #a855f7; border-radius: 10px; color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+            background: linear-gradient(135deg, #a855f7 0%, #6d28d9 100%); box-shadow: 0 4px 15px rgba(168,85,247,.3); }
+        .reg-msg { margin-top: 12px; padding: 10px 12px; border: 1px solid #22c55e; border-radius: 8px; background: rgba(34,197,94,.08); color: #22c55e; font-size: 13px; line-height: 1.45; opacity: 0; }
     </style>
 </head>
 <body>
@@ -308,7 +155,12 @@
 
         <!-- СЦЕНА 1: ГЛАВНЫЙ ЭКРАН -->
         <div id="page-index" class="page active-page">
+            <div class="acc-mock" id="acc-mock">
+                <div id="acc-guest"><span>Войти</span><span class="sep">|</span><span>Регистрация</span></div>
+                <div id="acc-user"><span class="mail">alex@mail.ru</span><span class="sep">·</span><span>Выйти</span></div>
+            </div>
             <h1 class="logo">HardwareVS</h1>
+            <button class="btn btn-build" id="mock-btn-build">🛠️ ПОСТРОИТЬ КОМПЬЮТЕР</button>
             <button class="btn btn-cpu" id="mock-btn-cpu">💻 СРАВНИТЬ ПРОЦЕССОРЫ</button>
             <button class="btn btn-gpu" id="mock-btn-gpu">🔮 СРАВНИТЬ ВИДЕОКАРТЫ</button>
             <button class="btn btn-guide">📖 ПОШАГОВЫЙ ГАЙД</button>
@@ -393,13 +245,63 @@
                 Модель <strong>NVIDIA GeForce RTX 4080 Super 16GB</strong> мощнее в тестах ровно на <span style="color: #22c55e; font-weight: bold;">14160 баллов!</span>
             </div>
         </div>
+
+        <!-- СЦЕНА 4: КОНФИГУРАТОР ПК -->
+        <div id="page-builder" class="page">
+            <a href="#" class="back-link" id="mock-back-builder">← На главную</a>
+            <div class="bld">
+                <aside class="bld-side">
+                    <div class="bld-h">3D-конфигуратор ПК</div>
+                    <div class="bld-stepper" id="bld-stepper"></div>
+                    <div class="bld-eyebrow" id="bld-eyebrow"></div>
+                    <div class="bld-step" id="bld-step"></div>
+                    <div class="bld-opts" id="bld-opts"></div>
+                    <div class="bld-foot">
+                        <div><div class="bld-tl">ИТОГО</div><div class="bld-total" id="bld-total">0 ₽</div></div>
+                        <button class="bld-save" id="mock-save">💾 Сохранить</button>
+                    </div>
+                </aside>
+                <section class="bld-view">
+                    <div class="bld-hint" id="bld-hint">Выберите корпус слева, чтобы начать сборку</div>
+                    <div class="pc" id="pc">
+                        <div class="part" id="part-0"><i style="top:60px"></i><i style="top:200px"></i><i style="top:340px"></i></div>
+                        <div class="part" id="part-1"><span>B650</span></div>
+                        <div class="part" id="part-2">7800X3D</div>
+                        <div class="part" id="part-3"><b></b></div>
+                        <div class="part" id="part-4"><i></i><i></i><i></i><i></i></div>
+                        <div class="part" id="part-5"><i></i><i></i><i></i></div>
+                        <div class="part" id="part-6"></div>
+                        <div class="part" id="part-7"><span>750W</span><i></i></div>
+                    </div>
+                    <div class="bld-toast" id="bld-toast"></div>
+                </section>
+            </div>
+        </div>
+
+        <!-- СЦЕНА 5: РЕГИСТРАЦИЯ -->
+        <div id="page-register" class="page">
+            <h1 class="logo" style="font-size: 44px; margin-bottom: 22px;">HardwareVS</h1>
+            <div class="reg-card">
+                <h3>Регистрация</h3>
+                <p class="reg-sub">Аккаунт нужен, чтобы сохранять свои сборки ПК. Это бесплатно.</p>
+                <div class="reg-lbl">Почта</div>
+                <div class="fld" id="fld-email"><span id="txt-email"></span><i class="caret"></i></div>
+                <div class="reg-lbl">Пароль (от 8 символов)</div>
+                <div class="fld" id="fld-pass"><span id="txt-pass"></span><i class="caret"></i></div>
+                <div class="reg-lbl">Повторите пароль</div>
+                <div class="fld" id="fld-pass2"><span id="txt-pass2"></span><i class="caret"></i></div>
+                <button class="reg-btn" id="mock-reg-btn">Создать аккаунт</button>
+                <div class="reg-msg" id="reg-msg">✅ Аккаунт создан! Если придёт письмо, подтвердите адрес по ссылке.</div>
+            </div>
+        </div>
     </div> <!-- Закрываем контейнер видео-плеера -->
 
     <script>
         const cursor = document.getElementById('virtual-cursor');
         const pulse = cursor.querySelector('.pulse');
         const viewport = document.getElementById('video-viewport');
-        const PAGES = ['#page-index', '#page-cpu', '#page-gpu'];
+        const PAGES = ['#page-index', '#page-cpu', '#page-gpu', '#page-builder', '#page-register'];
+        const $ = id => document.getElementById(id);
 
         // Центрирование курсора средствами GSAP (вместо CSS-transform)
         gsap.set(cursor, { xPercent: -50, yPercent: -50 });
@@ -457,6 +359,99 @@
             return t;
         }
 
+        // Движение курсора к элементу: координаты считаются в момент запуска,
+        // а не при построении таймлайна
+        function moveTo(tl, elementId, duration) {
+            tl.call(() => {
+                const c = getCoords(elementId);
+                gsap.to(cursor, { left: c.x, top: c.y, duration: duration, ease: "power2.inOut", overwrite: "auto" });
+            });
+            tl.to({}, { duration: duration });
+        }
+
+        // Печать текста в поле (посимвольно)
+        function typeInto(tl, id, text, dur) {
+            tl.call(() => {
+                const el = $(id), o = { n: 0 };
+                gsap.to(o, { n: text.length, duration: dur, ease: 'none', onUpdate: () => { el.textContent = text.slice(0, Math.round(o.n)); } });
+            });
+            tl.to({}, { duration: dur });
+        }
+        function focusField(id) {
+            document.querySelectorAll('.fld').forEach(f => f.classList.toggle('focus', f.id === id));
+        }
+        function pause(tl, s) { tl.to({}, { duration: s }); }
+
+        // ------------------------------------------
+        //     ДАННЫЕ И ЛОГИКА СЦЕНЫ «КОНФИГУРАТОР»
+        // ------------------------------------------
+        const RUB = n => n.toLocaleString('ru-RU') + ' ₽';
+        const BSTEPS = [
+            { t: 'Корпус', i: '🗄️', pick: 0, o: [['Aurora ATX Midi-Tower', 'ATX / mATX / ITX · видеокарта до 38 см', 8990], ['Nova mATX Compact', 'mATX / ITX · видеокарта до 32.5 см', 6490], ['Forge Full-Tower', 'ATX / mATX / ITX · СЖО до 360 мм', 17990]] },
+            { t: 'Материнская плата', i: '🧩', pick: 1, o: [['AMD A620M mATX', 'AM5 · mATX · DDR5', 7990], ['AMD B650 ATX', 'AM5 · ATX · DDR5', 16990], ['AMD X670E ATX', 'AM5 · ATX · DDR5', 31990]] },
+            { t: 'Процессор', i: '🧠', pick: 1, o: [['AMD Ryzen 5 7600', 'AM5 · 6 ядер / 12 потоков · 65 Вт', 17990], ['AMD Ryzen 7 7800X3D', 'AM5 · 8 ядер / 16 потоков · 120 Вт', 36990], ['AMD Ryzen 9 7950X', 'AM5 · 16 ядер / 32 потока · 170 Вт', 52990]] },
+            { t: 'Охлаждение', i: '❄️', pick: 2, o: [['Башенный 120 мм', 'Башня 15.5 см · до 180 Вт', 3490], ['Башенный 140 мм', 'Башня 16.5 см · до 250 Вт', 5490], ['СЖО 240 мм', 'СЖО 240 мм · до 250 Вт', 8990]] },
+            { t: 'Оперативная память', i: '🧬', pick: 1, o: [['16 ГБ DDR5-5200', 'DDR5 · 2×8 ГБ', 4990], ['32 ГБ DDR5-6000', 'DDR5 · 2×16 ГБ', 9490], ['64 ГБ DDR5-6000', 'DDR5 · 2×32 ГБ', 17990]] },
+            { t: 'Видеокарта', i: '🎮', pick: 1, o: [['NVIDIA GeForce RTX 4060', '8 ГБ · 115 Вт · длина 24 см', 29990], ['NVIDIA GeForce RTX 4070 Super', '12 ГБ · 220 Вт · длина 27 см', 59990], ['NVIDIA GeForce RTX 4080 Super', '16 ГБ · 320 Вт · длина 31 см', 109990]] },
+            { t: 'Накопитель', i: '💾', pick: 1, o: [['NVMe 500 ГБ Gen4', 'M.2 · PCIe 4.0 · до 5 000 МБ/с', 4290], ['NVMe 1 ТБ Gen4', 'M.2 · PCIe 4.0 · до 7 000 МБ/с', 5990], ['NVMe 2 ТБ Gen4', 'M.2 · PCIe 4.0 · до 7 300 МБ/с', 10990]] },
+            { t: 'Блок питания', i: '🔌', pick: 1, o: [['Блок питания 650 Вт', '650 Вт · 80+ Gold', 6990], ['Блок питания 750 Вт', '750 Вт · 80+ Gold', 8490], ['Блок питания 850 Вт', '850 Вт · 80+ Gold', 10990]] }
+        ];
+        let totalVal = 0;
+
+        function mkEl(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+
+        // Рисуем значки шагов один раз
+        BSTEPS.forEach((s, i) => $('bld-stepper').appendChild(mkEl('div', 'bchip', s.i)));
+
+        function setStep(i) {
+            const s = BSTEPS[i];
+            document.querySelectorAll('.bchip').forEach((c, k) => c.classList.toggle('active', k === i));
+            $('bld-eyebrow').textContent = 'Шаг ' + (i + 1) + ' из ' + BSTEPS.length;
+            $('bld-step').textContent = s.t;
+            const box = $('bld-opts');
+            box.textContent = '';
+            s.o.forEach((o, k) => {
+                const d = mkEl('div', 'bopt'); d.id = 'bopt-' + k;
+                const top = mkEl('div', 'bopt-top');
+                top.appendChild(mkEl('span', 'bopt-n', o[0]));
+                top.appendChild(mkEl('span', 'bopt-p', RUB(o[2])));
+                d.appendChild(top);
+                d.appendChild(mkEl('div', 'bopt-s', o[1]));
+                box.appendChild(d);
+            });
+        }
+        function choose(i) {
+            const s = BSTEPS[i], price = s.o[s.pick][2];
+            $('bopt-' + s.pick).classList.add('sel');
+            document.querySelectorAll('.bchip')[i].classList.add('done');
+            if (i === 0) gsap.to('#bld-hint', { opacity: 0, duration: 0.3 });
+            gsap.to('#part-' + i, { opacity: 1, scale: 1, duration: 0.45, ease: 'back.out(1.6)' });
+            const from = totalVal; totalVal += price;
+            const o = { v: from };
+            gsap.to(o, { v: totalVal, duration: 0.4, onUpdate: () => { $('bld-total').textContent = RUB(Math.round(o.v)); } });
+        }
+        function showDone() {
+            document.querySelectorAll('.bchip').forEach(c => c.classList.remove('active'));
+            $('bld-eyebrow').textContent = 'Готово';
+            $('bld-step').textContent = 'Сборка завершена';
+            const box = $('bld-opts'); box.textContent = '';
+            const d = mkEl('div', 'bld-done');
+            const b = mkEl('b', null, 'Все детали совместимы. ');
+            d.appendChild(b);
+            d.appendChild(document.createTextNode('Можно сохранить сборку и вернуться к ней позже.'));
+            box.appendChild(d);
+        }
+        function bToast(text, ok) {
+            const t = $('bld-toast');
+            t.textContent = text; t.classList.toggle('ok', !!ok);
+            gsap.fromTo(t, { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.3 });
+        }
+        function bToastHide() { gsap.to('#bld-toast', { opacity: 0, duration: 0.3 }); }
+        function setLoggedIn(on) {
+            $('acc-guest').style.display = on ? 'none' : 'flex';
+            $('acc-user').style.display = on ? 'flex' : 'none';
+        }
+
         // Полный сброс состояния в начале каждого цикла
         function resetAll() {
             PAGES.forEach((id, i) => {
@@ -468,16 +463,19 @@
             gsap.set('.result-box', { opacity: 0, y: 15 });
             gsap.set(cursor, { left: '50%', top: '85%', scale: 1 });
             gsap.set(pulse, { opacity: 0, scale: 1 });
-        }
-
-        // Движение курсора к элементу: координаты считаются в момент запуска,
-        // а не при построении таймлайна
-        function moveTo(tl, elementId, duration) {
-            tl.call(() => {
-                const c = getCoords(elementId);
-                gsap.to(cursor, { left: c.x, top: c.y, duration: duration, ease: "power2.inOut", overwrite: "auto" });
-            });
-            tl.to({}, { duration: duration });
+            // конфигуратор
+            totalVal = 0;
+            $('bld-total').textContent = RUB(0);
+            gsap.set('.part', { opacity: 0, scale: 0.92 });
+            gsap.set('#bld-hint', { opacity: 1 });
+            gsap.set('#bld-toast', { opacity: 0 });
+            document.querySelectorAll('.bchip').forEach(c => c.classList.remove('done'));
+            setStep(0);
+            // регистрация и аккаунт
+            ['txt-email', 'txt-pass', 'txt-pass2'].forEach(id => { $(id).textContent = ''; });
+            focusField('');
+            gsap.set('#reg-msg', { opacity: 0, y: 8 });
+            setLoggedIn(false);
         }
 
         // ------------------------------------------
@@ -485,15 +483,14 @@
         // ------------------------------------------
         // Адрес главного экрана сайта — при необходимости замените на свой
         const MAIN_SITE_URL = 'https://vysotskiyxsamitov-gif.github.io/hardwarevs/index.html';
-        document.getElementById('exit-btn').setAttribute('href', MAIN_SITE_URL);
+        $('exit-btn').setAttribute('href', MAIN_SITE_URL);
 
-        const endOverlay = document.getElementById('end-overlay');
+        const endOverlay = $('end-overlay');
 
         function showEndQuestion() {
             endOverlay.style.display = 'flex';
             gsap.to(endOverlay, { opacity: 1, duration: 0.4 });
         }
-
         function hideEndQuestion() {
             gsap.to(endOverlay, { opacity: 0, duration: 0.2, onComplete: () => {
                 endOverlay.style.display = 'none';
@@ -503,10 +500,8 @@
         // Анимация проигрывается один раз, затем появляется вопрос
         const tl = gsap.timeline({ onComplete: showEndQuestion });
 
-        document.getElementById('end-exit').addEventListener('click', () => {
-            window.location.href = MAIN_SITE_URL;
-        });
-        document.getElementById('end-replay').addEventListener('click', () => {
+        $('end-exit').addEventListener('click', () => { window.location.href = MAIN_SITE_URL; });
+        $('end-replay').addEventListener('click', () => {
             hideEndQuestion();
             tl.restart();
         });
@@ -525,7 +520,7 @@
         moveTo(tl, 'mock-compare-cpu', 0.7);
         tl.add(playClick());
         tl.add(runBars('#page-cpu'));
-        tl.to({}, { duration: 2.5 }); // пауза для просмотра результатов
+        pause(tl, 2.5); // пауза для просмотра результатов
 
         // ШАГ 3: возврат на главную
         // Шкалы не сбрасываем: их обнуляет resetAll в начале следующего показа
@@ -542,13 +537,69 @@
         moveTo(tl, 'mock-compare-gpu', 0.7);
         tl.add(playClick());
         tl.add(runBars('#page-gpu'));
-        tl.to({}, { duration: 2.5 }); // пауза для просмотра результатов
+        pause(tl, 2.5); // пауза для просмотра результатов
 
-        // ШАГ 6: «На главную» и конец цикла
-        // Шкалы не сбрасываем: их обнуляет resetAll при повторном просмотре
+        // ШАГ 6: возврат на главную
         moveTo(tl, 'mock-back-gpu', 0.8);
         tl.add(playClick());
         tl.add(changeScene('#page-gpu', '#page-index'));
+
+        // ШАГ 7: «Построить компьютер» — выбираем детали шаг за шагом
+        moveTo(tl, 'mock-btn-build', 1.0);
+        tl.add(playClick());
+        tl.add(changeScene('#page-index', '#page-builder'));
+        pause(tl, 0.6);
+        BSTEPS.forEach((s, i) => {
+            tl.call(() => setStep(i));
+            pause(tl, 0.2);
+            moveTo(tl, 'bopt-' + s.pick, 0.5);
+            tl.add(playClick());
+            tl.call(() => choose(i));
+            pause(tl, 0.35);
+        });
+        tl.call(showDone);
+        pause(tl, 1.4);
+
+        // ШАГ 8: пробуем сохранить без аккаунта — сайт предлагает зарегистрироваться
+        moveTo(tl, 'mock-save', 0.8);
+        tl.add(playClick());
+        tl.call(() => bToast('🔒 Чтобы сохранить сборку, войдите или зарегистрируйтесь'));
+        pause(tl, 1.8);
+        tl.call(bToastHide);
+        tl.add(changeScene('#page-builder', '#page-register'));
+
+        // ШАГ 9: регистрация — почта, пароль, повтор пароля
+        moveTo(tl, 'fld-email', 0.8);
+        tl.add(playClick());
+        tl.call(() => focusField('fld-email'));
+        typeInto(tl, 'txt-email', 'alex@mail.ru', 0.9);
+        moveTo(tl, 'fld-pass', 0.5);
+        tl.add(playClick());
+        tl.call(() => focusField('fld-pass'));
+        typeInto(tl, 'txt-pass', '••••••••••', 0.8);
+        moveTo(tl, 'fld-pass2', 0.5);
+        tl.add(playClick());
+        tl.call(() => focusField('fld-pass2'));
+        typeInto(tl, 'txt-pass2', '••••••••••', 0.8);
+        moveTo(tl, 'mock-reg-btn', 0.6);
+        tl.add(playClick());
+        tl.call(() => { focusField(''); gsap.to('#reg-msg', { opacity: 1, y: 0, duration: 0.35 }); setLoggedIn(true); });
+        pause(tl, 2.2);
+
+        // ШАГ 10: возвращаемся к сборке и сохраняем её
+        tl.add(changeScene('#page-register', '#page-builder'));
+        pause(tl, 0.5);
+        moveTo(tl, 'mock-save', 0.7);
+        tl.add(playClick());
+        tl.call(() => bToast('✅ Сборка сохранена. Её можно открыть в «Мои сборки»', true));
+        pause(tl, 2.0);
+        tl.call(bToastHide);
+
+        // ШАГ 11: «На главную» — теперь вверху виден аккаунт
+        moveTo(tl, 'mock-back-builder', 0.8);
+        tl.add(playClick());
+        tl.add(changeScene('#page-builder', '#page-index'));
+        pause(tl, 1.8);
     </script>
 </body>
 </html>
