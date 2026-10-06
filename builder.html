@@ -1042,7 +1042,7 @@ const BUILDERS = {
                 : new T.Mesh(new T.BoxGeometry(w, h, d), mat(body, Object.assign({ transparent: true, opacity: wo, depthWrite: false }, mo)));
             return g.add(at(m, x, y, z));
         };
-        wall(D.x, D.y, 0.4, D.x / 2, D.y / 2, -0.2);        // тыльная панель (tray)
+        g.add(at(box(D.x, D.y, 0.4, body, mo), D.x / 2, D.y / 2, -0.2));   // тыльная панель (tray, к ней крепится материнка) — всегда непрозрачная
         wall(D.x, 0.4, D.z, D.x / 2, -0.2, D.z / 2);        // дно
         wall(0.4, D.y, D.z, -0.2, D.y / 2, D.z / 2);        // задняя стенка
         if (c.panel === 'aquarium') {                    // аквариум: передняя панель из стекла
