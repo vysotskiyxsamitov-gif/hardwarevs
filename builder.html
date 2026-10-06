@@ -364,13 +364,13 @@ const mk = (keys, rows) => rows.map(r => { const o = {}; keys.forEach((k, i) => 
 const DATA = {
     // radMax — максимальный радиатор СЖО (0 = нельзя), thickMax — макс. толщина видеокарты, cpuTdpMax — предел по охлаждению CPU
     case: [
-        { id: 'aurora',  name: 'Aurora ATX Midi-Tower',     price: 8990,  dims: { x: 46, y: 45, z: 21 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 38,   thickMax: 8,   coolerMax: 17, radMax: 280, color: '#1a1626', frame: '#3b2a63', fronts: [13, 26, 39] },
-        { id: 'crystal', name: 'Crystal ATX White',         price: 10990, dims: { x: 44, y: 43, z: 21 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 36,   thickMax: 7.5, coolerMax: 17, radMax: 280, color: '#e9e7f2', frame: '#a9a4c4', fronts: [13, 25, 37] },
-        { id: 'forge',   name: 'Forge Full-Tower',          price: 17990, dims: { x: 52, y: 52, z: 23 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 44,   thickMax: 9,   coolerMax: 18, radMax: 360, color: '#14111d', frame: '#7c3aed', fronts: [14, 27, 40] },
-        { id: 'nova',    name: 'Nova mATX Compact',         price: 6490,  dims: { x: 40, y: 38, z: 19 }, forms: ['mATX', 'ITX'],        gpuMax: 32.5, thickMax: 7,   coolerMax: 16, radMax: 240, color: '#d8d5e6', frame: '#9b97b3', fronts: [12, 26] },
+        { id: 'aurora',  name: 'Aurora ATX Midi-Tower',     price: 8990,  dims: { x: 46, y: 45, z: 21 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 38,   thickMax: 8,   coolerMax: 17, radMax: 280, wall: 0.85, color: '#1a1626', frame: '#3b2a63', fronts: [13, 26, 39] },
+        { id: 'crystal', name: 'Crystal ATX White',         price: 10990, dims: { x: 44, y: 43, z: 21 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 36,   thickMax: 7.5, coolerMax: 17, radMax: 280, wall: 0.45, glassOp: 0.22, color: '#e9e7f2', frame: '#a9a4c4', fronts: [13, 25, 37] },
+        { id: 'forge',   name: 'Forge Full-Tower',          price: 17990, dims: { x: 52, y: 52, z: 23 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 44,   thickMax: 9,   coolerMax: 18, radMax: 360, wall: 1, color: '#14111d', frame: '#7c3aed', fronts: [14, 27, 40] },
+        { id: 'nova',    name: 'Nova mATX Compact',         price: 6490,  dims: { x: 40, y: 38, z: 19 }, forms: ['mATX', 'ITX'],        gpuMax: 32.5, thickMax: 7,   coolerMax: 16, radMax: 240, wall: 0.6, color: '#d8d5e6', frame: '#9b97b3', fronts: [12, 26] },
         { id: 'mesh',    name: 'Vent mATX Mesh',            price: 5490,  dims: { x: 39, y: 38, z: 19.5 }, forms: ['mATX', 'ITX'],      gpuMax: 31.5, thickMax: 6.5, coolerMax: 16, radMax: 240, color: '#22303a', frame: '#3b82a0', fronts: [12, 26], panel: 'mesh' },
-        { id: 'pico',    name: 'Pico Mini-ITX',             price: 11990, dims: { x: 36, y: 34, z: 17 }, forms: ['ITX'],                gpuMax: 28,   thickMax: 6,   coolerMax: 7,  radMax: 0,   cpuTdpMax: 125, color: '#2b3340', frame: '#5b6b86', fronts: [15] },
-        { id: 'cube',    name: 'Cube ITX Slim',             price: 9490,  dims: { x: 34, y: 34, z: 17 }, forms: ['ITX'],                gpuMax: 26.5, thickMax: 5.5, coolerMax: 7,  radMax: 0,   cpuTdpMax: 125, color: '#d9cbb4', frame: '#a08b6b', fronts: [15] },
+        { id: 'pico',    name: 'Pico Mini-ITX',             price: 11990, dims: { x: 36, y: 34, z: 17 }, forms: ['ITX'],                gpuMax: 28,   thickMax: 6,   coolerMax: 7,  radMax: 0,   cpuTdpMax: 125, wall: 0.9, color: '#2b3340', frame: '#5b6b86', fronts: [15] },
+        { id: 'cube',    name: 'Cube ITX Slim',             price: 9490,  dims: { x: 34, y: 34, z: 17 }, forms: ['ITX'],                gpuMax: 26.5, thickMax: 5.5, coolerMax: 7,  radMax: 0,   cpuTdpMax: 125, wall: 0.55, color: '#d9cbb4', frame: '#a08b6b', fronts: [15] },
         // ---- Аквариумы: панорамное стекло спереди и сбоку ----
         { id: 'aqua',    name: 'Aqua ATX Panorama',         price: 14990, dims: { x: 47, y: 46, z: 23 },   forms: ['ATX', 'mATX', 'ITX'], gpuMax: 39,   thickMax: 9,   coolerMax: 16.5, radMax: 360, color: '#0f1a28', frame: '#06b6d4', fronts: [],             panel: 'aquarium' },
         { id: 'prism',   name: 'Prism ATX White',           price: 16990, dims: { x: 46, y: 47, z: 22.5 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 38,   thickMax: 8.5, coolerMax: 16,   radMax: 360, color: '#eef0f7', frame: '#f472b6', fronts: [],             panel: 'aquarium' },
@@ -381,9 +381,9 @@ const DATA = {
         { id: 'retro',   name: 'Retro Wood ATX',            price: 12490, dims: { x: 45, y: 44, z: 21.5 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 37,   thickMax: 7.5, coolerMax: 16,   radMax: 240, color: '#7a5230', frame: '#d6b27a', fronts: [14, 28],       panel: 'solid' },
         // ---- Сетка и стекло разных размеров ----
         { id: 'airflow', name: 'Airflow ATX Mesh',          price: 7990,  dims: { x: 46, y: 44, z: 20.5 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 38,   thickMax: 7,   coolerMax: 17,   radMax: 360, color: '#1d2228', frame: '#22c55e', fronts: [13, 26, 39],   panel: 'mesh' },
-        { id: 'sakura',  name: 'Sakura ATX White-Pink',     price: 11490, dims: { x: 44, y: 43, z: 21 },   forms: ['ATX', 'mATX', 'ITX'], gpuMax: 36,   thickMax: 7.5, coolerMax: 16.5, radMax: 280, color: '#f7e8ef', frame: '#ec4899', fronts: [13, 25, 37] },
-        { id: 'micro',   name: 'Micro mATX Tower',          price: 4990,  dims: { x: 37, y: 36, z: 19 },   forms: ['mATX', 'ITX'],        gpuMax: 29,   thickMax: 6.5, coolerMax: 15,   radMax: 120, color: '#262b36', frame: '#64748b', fronts: [12, 25] },
-        { id: 'pixel',   name: 'Pixel ITX Glass',           price: 12990, dims: { x: 37, y: 35, z: 17 },   forms: ['ITX'],                gpuMax: 29,   thickMax: 5.5, coolerMax: 7.5,  radMax: 0,   cpuTdpMax: 150, color: '#e5e7eb', frame: '#a78bfa', fronts: [15] }
+        { id: 'sakura',  name: 'Sakura ATX White-Pink',     price: 11490, dims: { x: 44, y: 43, z: 21 },   forms: ['ATX', 'mATX', 'ITX'], gpuMax: 36,   thickMax: 7.5, coolerMax: 16.5, radMax: 280, wall: 0.4, glassOp: 0.2, color: '#f7e8ef', frame: '#ec4899', fronts: [13, 25, 37] },
+        { id: 'micro',   name: 'Micro mATX Tower',          price: 4990,  dims: { x: 37, y: 36, z: 19 },   forms: ['mATX', 'ITX'],        gpuMax: 29,   thickMax: 6.5, coolerMax: 15,   radMax: 120, wall: 0.75, color: '#262b36', frame: '#64748b', fronts: [12, 25] },
+        { id: 'pixel',   name: 'Pixel ITX Glass',           price: 12990, dims: { x: 37, y: 35, z: 17 },   forms: ['ITX'],                gpuMax: 29,   thickMax: 5.5, coolerMax: 7.5,  radMax: 0,   cpuTdpMax: 150, wall: 0.3, glassOp: 0.24, color: '#e5e7eb', frame: '#a78bfa', fronts: [15] }
     ],
     mb: mk(['id', 'name', 'chip', 'vendor', 'socket', 'form', 'mem', 'price'], [
         // LGA1700
@@ -726,7 +726,7 @@ const DATA = {
 const PANEL_LABEL = { glass: 'Стекло', solid: 'Закрытый', mesh: 'Сетка', aquarium: 'Аквариум' };
 function specOf(key, o) {
     switch (key) {
-        case 'case':   return PANEL_LABEL[o.panel || 'glass'] + ' · ' + o.forms.join(' / ') + ' · видеокарта до ' + o.gpuMax + ' см · кулер до ' + o.coolerMax + ' см · ' + (o.radMax ? 'СЖО до ' + o.radMax + ' мм' : 'без СЖО');
+        case 'case':   return PANEL_LABEL[o.panel || 'glass'] + ' · ' + o.dims.x + '×' + o.dims.y + '×' + o.dims.z + ' см · ' + o.forms.join(' / ') + ' · видеокарта до ' + o.gpuMax + ' см · кулер до ' + o.coolerMax + ' см · ' + (o.radMax ? 'СЖО до ' + o.radMax + ' мм' : 'без СЖО');
         case 'mb':     return o.socket + ' · ' + o.form + ' · ' + o.mem;
         case 'cpu':    return o.socket + ' · ' + o.cores + ' ядер / ' + o.threads + ' потоков · ' + o.tdp + ' Вт';
         case 'cooler': return o.kind + ' · до ' + o.tdpMax + ' Вт';
@@ -860,10 +860,15 @@ const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 function caseDims() { return state.case ? state.case.dims : { x: 46, y: 45, z: 21 }; }
 
+const FIT_REF = 56;   // единый масштаб кадра: большие корпуса занимают больше места, маленькие — меньше
 function fitRadius() {
     const D = caseDims();
-    const span = Math.max(D.x, D.y) * 1.18;
-    return 1.45 * span * Math.max(1, 1 / camera.aspect);
+    const target = Math.max(D.x, D.y) * 1.18;
+    const ref = FIT_REF * 1.18;
+    // 65% — реальное соотношение размеров, 35% — подгонка под кадр (чтобы мелкий корпус не терялся)
+    const span = ref * Math.pow(target / ref, 0.65);
+    cam.span = cam.span ? cam.span + (span - cam.span) * 0.12 : span;
+    return 1.45 * cam.span * Math.max(1, 1 / camera.aspect);
 }
 
 function updateCamera(dt) {
@@ -1029,13 +1034,21 @@ const BUILDERS = {
     case() {
         const c = state.case, D = c.dims, g = new T.Group();
         const body = c.color, fr = c.frame, mo = { metalness: 0.5, roughness: 0.55 };
-        g.add(at(box(D.x, D.y, 0.4, body, mo), D.x / 2, D.y / 2, -0.2));        // тыльная панель (tray)
-        g.add(at(box(D.x, 0.4, D.z, body, mo), D.x / 2, -0.2, D.z / 2));        // дно
-        g.add(at(box(0.4, D.y, D.z, body, mo), -0.2, D.y / 2, D.z / 2));        // задняя стенка
+        // прозрачность стенок зависит от типа корпуса (c.wall можно задать вручную: 1 — глухой, 0.2 — почти стекло)
+        const WALL_DEF = { solid: 1, mesh: 0.85, glass: 0.7, aquarium: 0.2 };
+        const wo = c.wall != null ? c.wall : WALL_DEF[c.panel || 'glass'];
+        const wall = (w, h, d, x, y, z) => {
+            const m = wo >= 1 ? box(w, h, d, body, mo)
+                : new T.Mesh(new T.BoxGeometry(w, h, d), mat(body, Object.assign({ transparent: true, opacity: wo, depthWrite: false }, mo)));
+            return g.add(at(m, x, y, z));
+        };
+        wall(D.x, D.y, 0.4, D.x / 2, D.y / 2, -0.2);        // тыльная панель (tray)
+        wall(D.x, 0.4, D.z, D.x / 2, -0.2, D.z / 2);        // дно
+        wall(0.4, D.y, D.z, -0.2, D.y / 2, D.z / 2);        // задняя стенка
         if (c.panel === 'aquarium') {                    // аквариум: передняя панель из стекла
             g.add(at(new T.Mesh(new T.BoxGeometry(0.3, D.y, D.z), mat('#7dd3fc', { transparent: true, opacity: 0.16, roughness: 0.05, metalness: 0.2, depthWrite: false })), D.x + 0.15, D.y / 2, D.z / 2));
         } else {
-            g.add(at(box(0.4, D.y, D.z, body, mo), D.x + 0.2, D.y / 2, D.z / 2));   // передняя панель
+            wall(0.4, D.y, D.z, D.x + 0.2, D.y / 2, D.z / 2);   // передняя панель
         }
         const bar = (w, h, d, x, y, z) => g.add(at(box(w, h, d, fr, { metalness: 0.6, roughness: 0.4 }), x, y, z));
         bar(D.x, 0.6, 0.6, D.x / 2, D.y, 0.3);        bar(D.x, 0.6, 0.6, D.x / 2, D.y, D.z - 0.3);
@@ -1061,7 +1074,7 @@ const BUILDERS = {
             glass = new T.Mesh(new T.BoxGeometry(D.x, D.y, 0.3), mat(body, { alphaMap: tex, alphaTest: 0.5, metalness: 0.5, roughness: 0.55 }));
         } else {
             glass = new T.Mesh(new T.BoxGeometry(D.x, D.y, 0.2),
-                mat(c.panel === 'aquarium' ? '#7dd3fc' : '#9bb8ff', { transparent: true, opacity: c.panel === 'aquarium' ? 0.16 : 0.14, roughness: 0.05, metalness: 0.2, depthWrite: false }));
+                mat(c.panel === 'aquarium' ? '#7dd3fc' : '#9bb8ff', { transparent: true, opacity: c.panel === 'aquarium' ? 0.16 : (c.glassOp || 0.14), roughness: 0.05, metalness: 0.2, depthWrite: false }));
         }
         at(glass, D.x / 2, D.y / 2, D.z + 0.2);
         glass.visible = glassOn;
