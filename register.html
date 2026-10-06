@@ -1,0 +1,64 @@
+[register.html](https://github.com/user-attachments/files/33126807/register.html)
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HardwareVS — Регистрация</title>
+<script>try{var t=localStorage.getItem("hardwarevs-theme");if(t==="light"||t==="dark")document.documentElement.setAttribute("data-theme",t);}catch(e){}</script>
+<link rel="stylesheet" href="auth.css">
+</head>
+<body>
+<div class="wrap">
+    <a class="logo" href="index.html">HardwareVS</a>
+    <form class="card" id="form" novalidate>
+        <h2>Регистрация</h2>
+        <p class="sub">Аккаунт нужен, чтобы сохранять свои сборки ПК. Это бесплатно.</p>
+        <label for="email">Почта</label>
+        <input id="email" type="email" autocomplete="email" required>
+        <label for="password">Пароль (от 8 символов)</label>
+        <input id="password" type="password" autocomplete="new-password" minlength="8" required>
+        <label for="password2">Повторите пароль</label>
+        <input id="password2" type="password" autocomplete="new-password" required>
+        <button class="btn" id="submit" type="submit">Создать аккаунт</button>
+        <div class="msg" id="msg" role="alert" hidden></div>
+        <div class="row">
+            <span></span>
+            <a id="toLogin" href="login.html">Уже есть аккаунт? Войти</a>
+        </div>
+    </form>
+    <a class="back" href="index.html">← На главную</a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script src="auth.js"></script>
+<script>
+(function () {
+    var A = window.HW_AUTH, $ = function (id) { return document.getElementById(id); };
+    var msg = $('msg'), btn = $('submit');
+    function show(text, ok) { msg.textContent = text; msg.className = 'msg ' + (ok ? 'ok' : 'err'); msg.hidden = false; }
+    if (!A) { show('Не удалось загрузить сервис входа. Проверьте интернет и обновите страницу.'); btn.disabled = true; return; }
+
+    var q = location.search; if (q) $('toLogin').href = 'login.html' + q;
+    A.getUser().then(function (u) { if (u) location.replace(A.safeNext()); });
+
+    $('form').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var email = $('email').value.trim(), p1 = $('password').value, p2 = $('password2').value;
+        if (!email) { show('Введите почту.'); return; }
+        if (p1.length < 8) { show('Пароль должен быть не короче 8 символов.'); return; }
+        if (p1 !== p2) { show('Пароли не совпадают.'); return; }
+        btn.disabled = true; msg.hidden = true;
+        A.client.auth.signUp({ email: email, password: p1, options: { emailRedirectTo: A.base + 'login.html' } }).then(function (r) {
+            if (r.error) { show(A.ruError(r.error)); btn.disabled = false; return; }
+            if (r.data && r.data.session) { location.href = A.safeNext(); return; }   // подтверждение почты выключено
+            if (r.data && r.data.user && r.data.user.identities && r.data.user.identities.length === 0) {
+                show('Эта почта уже зарегистрирована. Попробуйте войти.'); btn.disabled = false; return;
+            }
+            show('Готово! Мы отправили письмо со ссылкой подтверждения. Откройте его, а потом войдите.', true);
+            $('form').reset();
+        }).catch(function (err) { show(A.ruError(err)); btn.disabled = false; });
+    });
+})();
+</script>
+</body>
+</html>
