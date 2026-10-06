@@ -17,6 +17,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
     <script src="auth.js"></script>
+    <script src="cookies.js"></script>
 
     <style>
         /* ТЕМЫ: все цвета вынесены в переменные */
@@ -211,12 +212,34 @@
         .modal-need-login a { color: #a855f7; font-weight: 600; }
         .kind-option:focus-visible, .modal-input:focus-visible, .modal-send:focus-visible, .modal-close:focus-visible { outline: 2px solid #a855f7; outline-offset: 2px; }
 
+        /* МАГАЗИН: VIP под блоком аккаунта */
+        .shop {
+            position: fixed; top: 72px; left: 20px; z-index: 50; display: flex; align-items: center; gap: 8px;
+            max-width: calc(100% - 40px); min-height: 40px; padding: 0 6px 0 14px; box-sizing: border-box;
+            background: var(--panel-bg); border: 1px solid var(--panel-border); border-radius: 20px;
+            backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); font-size: 13px; color: var(--panel-text);
+            transition: opacity 0.3s ease;
+        }
+        .shop[hidden] { display: none; }
+        html.leaving .shop { opacity: 0; pointer-events: none; }
+        .shop-vip { font-weight: 700; white-space: nowrap; }
+        .shop-status { color: var(--panel-muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .shop-info { flex: none; width: 26px; height: 26px; padding: 0; border-radius: 50%; cursor: pointer; font: inherit; font-weight: 700;
+            background: var(--option-bg); color: var(--panel-text); border: 1px solid var(--panel-border); }
+        .shop-info:hover { border-color: #a855f7; }
+        .shop-buy { flex: none; border: 0; border-radius: 14px; padding: 7px 12px; cursor: pointer; font: inherit; font-weight: 700; color: #fff; white-space: nowrap;
+            background: linear-gradient(135deg, #f59e0b, #b45309); }
+        .shop-info:focus-visible, .shop-buy:focus-visible { outline: 2px solid #a855f7; outline-offset: 2px; }
+        .modal-list { margin: 0 0 12px; padding-left: 20px; line-height: 1.7; }
+        .modal-text { margin: 0 0 8px; line-height: 1.5; }
+
         /* Телефоны: кнопки чуть меньше, чтобы все три поместились рядом с аккаунтом */
         @media (max-width: 480px) {
             .gear-btn, .reviews-btn, .suggest-btn { width: 40px; height: 40px; }
             .settings { top: 16px; right: 16px; }
             .reviews-btn { top: 16px; right: 64px; }
             .suggest-btn { top: 16px; right: 112px; }
+            .shop { top: 64px; left: 16px; max-width: calc(100% - 32px); }
             .account { top: 16px; left: 16px; min-height: 40px; max-width: calc(100% - 175px); }
         }
 
@@ -290,6 +313,24 @@
 
 <!-- Вход / регистрация / профиль -->
 <div class="account" id="account"></div>
+
+<!-- Магазин: VIP-статус под аккаунтом -->
+<div class="shop" id="shop">
+    <span class="shop-vip">👑 VIP</span>
+    <span class="shop-status" id="shop-status">…</span>
+    <button class="shop-info" id="shop-info" type="button" aria-label="Что даёт VIP" title="Что даёт VIP">?</button>
+    <button class="shop-buy" id="shop-buy" type="button">Купить · 75 🍪</button>
+</div>
+
+<div class="modal-overlay" id="shop-overlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shop-title">
+        <div class="modal-head">
+            <h2 class="modal-title" id="shop-title"></h2>
+            <button class="modal-close" id="shop-close" type="button" aria-label="Закрыть">×</button>
+        </div>
+        <div id="shop-body"></div>
+    </div>
+</div>
 
 <!-- Отзывы: слева от шестерёнки -->
 <a class="reviews-btn" href="https://vysotskiyxsamitov-gif.github.io/hardwarevs/reviews.html" aria-label="Отзывы" title="Отзывы">⭐</a>
@@ -476,6 +517,93 @@
     document.getElementById('suggest-close').addEventListener('click', closeSuggest);
     sugOverlay.addEventListener('click', function (e) { if (e.target === sugOverlay) closeSuggest(); });
     document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeSuggest(); });
+
+    /* ---------- МАГАЗИН: VIP за печеньки ---------- */
+    const C = window.HW_COOKIES;
+    const shop = document.getElementById('shop');
+    const shopOverlay = document.getElementById('shop-overlay');
+    const shopBody = document.getElementById('shop-body');
+    let shopMode = 'info', shopTrigger = null;
+
+    function vipPrice(w) { return (w && w.vip_price) || 75; }
+    function vipDate(iso) { return new Date(iso).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' }); }
+    function mk(parent, tag, cls, text) {
+        const n = document.createElement(tag); n.className = cls;
+        if (text != null) n.textContent = text;
+        parent.appendChild(n); return n;
+    }
+
+    function renderShop(w) {
+        const status = document.getElementById('shop-status');
+        status.textContent = w === undefined ? 'недоступен' : w === null ? 'войдите' : w.vip_active ? 'до ' + vipDate(w.vip_until) : 'не активен';
+        document.getElementById('shop-buy').textContent = (w && w.vip_active ? 'Продлить' : 'Купить') + ' · ' + vipPrice(w) + ' 🍪';
+    }
+
+    function renderShopModal() {
+        const w = C.get();
+        shopBody.textContent = '';
+        document.getElementById('shop-title').textContent = shopMode === 'info' ? 'VIP-статус' : 'Купить VIP';
+
+        if (shopMode === 'info') {
+            mk(shopBody, 'p', 'modal-text', 'Что даёт VIP на 30 дней:');
+            const ul = mk(shopBody, 'ul', 'modal-list');
+            mk(ul, 'li', '', 'доступ к 3D-конфигуратору ПК');
+            mk(ul, 'li', '', '3 печеньки в день вместо 1');
+            mk(shopBody, 'p', 'modal-hint', 'Стоимость: ' + vipPrice(w) + ' 🍪. Повторная покупка продлевает VIP ещё на 30 дней.');
+            mk(shopBody, 'p', 'modal-hint', 'Печеньку можно забрать раз в сутки: новый день начинается в 12:00 по Москве.');
+            return;
+        }
+        if (w === undefined) { mk(shopBody, 'p', 'modal-text', 'Не удалось загрузить данные. Обновите страницу.'); return; }
+        if (w === null) {
+            const d = mk(shopBody, 'div', 'modal-need-login', '🔒 Чтобы купить VIP, нужно войти в аккаунт.');
+            d.appendChild(document.createElement('br'));
+            const a = mk(d, 'a', '', 'Войти'); a.href = 'login.html?next=index.html';
+            return;
+        }
+        const p = vipPrice(w);
+        const line = mk(shopBody, 'p', 'modal-text', 'VIP на ' + (w.vip_days || 30) + ' дней за ' + p + ' 🍪. У вас ' + w.cookies + ' 🍪.');
+        if (w.vip_active) mk(shopBody, 'p', 'modal-hint', 'Сейчас VIP до ' + vipDate(w.vip_until) + ', покупка продлит его на 30 дней.');
+        if (w.cookies < p) mk(shopBody, 'p', 'modal-hint', 'Не хватает ' + (p - w.cookies) + ' 🍪.');
+        const btn = mk(shopBody, 'button', 'modal-send', 'Купить за ' + p + ' 🍪');
+        btn.type = 'button'; btn.disabled = w.cookies < p;
+        const msg = mk(shopBody, 'div', 'modal-msg');
+        msg.setAttribute('role', 'status');
+        btn.addEventListener('click', async function () {
+            btn.disabled = true; msg.className = 'modal-msg'; msg.textContent = 'Покупаю…';
+            try {
+                const nw = await C.buyVip();
+                line.textContent = 'У вас осталось ' + nw.cookies + ' 🍪.';
+                msg.className = 'modal-msg ok'; msg.textContent = 'Готово! VIP активен до ' + vipDate(nw.vip_until) + '.';
+            } catch (e) {
+                btn.disabled = false; msg.className = 'modal-msg err'; msg.textContent = C.ruError(e);
+            }
+        });
+    }
+
+    function openShop(mode, trigger) {
+        shopMode = mode; shopTrigger = trigger;
+        setPanel(false); closeSuggest();
+        shopOverlay.classList.add('open');
+        renderShopModal();
+    }
+    function closeShop() {
+        if (!shopOverlay.classList.contains('open')) return;
+        shopOverlay.classList.remove('open');
+        if (shopTrigger) shopTrigger.focus();
+    }
+
+    if (!C) {
+        shop.hidden = true;
+    } else {
+        C.mountCounter();
+        C.onChange(renderShop);
+        C.refresh();
+        document.getElementById('shop-info').addEventListener('click', function (e) { e.stopPropagation(); openShop('info', e.currentTarget); });
+        document.getElementById('shop-buy').addEventListener('click', function (e) { e.stopPropagation(); openShop('buy', e.currentTarget); });
+        document.getElementById('shop-close').addEventListener('click', closeShop);
+        shopOverlay.addEventListener('click', function (e) { if (e.target === shopOverlay) closeShop(); });
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeShop(); });
+    }
 
     /* ---------- ПЛАВНЫЙ ПЕРЕХОД МЕЖДУ СТРАНИЦАМИ ---------- */
     document.querySelectorAll('a.btn-style, a.reviews-btn').forEach(function (link) {
