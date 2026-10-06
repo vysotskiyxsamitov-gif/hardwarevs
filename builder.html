@@ -818,6 +818,8 @@ try {
 renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = T.PCFSoftShadowMap;
+renderer.toneMapping = T.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
 
 const scene = new T.Scene();
 const camera = new T.PerspectiveCamera(38, 1, 0.5, 600);
@@ -835,6 +837,13 @@ sun.shadow.bias = -0.0006;
 const pl1 = new T.PointLight(0xa855f7, 0.7, 260); pl1.position.set(-60, 30, 50);
 const pl2 = new T.PointLight(0x06b6d4, 0.6, 260); pl2.position.set(60, 10, 60);
 scene.add(ambient, hemi, sun, pl1, pl2);
+try {   // процедурная студийная карта окружения: металл и лак получают настоящие отражения
+    const pm = new T.PMREMGenerator(renderer), es = new T.Scene();
+    es.add(new T.Mesh(new T.BoxGeometry(100, 100, 100), new T.MeshBasicMaterial({ color: 0x241d3a, side: T.BackSide })));
+    [[0, 48, 0, 60, 1, 60, 0xffffff, 4], [-48, 5, 0, 1, 40, 60, 0xc4b5fd, 2.5], [48, 5, 10, 1, 30, 50, 0x67e8f9, 2], [0, 5, -48, 70, 40, 1, 0xffffff, 1.5], [0, -48, 0, 80, 1, 80, 0x3b2a63, 0.6]]
+        .forEach(k => { const m = new T.MeshBasicMaterial({ color: new T.Color(k[6]).multiplyScalar(k[7]) }); const b = new T.Mesh(new T.BoxGeometry(k[3], k[4], k[5]), m); b.position.set(k[0], k[1], k[2]); es.add(b); });
+    scene.environment = pm.fromScene(es, 0.03).texture;
+} catch (e) {}
 
 const floor = new T.Mesh(new T.CircleGeometry(95, 64), new T.MeshStandardMaterial({ color: 0x120a24, roughness: 0.95, metalness: 0 }));
 floor.rotation.x = -Math.PI / 2;
@@ -847,7 +856,7 @@ function applySceneTheme() {
     renderer.setClearColor(bg, 1);
     scene.fog = new T.Fog(bg, 110, 230);
     floor.material.color.set(light ? '#e1daf3' : '#120a24');
-    ambient.intensity = light ? 0.85 : 0.6;
+    ambient.intensity = light ? 0.5 : 0.28;
     sun.intensity = light ? 0.8 : 0.85;
     pl1.intensity = light ? 0.35 : 0.7;
     pl2.intensity = light ? 0.3 : 0.6;
@@ -931,10 +940,24 @@ window.addEventListener('resize', resize);
 let CTX = null; // собирает RGB-материалы и вращающиеся вентиляторы текущей детали
 
 function mat(color, o) {
-    return new T.MeshStandardMaterial(Object.assign({ color: color, metalness: 0.3, roughness: 0.55 }, o || {}));
+    const q = Object.assign({ color: color, metalness: 0.3, roughness: 0.55 }, o || {});
+    if (!q.transparent && !q.alphaMap && q.metalness < 0.6) return new T.MeshPhysicalMaterial(Object.assign({ clearcoat: 0.35, clearcoatRoughness: 0.4 }, q));
+    return new T.MeshStandardMaterial(q);
+}
+const BEV = {};
+function bevBox(w, h, d) {   // коробка со скруглёнными рёбрами — ловит блики на гранях
+    const mn = Math.min(w, h, d);
+    if (mn < 1.0) return new T.BoxGeometry(w, h, d);
+    const b = Math.min(0.14, mn * 0.1), key = [w, h, d].join();
+    if (BEV[key]) return BEV[key];
+    const x = (w - 2 * b) / 2, y = (h - 2 * b) / 2, sh = new T.Shape();
+    sh.moveTo(-x, -y); sh.lineTo(x, -y); sh.lineTo(x, y); sh.lineTo(-x, y); sh.lineTo(-x, -y);
+    const g = new T.ExtrudeGeometry(sh, { depth: d - 2 * b, bevelEnabled: true, bevelThickness: b, bevelSize: b, bevelSegments: 2, curveSegments: 1 });
+    g.translate(0, 0, -(d - 2 * b) / 2);
+    return (BEV[key] = g);
 }
 function box(w, h, d, color, o) {
-    const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat(color, o));
+    const m = new T.Mesh(bevBox(w, h, d), mat(color, o));
     m.castShadow = true; m.receiveShadow = true;
     return m;
 }
