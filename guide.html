@@ -6,6 +6,8 @@
     <title>HardwareVS - Интерактивный гайд</title>
     <!-- Библиотека анимаций GSAP -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+    <!-- 3D-библиотека (как в конфигураторе) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 
     <!-- СТИЛИ И ОФОРМЛЕНИЕ ИНТЕРФЕЙСА -->
     <style>
@@ -100,26 +102,11 @@
         .bld-tl { font-size: 11px; letter-spacing: 1.5px; color: #9aa0a6; }
         .bld-total { font-size: 20px; font-weight: 800; }
         .bld-save { padding: 10px 14px; border-radius: 6px; border: 1px solid #a855f7; background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); color: #fff; font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-        .bld-view { position: relative; display: flex; align-items: center; justify-content: center; background: radial-gradient(circle at 50% 40%, rgba(168,85,247,.12), transparent 65%); }
-        .bld-hint { position: absolute; color: #9aa0a6; font-size: 16px; text-align: center; padding: 20px; }
-        .bld-toast { position: absolute; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 18px; border-radius: 8px; background: rgba(14,8,32,.92); border: 1px solid #f59e0b; font-size: 13px; opacity: 0; white-space: nowrap; }
+        .bld-view { position: relative; overflow: hidden; background: #06020b; }
+        #canvas3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+        .bld-hint { position: absolute; z-index: 2; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; color: #9aa0a6; font-size: 16px; text-align: center; padding: 20px; }
+        .bld-toast { position: absolute; z-index: 3; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 18px; border-radius: 8px; background: rgba(14,8,32,.92); border: 1px solid #f59e0b; font-size: 13px; opacity: 0; white-space: nowrap; }
         .bld-toast.ok { border-color: #22c55e; }
-        .pc { position: relative; width: 440px; height: 480px; }
-        .part { position: absolute; opacity: 0; }
-        #part-0 { inset: 0; border: 3px solid #7c3aed; border-radius: 12px; background: linear-gradient(160deg, #120a2a, #0a0618); box-shadow: 0 0 30px rgba(124,58,237,.35); }
-        #part-0 i { position: absolute; right: 12px; width: 22px; height: 22px; border-radius: 50%; border: 2px solid #06b6d4; box-shadow: 0 0 8px #06b6d4; }
-        #part-1 { left: 60px; top: 34px; width: 270px; height: 250px; border: 1px solid #6d4aa8; border-radius: 6px; background: #1a1040; }
-        #part-1 span { position: absolute; right: 10px; bottom: 8px; font-size: 12px; color: #c084fc; font-weight: 700; }
-        #part-2 { left: 150px; top: 86px; width: 56px; height: 56px; border-radius: 6px; background: #cfd3da; color: #222; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
-        #part-3 { left: 120px; top: 12px; width: 200px; height: 26px; border: 2px solid #06b6d4; border-radius: 6px; background: #0e2a33; box-shadow: 0 0 12px rgba(6,182,212,.5); }
-        #part-3 b { position: absolute; left: 24px; top: 62px; width: 64px; height: 64px; border-radius: 50%; border: 3px solid #06b6d4; background: rgba(6,182,212,.14); box-shadow: 0 0 14px rgba(6,182,212,.6); }
-        #part-4 { left: 236px; top: 56px; display: flex; gap: 6px; }
-        #part-4 i { width: 12px; height: 110px; background: #e8e9ef; border-radius: 2px; border-top: 6px solid #a855f7; }
-        #part-5 { left: 56px; top: 200px; width: 300px; height: 58px; background: #0c0c12; border: 2px solid #76b900; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; padding: 0 16px; box-shadow: 0 0 14px rgba(118,185,0,.35); }
-        #part-5 i { width: 38px; height: 38px; border-radius: 50%; border: 3px solid #06b6d4; background: #16141f; box-shadow: 0 0 8px #06b6d4; }
-        #part-6 { left: 120px; top: 164px; width: 76px; height: 12px; background: #22303a; border: 1px solid #22c55e; border-radius: 2px; }
-        #part-7 { left: 16px; top: 392px; width: 200px; height: 76px; background: #1a1a26; border: 2px solid #5b6b86; border-radius: 6px; display: flex; align-items: center; justify-content: space-between; padding: 0 18px; font-weight: 800; color: #9aa0a6; }
-        #part-7 i { width: 46px; height: 46px; border-radius: 50%; border: 3px solid #5b6b86; background: #11111a; }
 
         /* ---------- СЦЕНА: РЕГИСТРАЦИЯ ---------- */
         .reg-card { width: 400px; background: rgba(19,13,51,.92); border: 1px solid #442a7a; border-radius: 14px; padding: 24px; box-shadow: 0 12px 30px rgba(0,0,0,.3); }
@@ -261,18 +248,9 @@
                         <button class="bld-save" id="mock-save">💾 Сохранить</button>
                     </div>
                 </aside>
-                <section class="bld-view">
+                <section class="bld-view" id="bld-view">
                     <div class="bld-hint" id="bld-hint">Выберите корпус слева, чтобы начать сборку</div>
-                    <div class="pc" id="pc">
-                        <div class="part" id="part-0"><i style="top:60px"></i><i style="top:200px"></i><i style="top:340px"></i></div>
-                        <div class="part" id="part-1"><span>B650</span></div>
-                        <div class="part" id="part-2">7800X3D</div>
-                        <div class="part" id="part-3"><b></b></div>
-                        <div class="part" id="part-4"><i></i><i></i><i></i><i></i></div>
-                        <div class="part" id="part-5"><i></i><i></i><i></i></div>
-                        <div class="part" id="part-6"></div>
-                        <div class="part" id="part-7"><span>750W</span><i></i></div>
-                    </div>
+                    <canvas id="canvas3d"></canvas>
                     <div class="bld-toast" id="bld-toast"></div>
                 </section>
             </div>
@@ -383,6 +361,530 @@
         function pause(tl, s) { tl.to({}, { duration: s }); }
 
         // ------------------------------------------
+        //   3D-ДВИЖОК (тот же, что в конфигураторе builder.html)
+        // ------------------------------------------
+        const PICKED = {"case":{"id":"aurora","name":"Aurora ATX Midi-Tower","price":8990,"dims":{"x":46,"y":45,"z":21},"forms":["ATX","mATX","ITX"],"gpuMax":38,"thickMax":8,"coolerMax":17,"radMax":280,"color":"#1a1626","frame":"#3b2a63","fronts":[13,26,39]},"mb":{"id":"b650","name":"AMD B650 ATX","chip":"B650","vendor":"amd","socket":"AM5","form":"ATX","mem":"DDR5","price":16990},"cpu":{"id":"r7-7800x3d","name":"AMD Ryzen 7 7800X3D","short":"R7 7800X3D","brand":"amd","socket":"AM5","cores":8,"threads":16,"tdp":120,"price":36990},"cooler":{"id":"aio240","name":"СЖО 240 мм","type":"aio","kind":"СЖО 240 мм","rad":240,"tdpMax":250,"price":8990},"ram":{"id":"d5-32","name":"32 ГБ DDR5-6000","type":"DDR5","kit":"2×16 ГБ","n":2,"color":"#e8e9ef","price":9490},"gpu":{"id":"rtx4070s","name":"NVIDIA GeForce RTX 4070 Super","short":"RTX 4070 SUPER","brand":"nvidia","vram":12,"tdp":220,"len":27,"thick":5,"fans":3,"price":59990},"ssd":{"id":"m1000","name":"NVMe 1 ТБ Gen4","cap":"1 ТБ","gen":4,"spec":"M.2 · PCIe 4.0 · до 7 000 МБ/с","price":5990},"psu":{"id":"p750","name":"Блок питания 750 Вт","watt":750,"cert":"Gold","price":8490}};
+
+        function createHW3D(canvas, viewport, onHint) {
+            const T = THREE;
+            const root = { getAttribute: () => 'dark' };
+            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+            const FORMS = { ATX: { w: 30.5, h: 24.4 }, mATX: { w: 24.4, h: 24.4 }, ITX: { w: 17, h: 17 } };
+            const STEPS = ['case', 'mb', 'cpu', 'cooler', 'ram', 'gpu', 'ssd', 'psu'].map(k => ({ key: k }));
+            const state = {};
+            let started = false;
+
+    /* =====================================================================
+       3D: СЦЕНА, СВЕТ, КАМЕРА
+       ===================================================================== */
+    let renderer;
+    try {
+        renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true });
+    } catch (e) {
+        if (onHint) onHint('Ваш браузер или устройство не поддерживает WebGL, 3D-модель недоступна.');
+        return null;
+    }
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = T.PCFSoftShadowMap;
+
+    const scene = new T.Scene();
+    const camera = new T.PerspectiveCamera(38, 1, 0.5, 600);
+    const rig = new T.Group();           // сюда добавляются все детали (координаты — «в корпусе»)
+    scene.add(rig);
+
+    const ambient = new T.AmbientLight(0xffffff, 0.6);
+    const hemi = new T.HemisphereLight(0xcdbfff, 0x20103a, 0.35);
+    const sun = new T.DirectionalLight(0xffffff, 0.85);
+    sun.position.set(40, 90, 70);
+    sun.castShadow = true;
+    sun.shadow.mapSize.set(2048, 2048);
+    Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 10, far: 260 });
+    sun.shadow.bias = -0.0006;
+    const pl1 = new T.PointLight(0xa855f7, 0.7, 260); pl1.position.set(-60, 30, 50);
+    const pl2 = new T.PointLight(0x06b6d4, 0.6, 260); pl2.position.set(60, 10, 60);
+    scene.add(ambient, hemi, sun, pl1, pl2);
+
+    const floor = new T.Mesh(new T.CircleGeometry(95, 64), new T.MeshStandardMaterial({ color: 0x120a24, roughness: 0.95, metalness: 0 }));
+    floor.rotation.x = -Math.PI / 2;
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    function applySceneTheme() {
+        const light = root.getAttribute('data-theme') === 'light';
+        const bg = new T.Color(light ? '#f3f0fa' : '#06020b');
+        renderer.setClearColor(bg, 1);
+        scene.fog = new T.Fog(bg, 110, 230);
+        floor.material.color.set(light ? '#e1daf3' : '#120a24');
+        ambient.intensity = light ? 0.85 : 0.6;
+        sun.intensity = light ? 0.8 : 0.85;
+        pl1.intensity = light ? 0.35 : 0.7;
+        pl2.intensity = light ? 0.3 : 0.6;
+    }
+
+    // --- Камера (орбита без внешних библиотек) ---
+    const cam = { base: 0.55, phi: 1.28, tPhi: 1.28, theta: 0.55, zoom: 1, tZoom: 1, auto: 0 };
+    let autoRotate = true, glassOn = false, rgbOn = true, dragging = false;
+    const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+    function caseDims() { return state.case ? state.case.dims : { x: 46, y: 45, z: 21 }; }
+
+    function fitRadius() {
+        const D = caseDims();
+        const span = Math.max(D.x, D.y) * 1.18;
+        return 1.45 * span * Math.max(1, 1 / camera.aspect);
+    }
+
+    function updateCamera(dt) {
+        if (autoRotate && !dragging) cam.auto += dt;
+        const sway = autoRotate ? Math.sin(cam.auto * 0.5) * 0.6 : 0;
+        const k = Math.min(1, dt * 9);
+        cam.theta += (cam.base + sway - cam.theta) * k;
+        cam.phi += (cam.tPhi - cam.phi) * k;
+        cam.zoom += (cam.tZoom - cam.zoom) * Math.min(1, dt * 8);
+        const r = fitRadius() * cam.zoom;
+        camera.position.set(r * Math.sin(cam.phi) * Math.sin(cam.theta), r * Math.cos(cam.phi), r * Math.sin(cam.phi) * Math.cos(cam.theta));
+        camera.lookAt(0, -1, 0);
+    }
+
+    const pointers = new Map();
+    function pinchDist() {
+        const p = Array.from(pointers.values());
+        return Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+    }
+    canvas.addEventListener('pointerdown', e => {
+        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+        dragging = true;
+    });
+    canvas.addEventListener('pointermove', e => {
+        const p = pointers.get(e.pointerId);
+        if (!p) return;
+        const dx = e.clientX - p.x, dy = e.clientY - p.y;
+        const oldDist = pointers.size === 2 ? pinchDist() : 0;
+        p.x = e.clientX; p.y = e.clientY;
+        if (pointers.size === 1) {
+            cam.base -= dx * 0.008;
+            cam.tPhi = clamp(cam.tPhi - dy * 0.006, 0.3, 1.75);
+        } else if (pointers.size === 2 && oldDist > 0) {
+            cam.tZoom = clamp(cam.tZoom * oldDist / pinchDist(), 0.35, 1.6);
+        }
+    });
+    function endPointer(e) { pointers.delete(e.pointerId); dragging = pointers.size > 0; }
+    canvas.addEventListener('pointerup', endPointer);
+    canvas.addEventListener('pointercancel', endPointer);
+    canvas.addEventListener('wheel', e => {
+        e.preventDefault();
+        cam.tZoom = clamp(cam.tZoom * Math.exp(e.deltaY * 0.001), 0.35, 1.6);
+    }, { passive: false });
+
+    function resize() {
+        const w = viewport.clientWidth, h = viewport.clientHeight;
+        if (!w || !h) return;
+        renderer.setSize(w, h, false);
+        camera.aspect = w / h;
+        camera.updateProjectionMatrix();
+    }
+    if (window.ResizeObserver) new ResizeObserver(resize).observe(viewport);
+    window.addEventListener('resize', resize);
+
+    /* =====================================================================
+       3D: ПОМОЩНИКИ ДЛЯ ПОСТРОЕНИЯ ДЕТАЛЕЙ
+       ===================================================================== */
+    let CTX = null; // собирает RGB-материалы и вращающиеся вентиляторы текущей детали
+
+    function mat(color, o) {
+        return new T.MeshStandardMaterial(Object.assign({ color: color, metalness: 0.3, roughness: 0.55 }, o || {}));
+    }
+    function box(w, h, d, color, o) {
+        const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat(color, o));
+        m.castShadow = true; m.receiveShadow = true;
+        return m;
+    }
+    function cyl(r, h, color, o, seg) {          // цилиндр, ось вдоль Z
+        const m = new T.Mesh(new T.CylinderGeometry(r, r, h, seg || 32), mat(color, o));
+        m.rotation.x = Math.PI / 2;
+        m.castShadow = true; m.receiveShadow = true;
+        return m;
+    }
+    function at(obj, x, y, z) { obj.position.set(x, y, z); return obj; }
+
+    function rgbMat() {
+        const m = new T.MeshStandardMaterial({ color: '#1a1a1f', emissive: new T.Color(0x000000), emissiveIntensity: 1.4, roughness: 0.4 });
+        m.userData.off = (CTX.rgb.length * 0.11) % 1;
+        CTX.rgb.push(m);
+        return m;
+    }
+
+    function labelPlane(text, w, h, fg, bg) {
+        const c = document.createElement('canvas');
+        c.width = 512; c.height = Math.max(32, Math.round(512 * h / w));
+        const x = c.getContext('2d');
+        if (bg) { x.fillStyle = bg; x.fillRect(0, 0, c.width, c.height); }
+        let fs = c.height * 0.62;
+        x.font = 'bold ' + fs + 'px "Segoe UI", Arial, sans-serif';
+        while (x.measureText(text).width > c.width * 0.9 && fs > 10) { fs -= 4; x.font = 'bold ' + fs + 'px "Segoe UI", Arial, sans-serif'; }
+        x.fillStyle = fg; x.textAlign = 'center'; x.textBaseline = 'middle';
+        x.fillText(text, c.width / 2, c.height / 2 + 2);
+        const tex = new T.CanvasTexture(c);
+        const m = new T.Mesh(new T.PlaneGeometry(w, h),
+            new T.MeshBasicMaterial({ map: tex, transparent: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+        return m;
+    }
+
+    function tube(pts, r, color) {
+        const curve = new T.CatmullRomCurve3(pts.map(p => new T.Vector3(p[0], p[1], p[2])));
+        const m = new T.Mesh(new T.TubeGeometry(curve, 48, r, 8, false), mat(color, { roughness: 0.8, metalness: 0.1 }));
+        m.castShadow = true;
+        return m;
+    }
+
+    // Вентилятор: смотрит вдоль +Z, толщина th, центр в начале координат
+    function fan(size, th) {
+        th = th || 2.5;
+        const g = new T.Group(), fc = '#16141f', b = 0.5;
+        g.add(at(box(size, b, th, fc), 0, size / 2 - b / 2, 0));
+        g.add(at(box(size, b, th, fc), 0, -(size / 2 - b / 2), 0));
+        g.add(at(box(b, size - 2 * b, th, fc), size / 2 - b / 2, 0, 0));
+        g.add(at(box(b, size - 2 * b, th, fc), -(size / 2 - b / 2), 0, 0));
+        g.add(cyl(size * 0.17, th * 0.9, '#0c0b12'));
+        const blades = new T.Group();
+        for (let i = 0; i < 7; i++) {
+            const arm = new T.Group();
+            arm.rotation.z = i / 7 * Math.PI * 2;
+            const bl = box(size * 0.33, size * 0.15, 0.12, '#25222f');
+            bl.position.x = size * 0.27;
+            bl.rotation.x = 0.55;
+            arm.add(bl);
+            blades.add(arm);
+        }
+        g.add(blades);
+        CTX.spin.push({ o: blades, sp: 7 });
+        const ring = new T.Mesh(new T.TorusGeometry(size * 0.455, 0.1, 8, 48), rgbMat());
+        ring.position.z = th / 2 - 0.2;
+        g.add(ring);
+        return g;
+    }
+
+    /* =====================================================================
+       3D: РАСКЛАДКА ВНУТРИ КОРПУСА
+       Система координат: начало — задний нижний угол у задней стенки (материнская
+       «тарелка» в плоскости z=0), X — от задней стенки к передней, Y — вверх,
+       Z — в сторону открытой боковины (на зрителя).
+       ===================================================================== */
+    function layoutNow() {
+        const c = state.case, mb = state.mb;
+        if (!c || !mb) return null;
+        const f = FORMS[mb.form], itx = mb.form === 'ITX';
+        const bx = 3.2, top = c.dims.y - 3, zb = 1.0, zs = zb + 0.09, cpuV = f.h * 0.30;
+        return {
+            c: c, mb: mb, D: c.dims, bx: bx, top: top, bw: f.w, bh: f.h, zb: zb, zs: zs, itx: itx,
+            cpu: { x: bx + f.w * (itx ? 0.45 : 0.40), y: top - cpuV },
+            ram: { x: bx + f.w * (itx ? 0.72 : 0.62), y: top - Math.max(cpuV, 7.2), n: itx ? 2 : 4 },
+            gpuY: top - f.h * (itx ? 0.90 : 0.57),
+            m2: { x: bx + f.w * (itx ? 0.45 : 0.40), y: top - (cpuV + 4.0) }
+        };
+    }
+    function gpuGeom(L, gpu) {
+        const x0 = L.bx + 0.4, y1 = L.gpuY + 0.3, y0 = y1 - gpu.thick, z0 = L.zs + 0.9;
+        return { x0: x0, x1: x0 + gpu.len, y0: y0, y1: y1, z0: z0, z1: z0 + 11.5 };
+    }
+    const PSU_BOX = { x0: 0.5, x1: 14.5, y0: 0.5, y1: 9.1, z0: 1.5, z1: 16.5 };
+
+    /* =====================================================================
+       3D: СБОРЩИКИ ДЕТАЛЕЙ
+       ===================================================================== */
+    const BUILDERS = {
+        case() {
+            const c = state.case, D = c.dims, g = new T.Group();
+            const body = c.color, fr = c.frame, mo = { metalness: 0.5, roughness: 0.55 };
+            g.add(at(box(D.x, D.y, 0.4, body, mo), D.x / 2, D.y / 2, -0.2));        // тыльная панель (tray)
+            g.add(at(box(D.x, 0.4, D.z, body, mo), D.x / 2, -0.2, D.z / 2));        // дно
+            g.add(at(box(0.4, D.y, D.z, body, mo), -0.2, D.y / 2, D.z / 2));        // задняя стенка
+            g.add(at(box(0.4, D.y, D.z, body, mo), D.x + 0.2, D.y / 2, D.z / 2));   // передняя панель
+            const bar = (w, h, d, x, y, z) => g.add(at(box(w, h, d, fr, { metalness: 0.6, roughness: 0.4 }), x, y, z));
+            bar(D.x, 0.6, 0.6, D.x / 2, D.y, 0.3);        bar(D.x, 0.6, 0.6, D.x / 2, D.y, D.z - 0.3);
+            bar(0.6, 0.6, D.z, 0.3, D.y, D.z / 2);        bar(0.6, 0.6, D.z, D.x - 0.3, D.y, D.z / 2);
+            bar(D.x, 0.6, 0.6, D.x / 2, 0.3, D.z - 0.3);
+            bar(0.6, D.y, 0.6, 0.3, D.y / 2, D.z - 0.3);  bar(0.6, D.y, 0.6, D.x - 0.3, D.y / 2, D.z - 0.3);
+            c.fronts.forEach(y => {                         // фронтальные вентиляторы
+                const f = fan(12); f.rotation.y = Math.PI / 2; at(f, D.x - 1.8, y, D.z / 2); g.add(f);
+            });
+            const rf = fan(12); rf.rotation.y = Math.PI / 2; at(rf, 1.8, D.y - 9.5, 8); g.add(rf);   // задний вентилятор
+            const glass = new T.Mesh(new T.BoxGeometry(D.x, D.y, 0.2),
+                mat('#9bb8ff', { transparent: true, opacity: 0.14, roughness: 0.05, metalness: 0.2, depthWrite: false }));
+            at(glass, D.x / 2, D.y / 2, D.z + 0.1);
+            glass.visible = glassOn;
+            g.userData.glass = glass;
+            g.add(glass);
+            return g;
+        },
+
+        mb() {
+            const L = layoutNow(), mb = state.mb, g = new T.Group();
+            const amd = mb.vendor === 'amd';
+            const pcb = amd ? '#1c1117' : '#0e1a2c', acc = amd ? '#ef4444' : '#38bdf8', hs = '#2b303c';
+            const metal = { metalness: 0.7, roughness: 0.4 };
+            g.add(at(box(L.bw, L.bh, 0.18, pcb, { metalness: 0.2, roughness: 0.7 }), L.bx + L.bw / 2, L.top - L.bh / 2, L.zb));
+            // кожух портов ввода-вывода
+            g.add(at(box(4.2, L.bh * 0.5, 2.6, '#1c1d26'), L.bx + 2.1, L.top - L.bh * 0.25, L.zs + 1.3));
+            g.add(at(box(4.25, 0.25, 2.65, acc, { emissive: acc, emissiveIntensity: 0.5 }), L.bx + 2.1, L.top - L.bh * 0.5, L.zs + 1.3));
+            const ioLabel = labelPlane(mb.chip, 3.4, 1.2, '#e9d5ff');
+            g.add(at(ioLabel, L.bx + 2.1, L.top - L.bh * 0.2, L.zs + 2.62));
+            // радиаторы VRM
+            g.add(at(box(L.bw * 0.34, 2.2, 2.0, hs, metal), L.bx + L.bw * 0.38, L.top - 1.3, L.zs + 1.0));
+            if (!L.itx) g.add(at(box(1.8, L.bh * 0.3, 2.0, hs, metal), L.cpu.x - 3.9, L.cpu.y, L.zs + 1.0));
+            // сокет
+            g.add(at(box(5.2, 5.2, 0.3, '#8b909b', { metalness: 0.8, roughness: 0.35 }), L.cpu.x, L.cpu.y, L.zs + 0.15));
+            // слоты ОЗУ
+            for (let i = 0; i < L.ram.n; i++) g.add(at(box(0.7, 13.5, 1.1, '#17151d'), L.ram.x + i * 0.85, L.ram.y, L.zs + 0.55));
+            // слоты PCIe
+            g.add(at(box(8.9, 0.8, 1.1, '#17151d'), L.bx + 5.4, L.gpuY, L.zs + 0.55));
+            if (!L.itx) g.add(at(box(4.5, 0.8, 1.1, '#17151d'), L.bx + 3.4, L.top - L.bh * 0.80, L.zs + 0.55));
+            // чипсет
+            if (!L.itx) {
+                g.add(at(box(4.2, 4.2, 1.0, hs, metal), L.bx + L.bw * 0.70, L.top - L.bh * 0.84, L.zs + 0.5));
+                g.add(at(labelPlane(mb.chip, 3.4, 1.2, '#e9d5ff'), L.bx + L.bw * 0.70, L.top - L.bh * 0.84, L.zs + 1.02));
+            }
+            // разъём 24-pin
+            g.add(at(box(1.2, 5.0, 1.6, '#e8e8ee'), L.bx + L.bw - 0.9, L.top - L.bh * 0.55, L.zs + 0.8));
+            return g;
+        },
+
+        cpu() {
+            const L = layoutNow(), cpu = state.cpu, g = new T.Group();
+            g.add(at(box(3.9, 3.9, 0.35, '#c8ccd4', { metalness: 0.85, roughness: 0.3 }), L.cpu.x, L.cpu.y, L.zs + 0.47));
+            g.add(at(labelPlane(cpu.short, 3.4, 1.3, '#1a1a22'), L.cpu.x, L.cpu.y, L.zs + 0.66));
+            return g;
+        },
+
+        cooler() {
+            const L = layoutNow(), cl = state.cooler, g = new T.Group();
+            const zc = L.zs + 0.7, p = L.cpu;
+            if (cl.type === 'low') {
+                const fh = cl.height - 2.0;
+                g.add(at(box(9, 9, 0.6, '#4a4f5a', { metalness: 0.6 }), p.x, p.y, zc + 0.3));
+                g.add(at(cyl(4.3, fh, '#9aa1ad', { metalness: 0.7, roughness: 0.4 }), p.x, p.y, zc + 0.6 + fh / 2));
+                const f = fan(8.6, 1.4); at(f, p.x, p.y, zc + 0.6 + fh + 0.7); g.add(f);
+            } else if (cl.type === 'tower') {
+                const h = cl.height, fs = cl.fan || 12;
+                g.add(at(box(4.2, 4.2, 0.8, '#b87333', { metalness: 0.9, roughness: 0.3 }), p.x, p.y, zc + 0.4));
+                for (let i = 0; i < 9; i++) g.add(at(box(0.12, fs, h - 1, '#9aa1ad', { metalness: 0.75, roughness: 0.4 }), p.x - 3.4 + i * 0.5, p.y, zc + 1 + (h - 1) / 2));
+                g.add(at(box(5.2, fs + 0.2, 0.3, '#1b1b24'), p.x - 1.0, p.y, zc + h - 0.15));
+                const f = fan(fs); f.rotation.y = Math.PI / 2; at(f, p.x + 2.75, p.y, zc + 1 + fs / 2); g.add(f);
+            } else { // СЖО
+                const D = L.D, ry = D.y - 2.85;
+                const n = cl.rad === 360 ? 3 : 2, fs = cl.rad === 280 ? 14 : 12;
+                const len = n * fs + 3.5, x0 = 6.25, rz = 5.6 + fs / 2;
+                g.add(at(cyl(3.7, 5.0, '#15121f', { metalness: 0.6, roughness: 0.35 }), p.x, p.y, zc + 2.5));
+                const ring = new T.Mesh(new T.TorusGeometry(2.7, 0.14, 8, 40), rgbMat());
+                at(ring, p.x, p.y, zc + 5.05); g.add(ring);
+                g.add(at(box(len, 2.7, fs, '#20202a', { metalness: 0.5, roughness: 0.5 }), x0 + len / 2, ry, rz));
+                for (let i = 0; i < n; i++) {
+                    const f = fan(fs); f.rotation.x = Math.PI / 2;
+                    at(f, x0 + 1.75 + fs * (i + 0.5), ry - 1.35 - 1.25, rz); g.add(f);
+                }
+                const midY = Math.min(p.y + 5, ry - 2);
+                g.add(tube([[p.x - 1.6, p.y + 3.6, zc + 2.5], [p.x - 3, midY, zc + 4], [x0 + 3, ry - 2.5, zc + 5], [x0 + 0.25, ry, rz - 3]], 0.45, '#0d0d12'));
+                g.add(tube([[p.x + 1.6, p.y + 3.6, zc + 2.5], [p.x, midY, zc + 6], [x0 + 3.5, ry - 3, zc + 8], [x0 + 0.25, ry, rz + 3]], 0.45, '#0d0d12'));
+            }
+            return g;
+        },
+
+        ram() {
+            const L = layoutNow(), r = state.ram, g = new T.Group();
+            const idx = L.ram.n === 4 ? (r.n >= 4 ? [0, 1, 2, 3] : r.n === 2 ? [1, 3] : [1]) : (r.n >= 2 ? [0, 1] : [0]);
+            const col = r.color;
+            idx.forEach(i => {
+                const x = L.ram.x + i * 0.85;
+                g.add(at(box(0.8, 13.3, 3.9, col, { metalness: 0.5, roughness: 0.4 }), x, L.ram.y, L.zs + 0.5 + 1.95));
+                const strip = new T.Mesh(new T.BoxGeometry(0.55, 12.2, 0.14), rgbMat());
+                g.add(at(strip, x, L.ram.y, L.zs + 0.5 + 3.9 + 0.05));
+            });
+            return g;
+        },
+
+        gpu() {
+            const L = layoutNow(), gpu = state.gpu, g = new T.Group();
+            const G = gpuGeom(L, gpu), len = gpu.len, th = gpu.thick, H = G.z1 - G.z0;
+            const brandCol = gpu.brand === 'nvidia' ? '#76b900' : gpu.brand === 'amd' ? '#ef4444' : '#38bdf8';
+            g.add(at(box(len, th, H, '#1b1b24', { metalness: 0.5, roughness: 0.45 }), G.x0 + len / 2, (G.y0 + G.y1) / 2, G.z0 + H / 2));
+            g.add(at(box(0.3, th + 0.5, H + 0.5, '#b8bcc6', { metalness: 0.8, roughness: 0.3 }), G.x0 - 0.15, (G.y0 + G.y1) / 2, G.z0 + H / 2));
+            const strip = new T.Mesh(new T.BoxGeometry(len * 0.92, 0.3, 0.1), rgbMat());
+            g.add(at(strip, G.x0 + len / 2, G.y1 - th * 0.18, G.z1 + 0.05));
+            g.add(at(labelPlane(gpu.short, len * 0.5, th * 0.5, brandCol), G.x0 + len * 0.45, (G.y0 + G.y1) / 2 - th * 0.08, G.z1 + 0.03));
+            const fs = Math.min(9.6, (len - 2) / gpu.fans);
+            for (let i = 0; i < gpu.fans; i++) {
+                const f = fan(fs - 0.3, 1.2); f.rotation.x = Math.PI / 2;
+                at(f, G.x0 + 1 + fs * (i + 0.5), G.y0 + 0.05, G.z0 + H / 2); g.add(f);
+            }
+            return g;
+        },
+
+        ssd() {
+            const L = layoutNow(), s = state.ssd, g = new T.Group();
+            const x = L.m2.x, y = L.m2.y, z = L.zs + 0.4;
+            g.add(at(box(8.0, 2.2, 0.25, '#1b3a2a', { metalness: 0.2, roughness: 0.7 }), x, y, z));
+            if (s.gen >= 4) {
+                const hsAcc = s.gen >= 5 ? '#f59e0b' : '#06b6d4', hsT = s.gen >= 5 ? 0.9 : 0.45;
+                g.add(at(box(7.2, 2.3, hsT, '#4b5563', { metalness: 0.85, roughness: 0.3 }), x, y, z + hsT / 2 + 0.12));
+                g.add(at(box(7.2, 0.18, 0.1, hsAcc, { emissive: hsAcc, emissiveIntensity: 0.6 }), x, y + 0.5, z + hsT + 0.17));
+            } else {
+                g.add(at(box(6.6, 2.0, 0.12, '#cbd0d8', { metalness: 0.4 }), x, y, z + 0.2));
+            }
+            g.add(at(labelPlane(s.cap, 3.4, 0.9, s.gen >= 4 ? '#e5e7eb' : '#1a1a22'), x, y - 0.1, z + (s.gen >= 5 ? 1.08 : s.gen >= 4 ? 0.6 : 0.28)));
+            return g;
+        },
+
+        psu() {
+            const L = layoutNow(), p = state.psu, g = new T.Group(), B = PSU_BOX;
+            const cx = (B.x0 + B.x1) / 2, cy = (B.y0 + B.y1) / 2, cz = (B.z0 + B.z1) / 2;
+            g.add(at(box(B.x1 - B.x0, B.y1 - B.y0, B.z1 - B.z0, '#1c1c24', { metalness: 0.4, roughness: 0.6 }), cx, cy, cz));
+            g.add(at(box(B.x1 - B.x0, 0.35, B.z1 - B.z0 + 0.05, '#facc15', { emissive: '#facc15', emissiveIntensity: 0.25 }), cx, B.y1 - 0.6, cz));
+            g.add(at(labelPlane(p.watt + ' W', 8, 3.0, '#e9d5ff'), cx, cy - 0.4, B.z1 + 0.03));
+            if (L) { // кабели питания
+                const cable = (pts) => g.add(tube(pts, 0.42, '#0b0b10'));
+                const yc = L.top - L.bh * 0.55, xr = L.bx + L.bw;
+                cable([[B.x1 + 0.1, 4.5, 8], [xr + 0.6, 5, 7.5], [xr + 0.9, yc - 5, 5.5], [xr - 0.9, yc - 2.6, L.zs + 1.4]]);
+                cable([[B.x1 + 0.1, 7.2, 12], [2.2, 12, 14.5], [2.2, L.top - 3, 14.5], [L.bx + 5.0, L.top - 1.0, L.zs + 2.4]]);
+                if (state.gpu) {
+                    const G = gpuGeom(L, state.gpu), gy = (G.y0 + G.y1) / 2;
+                    cable([[B.x1 + 0.1, 3.6, 11], [(B.x1 + G.x1) / 2, 3.4, G.z1 + 0.8], [G.x1 - 1.4, (3.4 + gy) / 2, G.z1 + 1.0], [G.x1 - 3, gy, G.z1 + 0.2]]);
+                }
+            }
+            return g;
+        }
+    };
+
+    // От чего зависит деталь: req — обязательные, opt — влияют на геометрию (кабели)
+    const PARTSPEC = {
+        case:   { req: ['case'] },
+        mb:     { req: ['case', 'mb'] },
+        cpu:    { req: ['case', 'mb', 'cpu'] },
+        cooler: { req: ['case', 'mb', 'cpu', 'cooler'] },
+        ram:    { req: ['case', 'mb', 'ram'] },
+        gpu:    { req: ['case', 'mb', 'gpu'] },
+        ssd:    { req: ['case', 'mb', 'ssd'] },
+        psu:    { req: ['case', 'psu'], opt: ['mb', 'gpu'] }
+    };
+    const OFFS = {
+        case:   new T.Vector3(0, 16, 0),  mb:  new T.Vector3(0, 0, 18),  cpu:  new T.Vector3(0, 0, 16),
+        cooler: new T.Vector3(0, 0, 20),  ram: new T.Vector3(0, 12, 10), gpu:  new T.Vector3(14, 0, 8),
+        ssd:    new T.Vector3(0, 0, 12),  psu: new T.Vector3(-16, 0, 0)
+    };
+
+    /* =====================================================================
+       3D: УПРАВЛЕНИЕ ДЕТАЛЯМИ В СЦЕНЕ (появление, удаление, синхронизация)
+       ===================================================================== */
+    const parts = {};   // key -> { key, group }
+
+    function buildPart(key) {
+        CTX = { rgb: [], spin: [] };
+        const g = BUILDERS[key]();
+        g.userData.rgb = CTX.rgb;
+        g.userData.spin = CTX.spin;
+        CTX = null;
+        return g;
+    }
+    function eachMat(obj, fn) {
+        obj.traverse(o => {
+            if (!o.material) return;
+            (Array.isArray(o.material) ? o.material : [o.material]).forEach(fn);
+        });
+    }
+    function disposePart(g) {
+        rig.remove(g);
+        g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+        eachMat(g, m => { if (m.map) m.map.dispose(); m.dispose(); });
+    }
+    function startAnim(g, off, delay) {
+        g.userData.anim = { t0: performance.now() + delay, off: off, dur: reduceMotion ? 1 : 750 };
+        g.position.copy(off);
+        eachMat(g, m => {
+            if (m.userData.o === undefined) { m.userData.o = m.opacity; m.userData.tr = m.transparent; }
+            m.transparent = true; m.opacity = 0;
+        });
+    }
+    function stepAnims(now) {
+        for (const key in parts) {
+            const g = parts[key].group, a = g.userData.anim;
+            if (!a) continue;
+            const t = clamp((now - a.t0) / a.dur, 0, 1), e = 1 - Math.pow(1 - t, 3);
+            g.position.set(a.off.x * (1 - e), a.off.y * (1 - e), a.off.z * (1 - e));
+            eachMat(g, m => { m.opacity = m.userData.o * e; });
+            if (t >= 1) {
+                eachMat(g, m => { m.opacity = m.userData.o; m.transparent = m.userData.tr; });
+                g.position.set(0, 0, 0);
+                delete g.userData.anim;
+            }
+        }
+    }
+    function wantKey(key) {
+        const sp = PARTSPEC[key];
+        if (!sp.req.every(k => state[k])) return null;
+        return sp.req.concat(sp.opt || []).map(k => state[k] ? state[k].id : '-').join('|');
+    }
+    function sync() {
+        let delay = 0;
+        STEPS.forEach(step => {
+            const key = step.key, want = wantKey(key), have = parts[key];
+            if (have && have.key === want) return;
+            if (have) { disposePart(have.group); delete parts[key]; }
+            if (want) {
+                const g = buildPart(key);
+                rig.add(g);
+                parts[key] = { key: want, group: g };
+                startAnim(g, OFFS[key], delay);
+                delay += 130;
+            }
+        });
+        const D = caseDims();
+        rig.position.set(-D.x / 2, -D.y / 2, -D.z / 2);
+        floor.position.y = -D.y / 2 - 0.5;
+        applyGlass();
+    }
+    function applyGlass() {
+        if (parts.case && parts.case.group.userData.glass) parts.case.group.userData.glass.visible = glassOn;
+    }
+
+    /* =====================================================================
+       ЦИКЛ ОТРИСОВКИ
+       ===================================================================== */
+    let lastT = performance.now();
+    function frame(now) {
+        const dt = Math.min(0.05, (now - lastT) / 1000);
+        lastT = now;
+        stepAnims(now);
+        for (const key in parts) {
+            const ud = parts[key].group.userData;
+            ud.spin.forEach(s => { s.o.rotation.z += dt * s.sp; });
+            ud.rgb.forEach(m => {
+                if (rgbOn) m.emissive.setHSL((now * 0.0001 + m.userData.off) % 1, 1, 0.5);
+                else m.emissive.setRGB(0, 0, 0);
+            });
+        }
+        if (viewport.clientWidth) { updateCamera(dt); renderer.render(scene, camera); }
+        requestAnimationFrame(frame);
+    }
+
+
+
+            applySceneTheme();
+            resize();
+            return {
+                setPart(key, obj) { state[key] = obj; sync(); },
+                reset() { Object.keys(state).forEach(k => { delete state[k]; }); sync(); },
+                start() { if (started) return; started = true; resize(); lastT = performance.now(); requestAnimationFrame(frame); }
+            };
+        }
+
+        const HW3D = (typeof THREE !== 'undefined')
+            ? createHW3D($('canvas3d'), $('bld-view'), msg => { $('bld-hint').textContent = msg; })
+            : null;
+        if (HW3D) HW3D.start();
+        const KEYS = ['case', 'mb', 'cpu', 'cooler', 'ram', 'gpu', 'ssd', 'psu'];
+
+        // ------------------------------------------
         //     ДАННЫЕ И ЛОГИКА СЦЕНЫ «КОНФИГУРАТОР»
         // ------------------------------------------
         const RUB = n => n.toLocaleString('ru-RU') + ' ₽';
@@ -425,7 +927,7 @@
             $('bopt-' + s.pick).classList.add('sel');
             document.querySelectorAll('.bchip')[i].classList.add('done');
             if (i === 0) gsap.to('#bld-hint', { opacity: 0, duration: 0.3 });
-            gsap.to('#part-' + i, { opacity: 1, scale: 1, duration: 0.45, ease: 'back.out(1.6)' });
+            if (HW3D) HW3D.setPart(KEYS[i], PICKED[KEYS[i]]);
             const from = totalVal; totalVal += price;
             const o = { v: from };
             gsap.to(o, { v: totalVal, duration: 0.4, onUpdate: () => { $('bld-total').textContent = RUB(Math.round(o.v)); } });
@@ -466,7 +968,7 @@
             // конфигуратор
             totalVal = 0;
             $('bld-total').textContent = RUB(0);
-            gsap.set('.part', { opacity: 0, scale: 0.92 });
+            if (HW3D) HW3D.reset();
             gsap.set('#bld-hint', { opacity: 1 });
             gsap.set('#bld-toast', { opacity: 0 });
             document.querySelectorAll('.bchip').forEach(c => c.classList.remove('done'));
