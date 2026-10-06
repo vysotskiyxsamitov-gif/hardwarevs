@@ -1,0 +1,887 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HardwareVS — 3D-конфигуратор ПК</title>
+
+    <!-- Тема применяется до отрисовки (тот же ключ, что и на главной) -->
+    <script>
+        try {
+            var savedTheme = localStorage.getItem('hardwarevs-theme');
+            if (savedTheme === 'light' || savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', savedTheme);
+            }
+        } catch (e) {}
+    </script>
+
+    <!-- 3D-библиотека -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+    <style>
+        :root, :root[data-theme="dark"] {
+            --bg: #06020b; --panel: #0e0820; --card: #150d33; --card-hover: #1c1245;
+            --border: #2e1a53; --border-strong: #442a7a; --text: #ffffff; --muted: #9aa0a6;
+            --accent: #a855f7; --accent-2: #06b6d4; --ok: #22c55e; --warn: #f59e0b; --bad: #f87171;
+            --glass: rgba(14, 8, 32, 0.82); color-scheme: dark;
+        }
+        :root[data-theme="light"] {
+            --bg: #f3f0fa; --panel: #ffffff; --card: #f1ecfb; --card-hover: #e7defa;
+            --border: #ddd2f3; --border-strong: #cbb8ee; --text: #1b1233; --muted: #6b6485;
+            --accent: #7c3aed; --accent-2: #0891b2; --ok: #16a34a; --warn: #b45309; --bad: #dc2626;
+            --glass: rgba(255, 255, 255, 0.85); color-scheme: light;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+        html, body { height: 100%; background: var(--bg); color: var(--text); overflow: hidden;
+            transition: background-color .4s ease, color .4s ease; }
+
+        .app { display: grid; grid-template-columns: 410px 1fr; height: 100vh; height: 100dvh;
+            animation: pageIn .6s ease backwards; transition: opacity .4s ease, filter .4s ease; }
+        @keyframes pageIn { from { opacity: 0; filter: blur(6px); } }
+        html.leaving .app { opacity: 0; filter: blur(8px); }
+
+        /* ---------- ЛЕВАЯ ПАНЕЛЬ ---------- */
+        .sidebar { display: flex; flex-direction: column; min-height: 0; background: var(--panel);
+            border-right: 1px solid var(--border); transition: background-color .4s ease; }
+        .sb-head { padding: 16px 18px 12px; border-bottom: 1px solid var(--border); }
+        .back { display: inline-block; color: var(--muted); text-decoration: none; font-size: 13px; margin-bottom: 8px; }
+        .back:hover { color: var(--accent); }
+        .sb-head h1 { font-size: 22px; font-weight: 800; letter-spacing: .5px;
+            background: linear-gradient(90deg, #a855f7, #06b6d4, #f59e0b); -webkit-background-clip: text;
+            background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
+        .scroll { flex: 1; overflow-y: auto; padding: 16px 18px 8px; min-height: 0; }
+
+        .stepper { display: grid; grid-template-columns: repeat(8, 1fr); gap: 6px; margin-bottom: 16px; }
+        .chip { position: relative; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center;
+            background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
+            font-size: 18px; color: var(--text); transition: border-color .2s, background-color .2s, box-shadow .2s; }
+        .chip:hover:not(:disabled) { border-color: var(--accent); }
+        .chip:disabled { opacity: .35; cursor: not-allowed; }
+        .chip.active { border-color: var(--accent); box-shadow: 0 0 12px rgba(168,85,247,.45); }
+        .chip.done::after { content: '✓'; position: absolute; top: -5px; right: -5px; width: 16px; height: 16px;
+            border-radius: 50%; background: var(--ok); color: #fff; font-size: 10px; font-weight: 700;
+            display: flex; align-items: center; justify-content: center; }
+        .chip:focus-visible, .opt:focus-visible, .tb-btn:focus-visible, .gear-btn:focus-visible,
+        .theme-option:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+        .eyebrow { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+        .step-head h2 { font-size: 24px; margin: 2px 0 4px; }
+        .step-head p { font-size: 13px; color: var(--muted); min-height: 18px; margin-bottom: 12px; }
+
+        .options { display: flex; flex-direction: column; gap: 8px; }
+        .opt { text-align: left; width: 100%; padding: 12px 14px; background: var(--card); color: var(--text);
+            border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+            transition: border-color .2s, background-color .2s, transform .2s, box-shadow .2s; }
+        .opt:hover:not(:disabled) { border-color: var(--accent); background: var(--card-hover); transform: translateY(-1px); }
+        .opt.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(168,85,247,.3); }
+        .opt:disabled { opacity: .55; cursor: not-allowed; }
+        .opt-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
+        .opt-name { font-weight: 700; font-size: 14px; }
+        .opt-price { font-size: 13px; color: var(--accent-2); font-weight: 600; white-space: nowrap; }
+        .opt-spec { font-size: 12px; color: var(--muted); margin-top: 3px; }
+        .opt-note { font-size: 12px; margin-top: 6px; }
+        .opt-note.bad { color: var(--bad); } .opt-note.warn { color: var(--warn); } .opt-note.ok { color: var(--ok); }
+
+        .banner { padding: 12px 14px; border: 1px solid var(--ok); border-radius: 10px; margin-bottom: 12px;
+            background: rgba(34,197,94,.08); font-size: 13px; line-height: 1.45; }
+        .banner b { color: var(--ok); }
+        .banner .btn { margin-top: 10px; }
+        .banner.warn { border-color: var(--warn); background: rgba(245,158,11,.08); }
+        .banner.warn b { color: var(--warn); }
+
+        details.build { margin: 16px 0 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+        details.build summary { cursor: pointer; padding: 11px 14px; font-size: 13px; font-weight: 600; }
+        .build-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 14px;
+            border-top: 1px solid var(--border); font-size: 12px; }
+        .build-row span:first-child { color: var(--muted); } .build-row span:last-child { text-align: right; }
+
+        .footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px;
+            border-top: 1px solid var(--border); background: var(--panel); }
+        .total-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+        .total { font-size: 20px; font-weight: 800; }
+        .power { font-size: 12px; color: var(--muted); }
+
+        .btn { padding: 10px 16px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--card);
+            color: var(--text); font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
+            cursor: pointer; transition: border-color .2s, box-shadow .2s, background-color .2s; }
+        .btn:hover { border-color: var(--accent); box-shadow: 0 0 12px rgba(168,85,247,.3); }
+        .btn.primary { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); border-color: #a855f7; color: #fff; }
+
+        /* ---------- 3D-ОБЛАСТЬ ---------- */
+        .viewport { position: relative; min-height: 0; min-width: 0; overflow: hidden; }
+        #canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+        #canvas:active { cursor: grabbing; }
+        .empty-hint { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+            pointer-events: none; text-align: center; padding: 20px; color: var(--muted); font-size: 16px; }
+        .empty-hint[hidden] { display: none; }
+        .toolbar { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 6px;
+            flex-wrap: wrap; justify-content: center; padding: 6px; background: var(--glass); border: 1px solid var(--border);
+            border-radius: 10px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); max-width: calc(100% - 24px); }
+        .tb-btn { padding: 8px 12px; border-radius: 6px; border: 1px solid transparent; background: var(--card);
+            color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; transition: border-color .2s, background-color .2s; }
+        .tb-btn:hover { border-color: var(--accent); }
+        .tb-btn[aria-pressed="true"] { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); color: #fff; border-color: #a855f7; }
+        .toast { position: absolute; top: 16px; left: 50%; transform: translate(-50%, -12px); max-width: 80%;
+            padding: 10px 16px; border-radius: 8px; background: var(--glass); border: 1px solid var(--warn);
+            font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; text-align: center; }
+        .toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+        /* Шестерёнка и выбор темы */
+        .settings { position: absolute; top: 16px; right: 16px; z-index: 20; }
+        .gear-btn { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
+            background: var(--glass); color: var(--text); border: 1px solid var(--border-strong); border-radius: 50%;
+            cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            transition: border-color .2s, box-shadow .2s; }
+        .gear-btn svg { width: 21px; height: 21px; transition: transform .6s ease; }
+        .gear-btn:hover { border-color: var(--accent); box-shadow: 0 0 14px rgba(168,85,247,.4); }
+        .gear-btn:hover svg { transform: rotate(60deg); }
+        .gear-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+        .settings-panel { position: absolute; top: 52px; right: 0; width: 220px; padding: 14px; background: var(--glass);
+            border: 1px solid var(--border-strong); border-radius: 10px; backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px); box-shadow: 0 12px 30px rgba(0,0,0,.35); opacity: 0; visibility: hidden;
+            transform: translateY(-8px) scale(.97); transform-origin: top right;
+            transition: opacity .25s ease, transform .25s ease, visibility .25s; }
+        .settings-panel.open { opacity: 1; visibility: visible; transform: none; }
+        .settings-title { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase;
+            color: var(--muted); margin-bottom: 10px; }
+        .theme-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .theme-option { padding: 10px 0; background: var(--card); color: var(--text); border: 1px solid transparent;
+            border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+        .theme-option:hover { border-color: var(--accent); }
+        .theme-option[aria-pressed="true"] { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%);
+            border-color: #a855f7; color: #fff; }
+
+        /* ---------- МОБИЛЬНАЯ ВЕРСТКА ---------- */
+        @media (max-width: 860px) {
+            .app { grid-template-columns: 1fr; grid-template-rows: 46dvh 1fr; }
+            .viewport { order: -1; }
+            .sidebar { border-right: 0; border-top: 1px solid var(--border); }
+            .toolbar { bottom: 8px; }
+            .tb-btn { padding: 6px 9px; font-size: 11px; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .app { animation: none; }
+        }
+    </style>
+</head>
+<body>
+<div class="app" id="app">
+
+    <!-- ===== ЛЕВАЯ ПАНЕЛЬ ===== -->
+    <aside class="sidebar">
+        <div class="sb-head">
+            <a class="back" id="back-link" href="https://vysotskiyxsamitov-gif.github.io/hardwarevs/index.html">← На главную</a>
+            <h1>3D-конфигуратор ПК</h1>
+        </div>
+
+        <div class="scroll" id="scroll">
+            <div class="stepper" id="stepper"></div>
+            <div class="step-head" id="stepHead"></div>
+            <div id="banner"></div>
+            <div class="options" id="options"></div>
+            <details class="build" id="buildBox">
+                <summary>Состав сборки</summary>
+                <div id="buildList"></div>
+            </details>
+        </div>
+
+        <div class="footer">
+            <div>
+                <div class="total-label">Итого</div>
+                <div class="total" id="total">0 ₽</div>
+                <div class="power" id="power"></div>
+            </div>
+            <button class="btn" id="resetBtn" type="button">Сбросить</button>
+        </div>
+    </aside>
+
+    <!-- ===== 3D-ОБЛАСТЬ ===== -->
+    <main class="viewport" id="viewport">
+        <canvas id="canvas"></canvas>
+        <div class="empty-hint" id="emptyHint">Выберите корпус слева, чтобы начать сборку</div>
+        <div class="toast" id="toast" role="status"></div>
+
+        <div class="toolbar" role="toolbar" aria-label="Управление моделью">
+            <button class="tb-btn" id="tbRotate" type="button" aria-pressed="true">↻ Покачивание</button>
+            <button class="tb-btn" id="tbGlass" type="button" aria-pressed="false">◻ Стекло</button>
+            <button class="tb-btn" id="tbRgb" type="button" aria-pressed="true">✦ RGB</button>
+            <button class="tb-btn" id="tbCam" type="button">⌖ Камера</button>
+            <button class="tb-btn" id="tbShot" type="button">⬇ PNG</button>
+        </div>
+
+        <div class="settings" id="settings">
+            <button class="gear-btn" id="gear-btn" type="button" aria-label="Настройки" aria-haspopup="dialog" aria-expanded="false" aria-controls="settings-panel">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                </svg>
+            </button>
+            <div class="settings-panel" id="settings-panel" role="dialog" aria-label="Тема оформления">
+                <div class="settings-title">Тема оформления</div>
+                <div class="theme-switch">
+                    <button class="theme-option" type="button" data-theme-value="dark" aria-pressed="true">🌙 Тёмная</button>
+                    <button class="theme-option" type="button" data-theme-value="light" aria-pressed="false">☀️ Светлая</button>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+if (typeof THREE === 'undefined') {
+    document.getElementById('emptyHint').textContent = 'Не удалось загрузить библиотеку Three.js. Проверьте подключение к интернету.';
+    return;
+}
+const T = THREE;
+const $ = id => document.getElementById(id);
+const root = document.documentElement;
+const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* =====================================================================
+   ДАННЫЕ (все цены и характеристики условные — замените на свои)
+   ===================================================================== */
+const CURRENCY = '₽';
+const fmt = n => n.toLocaleString('ru-RU') + ' ' + CURRENCY;
+const FORMS = { ATX: { w: 30.5, h: 24.4 }, mATX: { w: 24.4, h: 24.4 }, ITX: { w: 17, h: 17 } };
+
+const STEPS = [
+    { key: 'case',   title: 'Корпус',              icon: '🗄️' },
+    { key: 'mb',     title: 'Материнская плата',   icon: '🧩' },
+    { key: 'cpu',    title: 'Процессор',           icon: '🧠' },
+    { key: 'cooler', title: 'Охлаждение',          icon: '❄️' },
+    { key: 'ram',    title: 'Оперативная память',  icon: '🧬' },
+    { key: 'gpu',    title: 'Видеокарта',          icon: '🎮' },
+    { key: 'ssd',    title: 'Накопитель',          icon: '💾' },
+    { key: 'psu',    title: 'Блок питания',        icon: '🔌' }
+];
+
+const DATA = {
+    case: [
+        { id: 'aurora', name: 'Aurora ATX Midi-Tower', price: 8990, dims: { x: 46, y: 45, z: 21 }, forms: ['ATX', 'mATX', 'ITX'],
+          gpuMax: 38, coolerMax: 17, aio: true, color: '#1a1626', frame: '#3b2a63', fronts: [13, 26, 39] },
+        { id: 'nova', name: 'Nova mATX Compact', price: 6490, dims: { x: 40, y: 38, z: 19 }, forms: ['mATX', 'ITX'],
+          gpuMax: 33, coolerMax: 16, aio: true, color: '#d8d5e6', frame: '#9b97b3', fronts: [12, 26] },
+        { id: 'pico', name: 'Pico Mini-ITX', price: 11990, dims: { x: 36, y: 34, z: 17 }, forms: ['ITX'],
+          gpuMax: 28, coolerMax: 7, aio: false, color: '#2b3340', frame: '#5b6b86', fronts: [15] }
+    ],
+    mb: [
+        { id: 'h610m', name: 'Intel H610 mATX',  chip: 'H610', vendor: 'intel', socket: 'LGA1700', form: 'mATX', mem: 'DDR4', price: 6990 },
+        { id: 'b760',  name: 'Intel B760 ATX',   chip: 'B760', vendor: 'intel', socket: 'LGA1700', form: 'ATX',  mem: 'DDR4', price: 12990 },
+        { id: 'z790',  name: 'Intel Z790 ATX',   chip: 'Z790', vendor: 'intel', socket: 'LGA1700', form: 'ATX',  mem: 'DDR5', price: 24990 },
+        { id: 'b760i', name: 'Intel B760 Mini-ITX', chip: 'B760', vendor: 'intel', socket: 'LGA1700', form: 'ITX', mem: 'DDR5', price: 17990 },
+        { id: 'b650m', name: 'AMD B650M mATX',   chip: 'B650', vendor: 'amd', socket: 'AM5', form: 'mATX', mem: 'DDR5', price: 11990 },
+        { id: 'b650',  name: 'AMD B650 ATX',     chip: 'B650', vendor: 'amd', socket: 'AM5', form: 'ATX',  mem: 'DDR5', price: 16990 },
+        { id: 'b650i', name: 'AMD B650 Mini-ITX', chip: 'B650', vendor: 'amd', socket: 'AM5', form: 'ITX', mem: 'DDR5', price: 19990 }
+    ],
+    cpu: [
+        { id: 'i5-12400f', name: 'Intel Core i5-12400F',  short: 'i5-12400F', brand: 'intel', socket: 'LGA1700', cores: 6,  threads: 12, tdp: 65,  price: 11990 },
+        { id: 'i7-14700k', name: 'Intel Core i7-14700K',  short: 'i7-14700K', brand: 'intel', socket: 'LGA1700', cores: 20, threads: 28, tdp: 125, price: 38990 },
+        { id: 'r5-7600',   name: 'AMD Ryzen 5 7600',      short: 'R5 7600',   brand: 'amd',   socket: 'AM5',     cores: 6,  threads: 12, tdp: 65,  price: 17990 },
+        { id: 'r7-7800x3d',name: 'AMD Ryzen 7 7800X3D',   short: 'R7 7800X3D',brand: 'amd',   socket: 'AM5',     cores: 8,  threads: 16, tdp: 120, price: 36990 }
+    ],
+    cooler: [
+        { id: 'low',   name: 'Низкопрофильный 92 мм', type: 'low',   kind: 'Низкий профиль 4.7 см', height: 4.7,  tdpMax: 125, price: 3990 },
+        { id: 'tower', name: 'Башенный 120 мм',       type: 'tower', kind: 'Башня 15.5 см',         height: 15.5, tdpMax: 180, price: 3490 },
+        { id: 'aio',   name: 'СЖО 240 мм',            type: 'aio',   kind: 'Жидкостное, радиатор 240 мм', height: 5.0, tdpMax: 250, price: 8990 }
+    ],
+    ram: [
+        { id: 'd4-16', name: '16 ГБ DDR4-3200', type: 'DDR4', kit: '2×8 ГБ',  price: 2990 },
+        { id: 'd4-32', name: '32 ГБ DDR4-3600', type: 'DDR4', kit: '2×16 ГБ', price: 5990 },
+        { id: 'd5-32', name: '32 ГБ DDR5-6000', type: 'DDR5', kit: '2×16 ГБ', price: 9490 },
+        { id: 'd5-64', name: '64 ГБ DDR5-6000', type: 'DDR5', kit: '2×32 ГБ', price: 17990 }
+    ],
+    gpu: [
+        { id: 'rtx4060',  name: 'NVIDIA GeForce RTX 4060',       short: 'RTX 4060',       brand: 'nvidia', vram: 8,  tdp: 115, len: 24.0, thick: 4.0, fans: 2, price: 29990 },
+        { id: 'rtx4070s', name: 'NVIDIA GeForce RTX 4070 Super', short: 'RTX 4070 SUPER', brand: 'nvidia', vram: 12, tdp: 220, len: 27.0, thick: 5.0, fans: 3, price: 59990 },
+        { id: 'rx7800xt', name: 'AMD Radeon RX 7800 XT',         short: 'RX 7800 XT',     brand: 'amd',    vram: 16, tdp: 263, len: 28.5, thick: 5.5, fans: 3, price: 49990 },
+        { id: 'rtx4080s', name: 'NVIDIA GeForce RTX 4080 Super', short: 'RTX 4080 SUPER', brand: 'nvidia', vram: 16, tdp: 320, len: 31.0, thick: 6.0, fans: 3, price: 109990 }
+    ],
+    ssd: [
+        { id: 'm500',  name: 'NVMe 500 ГБ', cap: '500 ГБ', gen: 3, spec: 'M.2 · PCIe 3.0 · до 3 400 МБ/с', price: 3490 },
+        { id: 'm1000', name: 'NVMe 1 ТБ',   cap: '1 ТБ',   gen: 4, spec: 'M.2 · PCIe 4.0 · до 7 000 МБ/с', price: 5990 },
+        { id: 'm2000', name: 'NVMe 2 ТБ',   cap: '2 ТБ',   gen: 4, spec: 'M.2 · PCIe 4.0 · до 7 300 МБ/с', price: 10990 }
+    ],
+    psu: [
+        { id: 'p550',  name: 'Блок питания 550 Вт',  watt: 550,  cert: 'Bronze',   price: 4990 },
+        { id: 'p650',  name: 'Блок питания 650 Вт',  watt: 650,  cert: 'Gold',     price: 6990 },
+        { id: 'p850',  name: 'Блок питания 850 Вт',  watt: 850,  cert: 'Gold',     price: 10990 },
+        { id: 'p1000', name: 'Блок питания 1000 Вт', watt: 1000, cert: 'Platinum', price: 15990 }
+    ]
+};
+
+function specOf(key, o) {
+    switch (key) {
+        case 'case':   return o.forms.join(' / ') + ' · видеокарта до ' + o.gpuMax + ' см · кулер до ' + o.coolerMax + ' см' + (o.aio ? ' · СЖО 240' : '');
+        case 'mb':     return o.socket + ' · ' + o.form + ' · ' + o.mem;
+        case 'cpu':    return o.socket + ' · ' + o.cores + ' ядер / ' + o.threads + ' потоков · ' + o.tdp + ' Вт';
+        case 'cooler': return o.kind + ' · до ' + o.tdpMax + ' Вт';
+        case 'ram':    return o.type + ' · ' + o.kit;
+        case 'gpu':    return o.vram + ' ГБ · ' + o.tdp + ' Вт · длина ' + o.len + ' см';
+        case 'ssd':    return o.spec;
+        case 'psu':    return o.watt + ' Вт · 80+ ' + o.cert;
+    }
+    return '';
+}
+
+/* =====================================================================
+   СОСТОЯНИЕ И ПРОВЕРКА СОВМЕСТИМОСТИ
+   ===================================================================== */
+let state = {};
+let active = 0;
+
+function requiredPower(s) {
+    s = s || state;
+    if (!s.cpu || !s.gpu) return null;
+    return Math.ceil((s.cpu.tdp + s.gpu.tdp + 150) / 50) * 50;
+}
+
+// Возвращает текст причины несовместимости или null
+function check(key, o, s) {
+    s = s || state;
+    const c = s.case, mb = s.mb, cpu = s.cpu;
+    switch (key) {
+        case 'mb':
+            if (c && !c.forms.includes(o.form)) return 'Формат ' + o.form + ' не поместится в этот корпус';
+            break;
+        case 'cpu':
+            if (mb && mb.socket !== o.socket) return 'Сокет ' + o.socket + ' не подходит к плате (' + mb.socket + ')';
+            break;
+        case 'cooler':
+            if (o.type === 'aio') { if (c && !c.aio) return 'Корпус не поддерживает СЖО 240 мм'; }
+            else if (c && o.height > c.coolerMax) return 'Высота ' + o.height + ' см больше допустимых ' + c.coolerMax + ' см';
+            if (cpu && cpu.tdp > o.tdpMax) return 'Не справится с процессором на ' + cpu.tdp + ' Вт';
+            break;
+        case 'ram':
+            if (mb && mb.mem !== o.type) return 'Плата поддерживает только ' + mb.mem;
+            break;
+        case 'gpu':
+            if (c && o.len > c.gpuMax) return 'Длина ' + o.len + ' см больше допустимых ' + c.gpuMax + ' см';
+            break;
+        case 'psu': {
+            const r = requiredPower(s);
+            if (r && o.watt < r) return 'Не хватает мощности: нужно от ' + r + ' Вт';
+            break;
+        }
+    }
+    return null;
+}
+
+// Убирает из сборки несовместимые детали. Возвращает названия убранных шагов.
+function revalidate(s) {
+    const removed = [];
+    STEPS.forEach(step => {
+        const o = s[step.key];
+        if (o && check(step.key, o, s)) { delete s[step.key]; removed.push(step.title); }
+    });
+    return removed;
+}
+
+function firstMissing() {
+    for (let i = 0; i < STEPS.length; i++) if (!state[STEPS[i].key]) return i;
+    return -1;
+}
+
+/* =====================================================================
+   3D: СЦЕНА, СВЕТ, КАМЕРА
+   ===================================================================== */
+const canvas = $('canvas');
+const viewport = $('viewport');
+let renderer;
+try {
+    renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true });
+} catch (e) {
+    $('emptyHint').textContent = 'Ваш браузер или устройство не поддерживает WebGL, 3D-модель недоступна.';
+    return;
+}
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = T.PCFSoftShadowMap;
+
+const scene = new T.Scene();
+const camera = new T.PerspectiveCamera(38, 1, 0.5, 600);
+const rig = new T.Group();           // сюда добавляются все детали (координаты — «в корпусе»)
+scene.add(rig);
+
+const ambient = new T.AmbientLight(0xffffff, 0.6);
+const hemi = new T.HemisphereLight(0xcdbfff, 0x20103a, 0.35);
+const sun = new T.DirectionalLight(0xffffff, 0.85);
+sun.position.set(40, 90, 70);
+sun.castShadow = true;
+sun.shadow.mapSize.set(2048, 2048);
+Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 10, far: 260 });
+sun.shadow.bias = -0.0006;
+const pl1 = new T.PointLight(0xa855f7, 0.7, 260); pl1.position.set(-60, 30, 50);
+const pl2 = new T.PointLight(0x06b6d4, 0.6, 260); pl2.position.set(60, 10, 60);
+scene.add(ambient, hemi, sun, pl1, pl2);
+
+const floor = new T.Mesh(new T.CircleGeometry(95, 64), new T.MeshStandardMaterial({ color: 0x120a24, roughness: 0.95, metalness: 0 }));
+floor.rotation.x = -Math.PI / 2;
+floor.receiveShadow = true;
+scene.add(floor);
+
+function applySceneTheme() {
+    const light = root.getAttribute('data-theme') === 'light';
+    const bg = new T.Color(light ? '#f3f0fa' : '#06020b');
+    renderer.setClearColor(bg, 1);
+    scene.fog = new T.Fog(bg, 110, 230);
+    floor.material.color.set(light ? '#e1daf3' : '#120a24');
+    ambient.intensity = light ? 0.85 : 0.6;
+    sun.intensity = light ? 0.8 : 0.85;
+    pl1.intensity = light ? 0.35 : 0.7;
+    pl2.intensity = light ? 0.3 : 0.6;
+}
+
+// --- Камера (орбита без внешних библиотек) ---
+const cam = { base: 0.55, phi: 1.28, tPhi: 1.28, theta: 0.55, zoom: 1, tZoom: 1, auto: 0 };
+let autoRotate = true, glassOn = false, rgbOn = true, dragging = false;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function caseDims() { return state.case ? state.case.dims : { x: 46, y: 45, z: 21 }; }
+
+function fitRadius() {
+    const D = caseDims();
+    const span = Math.max(D.x, D.y) * 1.18;
+    return 1.45 * span * Math.max(1, 1 / camera.aspect);
+}
+
+function updateCamera(dt) {
+    if (autoRotate && !dragging) cam.auto += dt;
+    const sway = autoRotate ? Math.sin(cam.auto * 0.5) * 0.6 : 0;
+    const k = Math.min(1, dt * 9);
+    cam.theta += (cam.base + sway - cam.theta) * k;
+    cam.phi += (cam.tPhi - cam.phi) * k;
+    cam.zoom += (cam.tZoom - cam.zoom) * Math.min(1, dt * 8);
+    const r = fitRadius() * cam.zoom;
+    camera.position.set(r * Math.sin(cam.phi) * Math.sin(cam.theta), r * Math.cos(cam.phi), r * Math.sin(cam.phi) * Math.cos(cam.theta));
+    camera.lookAt(0, -1, 0);
+}
+
+const pointers = new Map();
+function pinchDist() {
+    const p = Array.from(pointers.values());
+    return Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
+}
+canvas.addEventListener('pointerdown', e => {
+    try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
+    pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    dragging = true;
+});
+canvas.addEventListener('pointermove', e => {
+    const p = pointers.get(e.pointerId);
+    if (!p) return;
+    const dx = e.clientX - p.x, dy = e.clientY - p.y;
+    const oldDist = pointers.size === 2 ? pinchDist() : 0;
+    p.x = e.clientX; p.y = e.clientY;
+    if (pointers.size === 1) {
+        cam.base -= dx * 0.008;
+        cam.tPhi = clamp(cam.tPhi - dy * 0.006, 0.3, 1.75);
+    } else if (pointers.size === 2 && oldDist > 0) {
+        cam.tZoom = clamp(cam.tZoom * oldDist / pinchDist(), 0.35, 1.6);
+    }
+});
+function endPointer(e) { pointers.delete(e.pointerId); dragging = pointers.size > 0; }
+canvas.addEventListener('pointerup', endPointer);
+canvas.addEventListener('pointercancel', endPointer);
+canvas.addEventListener('wheel', e => {
+    e.preventDefault();
+    cam.tZoom = clamp(cam.tZoom * Math.exp(e.deltaY * 0.001), 0.35, 1.6);
+}, { passive: false });
+
+function resize() {
+    const w = viewport.clientWidth, h = viewport.clientHeight;
+    if (!w || !h) return;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+}
+if (window.ResizeObserver) new ResizeObserver(resize).observe(viewport);
+window.addEventListener('resize', resize);
+
+/* =====================================================================
+   3D: ПОМОЩНИКИ ДЛЯ ПОСТРОЕНИЯ ДЕТАЛЕЙ
+   ===================================================================== */
+let CTX = null; // собирает RGB-материалы и вращающиеся вентиляторы текущей детали
+
+function mat(color, o) {
+    return new T.MeshStandardMaterial(Object.assign({ color: color, metalness: 0.3, roughness: 0.55 }, o || {}));
+}
+function box(w, h, d, color, o) {
+    const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat(color, o));
+    m.castShadow = true; m.receiveShadow = true;
+    return m;
+}
+function cyl(r, h, color, o, seg) {          // цилиндр, ось вдоль Z
+    const m = new T.Mesh(new T.CylinderGeometry(r, r, h, seg || 32), mat(color, o));
+    m.rotation.x = Math.PI / 2;
+    m.castShadow = true; m.receiveShadow = true;
+    return m;
+}
+function at(obj, x, y, z) { obj.position.set(x, y, z); return obj; }
+
+function rgbMat() {
+    const m = new T.MeshStandardMaterial({ color: '#1a1a1f', emissive: new T.Color(0x000000), emissiveIntensity: 1.4, roughness: 0.4 });
+    m.userData.off = (CTX.rgb.length * 0.11) % 1;
+    CTX.rgb.push(m);
+    return m;
+}
+
+function labelPlane(text, w, h, fg, bg) {
+    const c = document.createElement('canvas');
+    c.width = 512; c.height = Math.max(32, Math.round(512 * h / w));
+    const x = c.getContext('2d');
+    if (bg) { x.fillStyle = bg; x.fillRect(0, 0, c.width, c.height); }
+    let fs = c.height * 0.62;
+    x.font = 'bold ' + fs + 'px "Segoe UI", Arial, sans-serif';
+    while (x.measureText(text).width > c.width * 0.9 && fs > 10) { fs -= 4; x.font = 'bold ' + fs + 'px "Segoe UI", Arial, sans-serif'; }
+    x.fillStyle = fg; x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.fillText(text, c.width / 2, c.height / 2 + 2);
+    const tex = new T.CanvasTexture(c);
+    const m = new T.Mesh(new T.PlaneGeometry(w, h),
+        new T.MeshBasicMaterial({ map: tex, transparent: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
+    return m;
+}
+
+function tube(pts, r, color) {
+    const curve = new T.CatmullRomCurve3(pts.map(p => new T.Vector3(p[0], p[1], p[2])));
+    const m = new T.Mesh(new T.TubeGeometry(curve, 48, r, 8, false), mat(color, { roughness: 0.8, metalness: 0.1 }));
+    m.castShadow = true;
+    return m;
+}
+
+// Вентилятор: смотрит вдоль +Z, толщина th, центр в начале координат
+function fan(size, th) {
+    th = th || 2.5;
+    const g = new T.Group(), fc = '#16141f', b = 0.5;
+    g.add(at(box(size, b, th, fc), 0, size / 2 - b / 2, 0));
+    g.add(at(box(size, b, th, fc), 0, -(size / 2 - b / 2), 0));
+    g.add(at(box(b, size - 2 * b, th, fc), size / 2 - b / 2, 0, 0));
+    g.add(at(box(b, size - 2 * b, th, fc), -(size / 2 - b / 2), 0, 0));
+    g.add(cyl(size * 0.17, th * 0.9, '#0c0b12'));
+    const blades = new T.Group();
+    for (let i = 0; i < 7; i++) {
+        const arm = new T.Group();
+        arm.rotation.z = i / 7 * Math.PI * 2;
+        const bl = box(size * 0.33, size * 0.15, 0.12, '#25222f');
+        bl.position.x = size * 0.27;
+        bl.rotation.x = 0.55;
+        arm.add(bl);
+        blades.add(arm);
+    }
+    g.add(blades);
+    CTX.spin.push({ o: blades, sp: 7 });
+    const ring = new T.Mesh(new T.TorusGeometry(size * 0.455, 0.1, 8, 48), rgbMat());
+    ring.position.z = th / 2 - 0.2;
+    g.add(ring);
+    return g;
+}
+
+/* =====================================================================
+   3D: РАСКЛАДКА ВНУТРИ КОРПУСА
+   Система координат: начало — задний нижний угол у задней стенки (материнская
+   «тарелка» в плоскости z=0), X — от задней стенки к передней, Y — вверх,
+   Z — в сторону открытой боковины (на зрителя).
+   ===================================================================== */
+function layoutNow() {
+    const c = state.case, mb = state.mb;
+    if (!c || !mb) return null;
+    const f = FORMS[mb.form], itx = mb.form === 'ITX';
+    const bx = 3.2, top = c.dims.y - 3, zb = 1.0, zs = zb + 0.09, cpuV = f.h * 0.30;
+    return {
+        c: c, mb: mb, D: c.dims, bx: bx, top: top, bw: f.w, bh: f.h, zb: zb, zs: zs, itx: itx,
+        cpu: { x: bx + f.w * (itx ? 0.45 : 0.40), y: top - cpuV },
+        ram: { x: bx + f.w * (itx ? 0.72 : 0.62), y: top - Math.max(cpuV, 7.2), n: itx ? 2 : 4 },
+        gpuY: top - f.h * (itx ? 0.90 : 0.57),
+        m2: { x: bx + f.w * (itx ? 0.45 : 0.40), y: top - (cpuV + 4.0) }
+    };
+}
+function gpuGeom(L, gpu) {
+    const x0 = L.bx + 0.4, y1 = L.gpuY + 0.3, y0 = y1 - gpu.thick, z0 = L.zs + 0.9;
+    return { x0: x0, x1: x0 + gpu.len, y0: y0, y1: y1, z0: z0, z1: z0 + 11.5 };
+}
+const PSU_BOX = { x0: 0.5, x1: 14.5, y0: 0.5, y1: 9.1, z0: 1.5, z1: 16.5 };
+
+/* =====================================================================
+   3D: СБОРЩИКИ ДЕТАЛЕЙ
+   ===================================================================== */
+const BUILDERS = {
+    case() {
+        const c = state.case, D = c.dims, g = new T.Group();
+        const body = c.color, fr = c.frame, mo = { metalness: 0.5, roughness: 0.55 };
+        g.add(at(box(D.x, D.y, 0.4, body, mo), D.x / 2, D.y / 2, -0.2));        // тыльная панель (tray)
+        g.add(at(box(D.x, 0.4, D.z, body, mo), D.x / 2, -0.2, D.z / 2));        // дно
+        g.add(at(box(0.4, D.y, D.z, body, mo), -0.2, D.y / 2, D.z / 2));        // задняя стенка
+        g.add(at(box(0.4, D.y, D.z, body, mo), D.x + 0.2, D.y / 2, D.z / 2));   // передняя панель
+        const bar = (w, h, d, x, y, z) => g.add(at(box(w, h, d, fr, { metalness: 0.6, roughness: 0.4 }), x, y, z));
+        bar(D.x, 0.6, 0.6, D.x / 2, D.y, 0.3);        bar(D.x, 0.6, 0.6, D.x / 2, D.y, D.z - 0.3);
+        bar(0.6, 0.6, D.z, 0.3, D.y, D.z / 2);        bar(0.6, 0.6, D.z, D.x - 0.3, D.y, D.z / 2);
+        bar(D.x, 0.6, 0.6, D.x / 2, 0.3, D.z - 0.3);
+        bar(0.6, D.y, 0.6, 0.3, D.y / 2, D.z - 0.3);  bar(0.6, D.y, 0.6, D.x - 0.3, D.y / 2, D.z - 0.3);
+        c.fronts.forEach(y => {                         // фронтальные вентиляторы
+            const f = fan(12); f.rotation.y = Math.PI / 2; at(f, D.x - 1.8, y, D.z / 2); g.add(f);
+        });
+        const rf = fan(12); rf.rotation.y = Math.PI / 2; at(rf, 1.8, D.y - 9.5, 8); g.add(rf);   // задний вентилятор
+        const glass = new T.Mesh(new T.BoxGeometry(D.x, D.y, 0.2),
+            mat('#9bb8ff', { transparent: true, opacity: 0.14, roughness: 0.05, metalness: 0.2, depthWrite: false }));
+        at(glass, D.x / 2, D.y / 2, D.z + 0.1);
+        glass.visible = glassOn;
+        g.userData.glass = glass;
+        g.add(glass);
+        return g;
+    },
+
+    mb() {
+        const L = layoutNow(), mb = state.mb, g = new T.Group();
+        const amd = mb.vendor === 'amd';
+        const pcb = amd ? '#1c1117' : '#0e1a2c', acc = amd ? '#ef4444' : '#38bdf8', hs = '#2b303c';
+        const metal = { metalness: 0.7, roughness: 0.4 };
+        g.add(at(box(L.bw, L.bh, 0.18, pcb, { metalness: 0.2, roughness: 0.7 }), L.bx + L.bw / 2, L.top - L.bh / 2, L.zb));
+        // кожух портов ввода-вывода
+        g.add(at(box(4.2, L.bh * 0.5, 2.6, '#1c1d26'), L.bx + 2.1, L.top - L.bh * 0.25, L.zs + 1.3));
+        g.add(at(box(4.25, 0.25, 2.65, acc, { emissive: acc, emissiveIntensity: 0.5 }), L.bx + 2.1, L.top - L.bh * 0.5, L.zs + 1.3));
+        const ioLabel = labelPlane(mb.chip, 3.4, 1.2, '#e9d5ff');
+        g.add(at(ioLabel, L.bx + 2.1, L.top - L.bh * 0.2, L.zs + 2.62));
+        // радиаторы VRM
+        g.add(at(box(L.bw * 0.34, 2.2, 2.0, hs, metal), L.bx + L.bw * 0.38, L.top - 1.3, L.zs + 1.0));
+        if (!L.itx) g.add(at(box(1.8, L.bh * 0.3, 2.0, hs, metal), L.cpu.x - 3.9, L.cpu.y, L.zs + 1.0));
+        // сокет
+        g.add(at(box(5.2, 5.2, 0.3, '#8b909b', { metalness: 0.8, roughness: 0.35 }), L.cpu.x, L.cpu.y, L.zs + 0.15));
+        // слоты ОЗУ
+        for (let i = 0; i < L.ram.n; i++) g.add(at(box(0.7, 13.5, 1.1, '#17151d'), L.ram.x + i * 0.85, L.ram.y, L.zs + 0.55));
+        // слоты PCIe
+        g.add(at(box(8.9, 0.8, 1.1, '#17151d'), L.bx + 5.4, L.gpuY, L.zs + 0.55));
+        if (!L.itx) g.add(at(box(4.5, 0.8, 1.1, '#17151d'), L.bx + 3.4, L.top - L.bh * 0.80, L.zs + 0.55));
+        // чипсет
+        if (!L.itx) {
+            g.add(at(box(4.2, 4.2, 1.0, hs, metal), L.bx + L.bw * 0.70, L.top - L.bh * 0.84, L.zs + 0.5));
+            g.add(at(labelPlane(mb.chip, 3.4, 1.2, '#e9d5ff'), L.bx + L.bw * 0.70, L.top - L.bh * 0.84, L.zs + 1.02));
+        }
+        // разъём 24-pin
+        g.add(at(box(1.2, 5.0, 1.6, '#e8e8ee'), L.bx + L.bw - 0.9, L.top - L.bh * 0.55, L.zs + 0.8));
+        return g;
+    },
+
+    cpu() {
+        const L = layoutNow(), cpu = state.cpu, g = new T.Group();
+        g.add(at(box(3.9, 3.9, 0.35, '#c8ccd4', { metalness: 0.85, roughness: 0.3 }), L.cpu.x, L.cpu.y, L.zs + 0.47));
+        g.add(at(labelPlane(cpu.short, 3.4, 1.3, '#1a1a22'), L.cpu.x, L.cpu.y, L.zs + 0.66));
+        return g;
+    },
+
+    cooler() {
+        const L = layoutNow(), cl = state.cooler, g = new T.Group();
+        const zc = L.zs + 0.7, p = L.cpu;
+        if (cl.type === 'low') {
+            g.add(at(box(9, 9, 0.6, '#4a4f5a', { metalness: 0.6 }), p.x, p.y, zc + 0.3));
+            g.add(at(cyl(4.3, 2.7, '#9aa1ad', { metalness: 0.7, roughness: 0.4 }), p.x, p.y, zc + 0.6 + 1.35));
+            const f = fan(8.6, 1.4); at(f, p.x, p.y, zc + 3.3 + 0.7); g.add(f);
+        } else if (cl.type === 'tower') {
+            const h = 15.5;
+            g.add(at(box(4.2, 4.2, 0.8, '#b87333', { metalness: 0.9, roughness: 0.3 }), p.x, p.y, zc + 0.4));
+            for (let i = 0; i < 9; i++) g.add(at(box(0.12, 12, h - 1, '#9aa1ad', { metalness: 0.75, roughness: 0.4 }), p.x - 3.4 + i * 0.5, p.y, zc + 1 + (h - 1) / 2));
+            g.add(at(box(5.2, 12.2, 0.3, '#1b1b24'), p.x - 1.0, p.y, zc + h - 0.15));
+            const f = fan(12); f.rotation.y = Math.PI / 2; at(f, p.x + 2.75, p.y, zc + 1 + 6); g.add(f);
+        } else { // СЖО
+            const D = L.D, ry = D.y - 2.85, rz = 12;
+            g.add(at(cyl(3.7, 5.0, '#15121f', { metalness: 0.6, roughness: 0.35 }), p.x, p.y, zc + 2.5));
+            const ring = new T.Mesh(new T.TorusGeometry(2.7, 0.14, 8, 40), rgbMat());
+            at(ring, p.x, p.y, zc + 5.05); g.add(ring);
+            g.add(at(box(27.5, 2.7, 12, '#20202a', { metalness: 0.5, roughness: 0.5 }), 20, ry, rz));
+            [13.8, 26.2].forEach(x => {
+                const f = fan(12); f.rotation.x = Math.PI / 2; at(f, x, ry - 1.35 - 1.25, rz); g.add(f);
+            });
+            const midY = Math.min(p.y + 5, ry - 2);
+            g.add(tube([[p.x - 1.6, p.y + 3.6, zc + 2.5], [p.x - 3, midY, zc + 4], [9, ry - 2.5, zc + 5], [6.5, ry, 8.8]], 0.45, '#0d0d12'));
+            g.add(tube([[p.x + 1.6, p.y + 3.6, zc + 2.5], [p.x, midY, zc + 6], [9.5, ry - 3, zc + 8], [6.5, ry, 15.2]], 0.45, '#0d0d12'));
+        }
+        return g;
+    },
+
+    ram() {
+        const L = layoutNow(), r = state.ram, g = new T.Group();
+        const idx = L.ram.n === 4 ? [1, 3] : [0, 1];
+        const col = r.type === 'DDR5' ? '#e8e9ef' : '#33384a';
+        idx.forEach(i => {
+            const x = L.ram.x + i * 0.85;
+            g.add(at(box(0.8, 13.3, 3.9, col, { metalness: 0.5, roughness: 0.4 }), x, L.ram.y, L.zs + 0.5 + 1.95));
+            const strip = new T.Mesh(new T.BoxGeometry(0.55, 12.2, 0.14), rgbMat());
+            g.add(at(strip, x, L.ram.y, L.zs + 0.5 + 3.9 + 0.05));
+        });
+        return g;
+    },
+
+    gpu() {
+        const L = layoutNow(), gpu = state.gpu, g = new T.Group();
+        const G = gpuGeom(L, gpu), len = gpu.len, th = gpu.thick, H = G.z1 - G.z0;
+        const nv = gpu.brand === 'nvidia', brandCol = nv ? '#76b900' : '#ef4444';
+        g.add(at(box(len, th, H, '#1b1b24', { metalness: 0.5, roughness: 0.45 }), G.x0 + len / 2, (G.y0 + G.y1) / 2, G.z0 + H / 2));
+        g.add(at(box(0.3, th + 0.5, H + 0.5, '#b8bcc6', { metalness: 0.8, roughness: 0.3 }), G.x0 - 0.15, (G.y0 + G.y1) / 2, G.z0 + H / 2));
+        const strip = new T.Mesh(new T.BoxGeometry(len * 0.92, 0.3, 0.1), rgbMat());
+        g.add(at(strip, G.x0 + len / 2, G.y1 - th * 0.18, G.z1 + 0.05));
+        g.add(at(labelPlane(gpu.short, len * 0.5, th * 0.5, brandCol), G.x0 + len * 0.45, (G.y0 + G.y1) / 2 - th * 0.08, G.z1 + 0.03));
+        const fs = Math.min(9.6, (len - 2) / gpu.fans);
+        for (let i = 0; i < gpu.fans; i++) {
+            const f = fan(fs - 0.3, 1.2); f.rotation.x = Math.PI / 2;
+            at(f, G.x0 + 1 + fs * (i + 0.5), G.y0 + 0.05, G.z0 + H / 2); g.add(f);
+        }
+        return g;
+    },
+
+    ssd() {
+        const L = layoutNow(), s = state.ssd, g = new T.Group();
+        const x = L.m2.x, y = L.m2.y, z = L.zs + 0.4;
+        g.add(at(box(8.0, 2.2, 0.25, '#1b3a2a', { metalness: 0.2, roughness: 0.7 }), x, y, z));
+        if (s.gen >= 4) {
+            g.add(at(box(7.2, 2.3, 0.45, '#4b5563', { metalness: 0.85, roughness: 0.3 }), x, y, z + 0.35));
+            g.add(at(box(7.2, 0.18, 0.1, '#06b6d4', { emissive: '#06b6d4', emissiveIntensity: 0.6 }), x, y + 0.5, z + 0.62));
+        } else {
+            g.add(at(box(6.6, 2.0, 0.12, '#cbd0d8', { metalness: 0.4 }), x, y, z + 0.2));
+        }
+        g.add(at(labelPlane(s.cap, 3.4, 0.9, s.gen >= 4 ? '#e5e7eb' : '#1a1a22'), x, y - 0.1, z + (s.gen >= 4 ? 0.6 : 0.28)));
+        return g;
+    },
+
+    psu() {
+        const L = layoutNow(), p = state.psu, g = new T.Group(), B = PSU_BOX;
+        const cx = (B.x0 + B.x1) / 2, cy = (B.y0 + B.y1) / 2, cz = (B.z0 + B.z1) / 2;
+        g.add(at(box(B.x1 - B.x0, B.y1 - B.y0, B.z1 - B.z0, '#1c1c24', { metalness: 0.4, roughness: 0.6 }), cx, cy, cz));
+        g.add(at(box(B.x1 - B.x0, 0.35, B.z1 - B.z0 + 0.05, '#facc15', { emissive: '#facc15', emissiveIntensity: 0.25 }), cx, B.y1 - 0.6, cz));
+        g.add(at(labelPlane(p.watt + ' W', 8, 3.0, '#e9d5ff'), cx, cy - 0.4, B.z1 + 0.03));
+        if (L) { // кабели питания
+            const cable = (pts) => g.add(tube(pts, 0.42, '#0b0b10'));
+            const yc = L.top - L.bh * 0.55, xr = L.bx + L.bw;
+            cable([[B.x1 + 0.1, 4.5, 8], [xr + 0.6, 5, 7.5], [xr + 0.9, yc - 5, 5.5], [xr - 0.9, yc - 2.6, L.zs + 1.4]]);
+            cable([[B.x1 + 0.1, 7.2, 12], [2.2, 12, 14.5], [2.2, L.top - 3, 14.5], [L.bx + 5.0, L.top - 1.0, L.zs + 2.4]]);
+            if (state.gpu) {
+                const G = gpuGeom(L, state.gpu), gy = (G.y0 + G.y1) / 2;
+                cable([[B.x1 + 0.1, 3.6, 11], [(B.x1 + G.x1) / 2, 3.4, G.z1 + 0.8], [G.x1 - 1.4, (3.4 + gy) / 2, G.z1 + 1.0], [G.x1 - 3, gy, G.z1 + 0.2]]);
+            }
+        }
+        return g;
+    }
+};
+
+// От чего зависит деталь: req — обязательные, opt — влияют на геометрию (кабели)
+const PARTSPEC = {
+    case:   { req: ['case'] },
+    mb:     { req: ['case', 'mb'] },
+    cpu:    { req: ['case', 'mb', 'cpu'] },
+    cooler: { req: ['case', 'mb', 'cpu', 'cooler'] },
+    ram:    { req: ['case', 'mb', 'ram'] },
+    gpu:    { req: ['case', 'mb', 'gpu'] },
+    ssd:    { req: ['case', 'mb', 'ssd'] },
+    psu:    { req: ['case', 'psu'], opt: ['mb', 'gpu'] }
+};
+const OFFS = {
+    case:   new T.Vector3(0, 16, 0),  mb:  new T.Vector3(0, 0, 18),  cpu:  new T.Vector3(0, 0, 16),
+    cooler: new T.Vector3(0, 0, 20),  ram: new T.Vector3(0, 12, 10), gpu:  new T.Vector3(14, 0, 8),
+    ssd:    new T.Vector3(0, 0, 12),  psu: new T.Vector3(-16, 0, 0)
+};
+
+/* =====================================================================
+   3D: УПРАВЛЕНИЕ ДЕТАЛЯМИ В СЦЕНЕ (появление, удаление, синхронизация)
+   ===================================================================== */
+const parts = {};   // key -> { key, group }
+
+function buildPart(key) {
+    CTX = { rgb: [], spin: [] };
+    const g = BUILDERS[key]();
+    g.userData.rgb = CTX.rgb;
+    g.userData.spin = CTX.spin;
+    CTX = null;
+    return g;
+}
+function eachMat(obj, fn) {
+    obj.traverse(o => {
+        if (!o.material) return;
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach(fn);
+    });
+}
+function disposePart(g) {
+    rig.remove(g);
+    g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+    eachMat(g, m => { if (m.map) m.map.dispose(); m.dispose(); });
+}
+function startAnim(g, off, delay) {
+    g.userData.anim = { t0: performance.now() + delay, off: off, dur: reduceMotion ? 1 : 750 };
+    g.position.copy(off);
+    eachMat(g, m => {
+        if (m.userData.o === undefined) { m.userData.o = m.opacity; m.userData.tr = m.transparent; }
+        m.transparent = true; m.opacity = 0;
+    });
+}
+function stepAnims(now) {
+    for (const key in parts) {
+        const g = parts[key].group, a = g.userData.anim;
+        if (!a) continue;
+        const t = clamp((now - a.t0) / a.dur, 0, 1), e = 1 - Math.pow(1 - t, 3);
+        g.position.set(a.off.x * (1 - e), a.off.y * (1 - e), a.off.z * (1 - e));
+        eachMat(g, m => { m.opacity = m.userData.o * e; });
+        if (t >= 1) {
+            eachMat(g, m => { m.opacity = m.userData.o; m.transparent = m.userData.tr; });
+            g.position.set(0, 0, 0);
+            delete g.userData.anim;
+        }
+    }
+}
+function wantKey(key) {
+    const sp = PARTSPEC[key];
+    if (!sp.req.every(k => state[k])) return null;
+    return sp.req.concat(sp.opt || []).map(k => state[k] ? state[k].id : '-').join('|');
+}
+function sync() {
+    let delay = 0;
+    STEPS.forEach(step => {
+        const key = step.key, want = wantKey(key), have = parts[key];
+        if (have && have.key === want) return;
+        if (have) { disposePart(have.group); delete parts[key]; }
+        if (want) {
+            const g = buildPart(key);
+            rig.add(g);
+            parts[key] = { key: want, group: g };
+            startAnim(g, OFFS[key], delay);
+            delay += 130;
+        }
+    });
+    const D = caseDims();
+    rig.position.set(-D.x / 2, -D.y / 2, -D.z / 2);
+    floor.position.y = -D.y / 2 - 0.5;
+    applyGlass();
+    $('emptyHint').hidden = !!state.case;
+}
+function applyGlass() {
+    if (parts.case && parts.case.group.userData.glass) parts.case.group.userData.glass.visible = glassOn;
+}
+
+/* =====================================================================
+   ЦИКЛ ОТРИСОВКИ
+   ===================================================================== */
+let lastT = performance.now();
+function frame(now) {
+    const dt = Math.min(0.05, (now - lastT) / 1000);
+    lastT = now;
+    stepAnims(now);
+    for (const key in parts) {
+        const ud = parts[key].group.userData;
+        ud.spin.forEach(s => { s.o.rotation.z += dt * s.sp; });
+        ud.rgb.forEach(m => {
+            if (rgbOn) m.emissive.setHSL((now * 0.0001 + m.userData.off) % 1, 1, 0.5);
+            else m.emissive.setRGB(0, 0, 0);
+        });
+    }
+    updateCamera(dt);
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+}
+
+/* =====================================================================
+   ИНТЕРФЕЙС
+   ===================================================================== */
+const stepperEl = $('stepper'), headEl = $('stepHead'), optionsEl = $('options'), bannerEl = $('banner');
+let advanceTimer = null;
+
+function stepHint(key) {
+    switch (key) {
+        case 'case': return 'К... (залишилося: 9 КБ)
