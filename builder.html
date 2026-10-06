@@ -82,6 +82,14 @@
         .opt-note { font-size: 12px; margin-top: 6px; }
         .opt-note.bad { color: var(--bad); } .opt-note.warn { color: var(--warn); } .opt-note.ok { color: var(--ok); }
 
+        .filters { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+        .filters input[type="search"] { flex: 1 1 150px; min-width: 0; padding: 9px 12px; background: var(--card); color: var(--text);
+            border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
+        .filters input[type="search"]:focus { border-color: var(--accent); }
+        .only-ok { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; white-space: nowrap; }
+        .only-ok input { accent-color: var(--accent); }
+        .opt-count { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+        .empty-opts { padding: 18px 12px; text-align: center; color: var(--muted); font-size: 13px; }
         .banner { padding: 12px 14px; border: 1px solid var(--ok); border-radius: 10px; margin-bottom: 12px;
             background: rgba(34,197,94,.08); font-size: 13px; line-height: 1.45; }
         .banner b { color: var(--ok); }
@@ -178,6 +186,11 @@
             <div class="stepper" id="stepper"></div>
             <div class="step-head" id="stepHead"></div>
             <div id="banner"></div>
+            <div class="filters">
+                <input type="search" id="optSearch" placeholder="Поиск по названию…" aria-label="Поиск по названию" autocomplete="off">
+                <label class="only-ok"><input type="checkbox" id="onlyOk" checked> Только совместимые</label>
+            </div>
+            <div class="opt-count" id="optCount"></div>
             <div class="options" id="options"></div>
             <details class="build" id="buildBox">
                 <summary>Состав сборки</summary>
@@ -258,68 +271,179 @@ const STEPS = [
     { key: 'psu',    title: 'Блок питания',        icon: '🔌' }
 ];
 
+const mk = (keys, rows) => rows.map(r => { const o = {}; keys.forEach((k, i) => { o[k] = r[i]; }); return o; });
+
 const DATA = {
+    // radMax — максимальный радиатор СЖО (0 = нельзя), thickMax — макс. толщина видеокарты, cpuTdpMax — предел по охлаждению CPU
     case: [
-        { id: 'aurora', name: 'Aurora ATX Midi-Tower', price: 8990, dims: { x: 46, y: 45, z: 21 }, forms: ['ATX', 'mATX', 'ITX'],
-          gpuMax: 38, coolerMax: 17, aio: true, color: '#1a1626', frame: '#3b2a63', fronts: [13, 26, 39] },
-        { id: 'nova', name: 'Nova mATX Compact', price: 6490, dims: { x: 40, y: 38, z: 19 }, forms: ['mATX', 'ITX'],
-          gpuMax: 33, coolerMax: 16, aio: true, color: '#d8d5e6', frame: '#9b97b3', fronts: [12, 26] },
-        { id: 'pico', name: 'Pico Mini-ITX', price: 11990, dims: { x: 36, y: 34, z: 17 }, forms: ['ITX'],
-          gpuMax: 28, coolerMax: 7, aio: false, color: '#2b3340', frame: '#5b6b86', fronts: [15] }
+        { id: 'aurora',  name: 'Aurora ATX Midi-Tower',     price: 8990,  dims: { x: 46, y: 45, z: 21 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 38,   thickMax: 8,   coolerMax: 17, radMax: 280, color: '#1a1626', frame: '#3b2a63', fronts: [13, 26, 39] },
+        { id: 'crystal', name: 'Crystal ATX White',         price: 10990, dims: { x: 44, y: 43, z: 21 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 36,   thickMax: 7.5, coolerMax: 17, radMax: 280, color: '#e9e7f2', frame: '#a9a4c4', fronts: [13, 25, 37] },
+        { id: 'forge',   name: 'Forge Full-Tower',          price: 17990, dims: { x: 52, y: 52, z: 23 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 44,   thickMax: 9,   coolerMax: 18, radMax: 360, color: '#14111d', frame: '#7c3aed', fronts: [14, 27, 40] },
+        { id: 'nova',    name: 'Nova mATX Compact',         price: 6490,  dims: { x: 40, y: 38, z: 19 }, forms: ['mATX', 'ITX'],        gpuMax: 32.5, thickMax: 7,   coolerMax: 16, radMax: 240, color: '#d8d5e6', frame: '#9b97b3', fronts: [12, 26] },
+        { id: 'mesh',    name: 'Vent mATX Mesh',            price: 5490,  dims: { x: 39, y: 38, z: 19.5 }, forms: ['mATX', 'ITX'],      gpuMax: 31.5, thickMax: 6.5, coolerMax: 16, radMax: 240, color: '#22303a', frame: '#3b82a0', fronts: [12, 26] },
+        { id: 'pico',    name: 'Pico Mini-ITX',             price: 11990, dims: { x: 36, y: 34, z: 17 }, forms: ['ITX'],                gpuMax: 28,   thickMax: 6,   coolerMax: 7,  radMax: 0,   cpuTdpMax: 125, color: '#2b3340', frame: '#5b6b86', fronts: [15] },
+        { id: 'cube',    name: 'Cube ITX Slim',             price: 9490,  dims: { x: 34, y: 34, z: 17 }, forms: ['ITX'],                gpuMax: 26.5, thickMax: 5.5, coolerMax: 7,  radMax: 0,   cpuTdpMax: 125, color: '#d9cbb4', frame: '#a08b6b', fronts: [15] }
     ],
-    mb: [
-        { id: 'h610m', name: 'Intel H610 mATX',  chip: 'H610', vendor: 'intel', socket: 'LGA1700', form: 'mATX', mem: 'DDR4', price: 6990 },
-        { id: 'b760',  name: 'Intel B760 ATX',   chip: 'B760', vendor: 'intel', socket: 'LGA1700', form: 'ATX',  mem: 'DDR4', price: 12990 },
-        { id: 'z790',  name: 'Intel Z790 ATX',   chip: 'Z790', vendor: 'intel', socket: 'LGA1700', form: 'ATX',  mem: 'DDR5', price: 24990 },
-        { id: 'b760i', name: 'Intel B760 Mini-ITX', chip: 'B760', vendor: 'intel', socket: 'LGA1700', form: 'ITX', mem: 'DDR5', price: 17990 },
-        { id: 'b650m', name: 'AMD B650M mATX',   chip: 'B650', vendor: 'amd', socket: 'AM5', form: 'mATX', mem: 'DDR5', price: 11990 },
-        { id: 'b650',  name: 'AMD B650 ATX',     chip: 'B650', vendor: 'amd', socket: 'AM5', form: 'ATX',  mem: 'DDR5', price: 16990 },
-        { id: 'b650i', name: 'AMD B650 Mini-ITX', chip: 'B650', vendor: 'amd', socket: 'AM5', form: 'ITX', mem: 'DDR5', price: 19990 }
-    ],
-    cpu: [
-        { id: 'i5-12400f', name: 'Intel Core i5-12400F',  short: 'i5-12400F', brand: 'intel', socket: 'LGA1700', cores: 6,  threads: 12, tdp: 65,  price: 11990 },
-        { id: 'i7-14700k', name: 'Intel Core i7-14700K',  short: 'i7-14700K', brand: 'intel', socket: 'LGA1700', cores: 20, threads: 28, tdp: 125, price: 38990 },
-        { id: 'r5-7600',   name: 'AMD Ryzen 5 7600',      short: 'R5 7600',   brand: 'amd',   socket: 'AM5',     cores: 6,  threads: 12, tdp: 65,  price: 17990 },
-        { id: 'r7-7800x3d',name: 'AMD Ryzen 7 7800X3D',   short: 'R7 7800X3D',brand: 'amd',   socket: 'AM5',     cores: 8,  threads: 16, tdp: 120, price: 36990 }
-    ],
+    mb: mk(['id', 'name', 'chip', 'vendor', 'socket', 'form', 'mem', 'price'], [
+        // LGA1700
+        ['h610m',    'Intel H610M mATX (DDR4)',      'H610', 'intel', 'LGA1700', 'mATX', 'DDR4', 6990],
+        ['b760m-d4', 'Intel B760M mATX (DDR4)',      'B760', 'intel', 'LGA1700', 'mATX', 'DDR4', 9990],
+        ['b760m-d5', 'Intel B760M mATX (DDR5)',      'B760', 'intel', 'LGA1700', 'mATX', 'DDR5', 11990],
+        ['b760',     'Intel B760 ATX (DDR4)',        'B760', 'intel', 'LGA1700', 'ATX',  'DDR4', 12990],
+        ['b760-d5',  'Intel B760 ATX (DDR5)',        'B760', 'intel', 'LGA1700', 'ATX',  'DDR5', 15990],
+        ['z790-d4',  'Intel Z790 ATX (DDR4)',        'Z790', 'intel', 'LGA1700', 'ATX',  'DDR4', 20990],
+        ['z790',     'Intel Z790 ATX (DDR5)',        'Z790', 'intel', 'LGA1700', 'ATX',  'DDR5', 24990],
+        ['b760i',    'Intel B760 Mini-ITX (DDR5)',   'B760', 'intel', 'LGA1700', 'ITX',  'DDR5', 17990],
+        ['z790i',    'Intel Z790 Mini-ITX (DDR5)',   'Z790', 'intel', 'LGA1700', 'ITX',  'DDR5', 27990],
+        // LGA1851
+        ['b860m',    'Intel B860M mATX',             'B860', 'intel', 'LGA1851', 'mATX', 'DDR5', 15990],
+        ['b860',     'Intel B860 ATX',               'B860', 'intel', 'LGA1851', 'ATX',  'DDR5', 19990],
+        ['z890',     'Intel Z890 ATX',               'Z890', 'intel', 'LGA1851', 'ATX',  'DDR5', 34990],
+        ['z890i',    'Intel Z890 Mini-ITX',          'Z890', 'intel', 'LGA1851', 'ITX',  'DDR5', 36990],
+        // AM5
+        ['a620m',    'AMD A620M mATX',               'A620', 'amd', 'AM5', 'mATX', 'DDR5', 7990],
+        ['b650m',    'AMD B650M mATX',               'B650', 'amd', 'AM5', 'mATX', 'DDR5', 11990],
+        ['b650',     'AMD B650 ATX',                 'B650', 'amd', 'AM5', 'ATX',  'DDR5', 16990],
+        ['b850',     'AMD B850 ATX',                 'B850', 'amd', 'AM5', 'ATX',  'DDR5', 19990],
+        ['x670e',    'AMD X670E ATX',                'X670E','amd', 'AM5', 'ATX',  'DDR5', 31990],
+        ['x870e',    'AMD X870E ATX',                'X870E','amd', 'AM5', 'ATX',  'DDR5', 39990],
+        ['b650i',    'AMD B650 Mini-ITX',            'B650', 'amd', 'AM5', 'ITX',  'DDR5', 19990],
+        // AM4
+        ['a520m',    'AMD A520M mATX (DDR4)',        'A520', 'amd', 'AM4', 'mATX', 'DDR4', 4990],
+        ['b550m',    'AMD B550M mATX (DDR4)',        'B550', 'amd', 'AM4', 'mATX', 'DDR4', 7990],
+        ['b550',     'AMD B550 ATX (DDR4)',          'B550', 'amd', 'AM4', 'ATX',  'DDR4', 10990],
+        ['x570',     'AMD X570 ATX (DDR4)',          'X570', 'amd', 'AM4', 'ATX',  'DDR4', 17990],
+        ['b550i',    'AMD B550 Mini-ITX (DDR4)',     'B550', 'amd', 'AM4', 'ITX',  'DDR4', 12990]
+    ]),
+    cpu: mk(['id', 'name', 'short', 'brand', 'socket', 'cores', 'threads', 'tdp', 'price'], [
+        // Intel LGA1700
+        ['i3-12100f', 'Intel Core i3-12100F', 'i3-12100F', 'intel', 'LGA1700', 4, 8, 58, 7990],
+        ['i5-12400f', 'Intel Core i5-12400F', 'i5-12400F', 'intel', 'LGA1700', 6, 12, 65, 11990],
+        ['i5-13400f', 'Intel Core i5-13400F', 'i5-13400F', 'intel', 'LGA1700', 10, 16, 65, 15990],
+        ['i5-13600k', 'Intel Core i5-13600K', 'i5-13600K', 'intel', 'LGA1700', 14, 20, 125, 26990],
+        ['i7-13700k', 'Intel Core i7-13700K', 'i7-13700K', 'intel', 'LGA1700', 16, 24, 125, 33990],
+        ['i7-14700k', 'Intel Core i7-14700K', 'i7-14700K', 'intel', 'LGA1700', 20, 28, 125, 38990],
+        ['i9-14900k', 'Intel Core i9-14900K', 'i9-14900K', 'intel', 'LGA1700', 24, 32, 125, 52990],
+        // Intel LGA1851
+        ['u5-245k', 'Intel Core Ultra 5 245K', 'U5 245K', 'intel', 'LGA1851', 14, 14, 125, 29990],
+        ['u7-265k', 'Intel Core Ultra 7 265K', 'U7 265K', 'intel', 'LGA1851', 20, 20, 125, 41990],
+        ['u9-285k', 'Intel Core Ultra 9 285K', 'U9 285K', 'intel', 'LGA1851', 24, 24, 125, 60990],
+        // AMD AM5
+        ['r5-7500f',  'AMD Ryzen 5 7500F',  'R5 7500F',  'amd', 'AM5', 6, 12, 65, 13990],
+        ['r5-7600',   'AMD Ryzen 5 7600',   'R5 7600',   'amd', 'AM5', 6, 12, 65, 17990],
+        ['r5-9600x',  'AMD Ryzen 5 9600X',  'R5 9600X',  'amd', 'AM5', 6, 12, 65, 24990],
+        ['r7-7700',   'AMD Ryzen 7 7700',   'R7 7700',   'amd', 'AM5', 8, 16, 65, 24990],
+        ['r7-7800x3d','AMD Ryzen 7 7800X3D','R7 7800X3D','amd', 'AM5', 8, 16, 120, 36990],
+        ['r7-9700x',  'AMD Ryzen 7 9700X',  'R7 9700X',  'amd', 'AM5', 8, 16, 65, 33990],
+        ['r7-9800x3d','AMD Ryzen 7 9800X3D','R7 9800X3D','amd', 'AM5', 8, 16, 120, 48990],
+        ['r9-7900x',  'AMD Ryzen 9 7900X',  'R9 7900X',  'amd', 'AM5', 12, 24, 170, 39990],
+        ['r9-7950x3d','AMD Ryzen 9 7950X3D','R9 7950X3D','amd', 'AM5', 16, 32, 120, 64990],
+        ['r9-9950x',  'AMD Ryzen 9 9950X',  'R9 9950X',  'amd', 'AM5', 16, 32, 170, 58990],
+        // AMD AM4
+        ['r5-5500',   'AMD Ryzen 5 5500',   'R5 5500',   'amd', 'AM4', 6, 12, 65, 6990],
+        ['r5-5600',   'AMD Ryzen 5 5600',   'R5 5600',   'amd', 'AM4', 6, 12, 65, 8990],
+        ['r5-5600x',  'AMD Ryzen 5 5600X',  'R5 5600X',  'amd', 'AM4', 6, 12, 65, 10990],
+        ['r7-5700x',  'AMD Ryzen 7 5700X',  'R7 5700X',  'amd', 'AM4', 8, 16, 65, 13990],
+        ['r7-5800x3d','AMD Ryzen 7 5800X3D','R7 5800X3D','amd', 'AM4', 8, 16, 105, 26990],
+        ['r9-5900x',  'AMD Ryzen 9 5900X',  'R9 5900X',  'amd', 'AM4', 12, 24, 105, 24990],
+        ['r9-5950x',  'AMD Ryzen 9 5950X',  'R9 5950X',  'amd', 'AM4', 16, 32, 105, 33990]
+    ]),
     cooler: [
-        { id: 'low',   name: 'Низкопрофильный 92 мм', type: 'low',   kind: 'Низкий профиль 4.7 см', height: 4.7,  tdpMax: 125, price: 3990 },
-        { id: 'tower', name: 'Башенный 120 мм',       type: 'tower', kind: 'Башня 15.5 см',         height: 15.5, tdpMax: 180, price: 3490 },
-        { id: 'aio',   name: 'СЖО 240 мм',            type: 'aio',   kind: 'Жидкостное, радиатор 240 мм', height: 5.0, tdpMax: 250, price: 8990 }
+        { id: 'low-slim', name: 'Низкопрофильный 70 мм',     type: 'low',   kind: 'Низкий профиль 3.5 см',  height: 3.5,  tdpMax: 65,  price: 2490 },
+        { id: 'low',      name: 'Низкопрофильный 92 мм',     type: 'low',   kind: 'Низкий профиль 4.7 см',  height: 4.7,  tdpMax: 125, price: 3990 },
+        { id: 'tower-b',  name: 'Башенный бюджетный 120 мм', type: 'tower', kind: 'Башня 14.5 см',          height: 14.5, fan: 12, tdpMax: 150, price: 1990 },
+        { id: 'tower',    name: 'Башенный 120 мм',           type: 'tower', kind: 'Башня 15.5 см',          height: 15.5, fan: 12, tdpMax: 180, price: 3490 },
+        { id: 'tower140', name: 'Башенный 140 мм',           type: 'tower', kind: 'Башня 16.5 см, вентилятор 140 мм', height: 16.5, fan: 14, tdpMax: 250, price: 5490 },
+        { id: 'aio240b',  name: 'СЖО 240 мм (базовая)',      type: 'aio',   kind: 'СЖО 240 мм', rad: 240, tdpMax: 200, price: 5990 },
+        { id: 'aio240',   name: 'СЖО 240 мм',                type: 'aio',   kind: 'СЖО 240 мм', rad: 240, tdpMax: 250, price: 8990 },
+        { id: 'aio280',   name: 'СЖО 280 мм',                type: 'aio',   kind: 'СЖО 280 мм', rad: 280, tdpMax: 280, price: 10990 },
+        { id: 'aio360',   name: 'СЖО 360 мм',                type: 'aio',   kind: 'СЖО 360 мм', rad: 360, tdpMax: 320, price: 13990 }
     ],
-    ram: [
-        { id: 'd4-16', name: '16 ГБ DDR4-3200', type: 'DDR4', kit: '2×8 ГБ',  price: 2990 },
-        { id: 'd4-32', name: '32 ГБ DDR4-3600', type: 'DDR4', kit: '2×16 ГБ', price: 5990 },
-        { id: 'd5-32', name: '32 ГБ DDR5-6000', type: 'DDR5', kit: '2×16 ГБ', price: 9490 },
-        { id: 'd5-64', name: '64 ГБ DDR5-6000', type: 'DDR5', kit: '2×32 ГБ', price: 17990 }
-    ],
-    gpu: [
-        { id: 'rtx4060',  name: 'NVIDIA GeForce RTX 4060',       short: 'RTX 4060',       brand: 'nvidia', vram: 8,  tdp: 115, len: 24.0, thick: 4.0, fans: 2, price: 29990 },
-        { id: 'rtx4070s', name: 'NVIDIA GeForce RTX 4070 Super', short: 'RTX 4070 SUPER', brand: 'nvidia', vram: 12, tdp: 220, len: 27.0, thick: 5.0, fans: 3, price: 59990 },
-        { id: 'rx7800xt', name: 'AMD Radeon RX 7800 XT',         short: 'RX 7800 XT',     brand: 'amd',    vram: 16, tdp: 263, len: 28.5, thick: 5.5, fans: 3, price: 49990 },
-        { id: 'rtx4080s', name: 'NVIDIA GeForce RTX 4080 Super', short: 'RTX 4080 SUPER', brand: 'nvidia', vram: 16, tdp: 320, len: 31.0, thick: 6.0, fans: 3, price: 109990 }
-    ],
-    ssd: [
-        { id: 'm500',  name: 'NVMe 500 ГБ', cap: '500 ГБ', gen: 3, spec: 'M.2 · PCIe 3.0 · до 3 400 МБ/с', price: 3490 },
-        { id: 'm1000', name: 'NVMe 1 ТБ',   cap: '1 ТБ',   gen: 4, spec: 'M.2 · PCIe 4.0 · до 7 000 МБ/с', price: 5990 },
-        { id: 'm2000', name: 'NVMe 2 ТБ',   cap: '2 ТБ',   gen: 4, spec: 'M.2 · PCIe 4.0 · до 7 300 МБ/с', price: 10990 }
-    ],
-    psu: [
-        { id: 'p550',  name: 'Блок питания 550 Вт',  watt: 550,  cert: 'Bronze',   price: 4990 },
-        { id: 'p650',  name: 'Блок питания 650 Вт',  watt: 650,  cert: 'Gold',     price: 6990 },
-        { id: 'p850',  name: 'Блок питания 850 Вт',  watt: 850,  cert: 'Gold',     price: 10990 },
-        { id: 'p1000', name: 'Блок питания 1000 Вт', watt: 1000, cert: 'Platinum', price: 15990 }
-    ]
+    ram: mk(['id', 'name', 'type', 'kit', 'n', 'color', 'price'], [
+        // DDR4
+        ['d4-8',    '8 ГБ DDR4-3200',            'DDR4', '1×8 ГБ',   1, '#33384a', 1490],
+        ['d4-16',   '16 ГБ DDR4-3200',           'DDR4', '2×8 ГБ',   2, '#33384a', 2990],
+        ['d4-16b',  '16 ГБ DDR4-3600 (чёрная)',  'DDR4', '2×8 ГБ',   2, '#1b1b22', 3490],
+        ['d4-32',   '32 ГБ DDR4-3600',           'DDR4', '2×16 ГБ',  2, '#33384a', 5990],
+        ['d4-32w',  '32 ГБ DDR4-3600 (белая)',   'DDR4', '2×16 ГБ',  2, '#e8e9ef', 6490],
+        ['d4-64',   '64 ГБ DDR4-3600',           'DDR4', '2×32 ГБ',  2, '#33384a', 11990],
+        ['d4-128',  '128 ГБ DDR4-3200',          'DDR4', '4×32 ГБ',  4, '#33384a', 22990],
+        // DDR5
+        ['d5-16',   '16 ГБ DDR5-5200',           'DDR5', '2×8 ГБ',   2, '#1b1b22', 4990],
+        ['d5-32a',  '32 ГБ DDR5-5600',           'DDR5', '2×16 ГБ',  2, '#cfd3da', 7990],
+        ['d5-32',   '32 ГБ DDR5-6000',           'DDR5', '2×16 ГБ',  2, '#e8e9ef', 9490],
+        ['d5-32r',  '32 ГБ DDR5-6400 (красная)', 'DDR5', '2×16 ГБ',  2, '#c0392b', 10990],
+        ['d5-48',   '48 ГБ DDR5-6400',           'DDR5', '2×24 ГБ',  2, '#1b1b22', 15990],
+        ['d5-64',   '64 ГБ DDR5-6000',           'DDR5', '2×32 ГБ',  2, '#e8e9ef', 17990],
+        ['d5-96',   '96 ГБ DDR5-6400',           'DDR5', '2×48 ГБ',  2, '#1b1b22', 27990],
+        ['d5-128',  '128 ГБ DDR5-5600',          'DDR5', '4×32 ГБ',  4, '#cfd3da', 38990]
+    ]),
+    gpu: mk(['id', 'name', 'short', 'brand', 'vram', 'tdp', 'len', 'thick', 'fans', 'price'], [
+        // Бюджетные
+        ['gtx1650',  'NVIDIA GeForce GTX 1650',          'GTX 1650',     'nvidia', 4,  75,  17.5, 3.8, 1, 12990],
+        ['rtx3050',  'NVIDIA GeForce RTX 3050 6GB',      'RTX 3050',     'nvidia', 6,  70,  17.0, 3.8, 1, 14990],
+        ['arcb570',  'Intel Arc B570',                   'Arc B570',     'intel',  10, 150, 23.5, 4.0, 2, 20990],
+        ['rx6600',   'AMD Radeon RX 6600',               'RX 6600',      'amd',    8,  132, 24.0, 3.8, 2, 17990],
+        ['rx7600',   'AMD Radeon RX 7600',               'RX 7600',      'amd',    8,  165, 24.5, 4.0, 2, 25990],
+        ['arcb580',  'Intel Arc B580',                   'Arc B580',     'intel',  12, 190, 27.0, 4.5, 2, 26990],
+        // Средний класс
+        ['rtx4060',  'NVIDIA GeForce RTX 4060',          'RTX 4060',     'nvidia', 8,  115, 24.0, 4.0, 2, 29990],
+        ['rtx5060',  'NVIDIA GeForce RTX 5060',          'RTX 5060',     'nvidia', 8,  145, 24.0, 4.2, 2, 32990],
+        ['rtx4060ti','NVIDIA GeForce RTX 4060 Ti',       'RTX 4060 Ti',  'nvidia', 8,  160, 24.8, 4.3, 2, 39990],
+        ['rx9060xt', 'AMD Radeon RX 9060 XT 16GB',       'RX 9060 XT',   'amd',    16, 160, 24.5, 4.2, 2, 39990],
+        ['rtx5060ti','NVIDIA GeForce RTX 5060 Ti 16GB',  'RTX 5060 Ti',  'nvidia', 16, 180, 24.5, 4.4, 2, 47990],
+        ['rx7700xt', 'AMD Radeon RX 7700 XT',            'RX 7700 XT',   'amd',    12, 245, 28.0, 5.2, 3, 44990],
+        ['rtx4070',  'NVIDIA GeForce RTX 4070',          'RTX 4070',     'nvidia', 12, 200, 24.5, 4.5, 2, 52990],
+        ['rx7800xt', 'AMD Radeon RX 7800 XT',            'RX 7800 XT',   'amd',    16, 263, 28.5, 5.5, 3, 49990],
+        // Верхний класс
+        ['rx7900gre','AMD Radeon RX 7900 GRE',           'RX 7900 GRE',  'amd',    16, 260, 28.0, 5.2, 3, 58990],
+        ['rtx4070s', 'NVIDIA GeForce RTX 4070 Super',    'RTX 4070 SUPER','nvidia',12, 220, 27.0, 5.0, 3, 59990],
+        ['rtx5070',  'NVIDIA GeForce RTX 5070',          'RTX 5070',     'nvidia', 12, 250, 24.5, 4.5, 2, 62990],
+        ['rx9070',   'AMD Radeon RX 9070',               'RX 9070',      'amd',    16, 220, 28.0, 5.0, 3, 64990],
+        ['rx9070xt', 'AMD Radeon RX 9070 XT',            'RX 9070 XT',   'amd',    16, 304, 32.0, 5.8, 3, 74990],
+        ['rtx4070tis','NVIDIA GeForce RTX 4070 Ti Super','RTX 4070 Ti S','nvidia', 16, 285, 30.5, 5.5, 3, 84990],
+        ['rx7900xt', 'AMD Radeon RX 7900 XT',            'RX 7900 XT',   'amd',    20, 315, 32.0, 6.0, 3, 84990],
+        ['rtx5070ti','NVIDIA GeForce RTX 5070 Ti',       'RTX 5070 Ti',  'nvidia', 16, 300, 30.0, 5.0, 3, 89990],
+        // Энтузиасты
+        ['rx7900xtx','AMD Radeon RX 7900 XTX',           'RX 7900 XTX',  'amd',    24, 355, 33.0, 6.5, 3, 99990],
+        ['rtx4080s', 'NVIDIA GeForce RTX 4080 Super',    'RTX 4080 SUPER','nvidia',16, 320, 31.0, 6.0, 3, 109990],
+        ['rtx5080',  'NVIDIA GeForce RTX 5080',          'RTX 5080',     'nvidia', 16, 360, 30.5, 5.5, 3, 109990],
+        ['rtx4090',  'NVIDIA GeForce RTX 4090',          'RTX 4090',     'nvidia', 24, 450, 34.0, 7.0, 3, 189990],
+        ['rtx5090',  'NVIDIA GeForce RTX 5090',          'RTX 5090',     'nvidia', 32, 575, 33.5, 6.5, 3, 249990]
+    ]),
+    ssd: mk(['id', 'name', 'cap', 'gen', 'spec', 'price'], [
+        ['m250',    'NVMe 250 ГБ Gen3', '250 ГБ', 3, 'M.2 · PCIe 3.0 · до 2 100 МБ/с', 2490],
+        ['m500',    'NVMe 500 ГБ Gen3', '500 ГБ', 3, 'M.2 · PCIe 3.0 · до 3 400 МБ/с', 3490],
+        ['m500g4',  'NVMe 500 ГБ Gen4', '500 ГБ', 4, 'M.2 · PCIe 4.0 · до 5 000 МБ/с', 4290],
+        ['m1000g3', 'NVMe 1 ТБ Gen3',   '1 ТБ',   3, 'M.2 · PCIe 3.0 · до 3 500 МБ/с', 5290],
+        ['m1000',   'NVMe 1 ТБ Gen4',   '1 ТБ',   4, 'M.2 · PCIe 4.0 · до 7 000 МБ/с', 5990],
+        ['m1000p',  'NVMe 1 ТБ Gen4 Pro', '1 ТБ', 4, 'M.2 · PCIe 4.0 · до 7 400 МБ/с', 7490],
+        ['m2000',   'NVMe 2 ТБ Gen4',   '2 ТБ',   4, 'M.2 · PCIe 4.0 · до 7 300 МБ/с', 10990],
+        ['m2000g5', 'NVMe 2 ТБ Gen5',   '2 ТБ',   5, 'M.2 · PCIe 5.0 · до 12 000 МБ/с', 19990],
+        ['m4000',   'NVMe 4 ТБ Gen4',   '4 ТБ',   4, 'M.2 · PCIe 4.0 · до 7 300 МБ/с', 24990]
+    ]),
+    psu: mk(['id', 'name', 'watt', 'cert', 'price'], [
+        ['p450',   'Блок питания 450 Вт',  450,  'Bronze',   3490],
+        ['p550',   'Блок питания 550 Вт',  550,  'Bronze',   4990],
+        ['p650b',  'Блок питания 650 Вт',  650,  'Bronze',   5990],
+        ['p650',   'Блок питания 650 Вт',  650,  'Gold',     6990],
+        ['p750',   'Блок питания 750 Вт',  750,  'Gold',     8490],
+        ['p850',   'Блок питания 850 Вт',  850,  'Gold',     10990],
+        ['p1000',  'Блок питания 1000 Вт', 1000, 'Gold',     13990],
+        ['p1000p', 'Блок питания 1000 Вт', 1000, 'Platinum', 15990],
+        ['p1200',  'Блок питания 1200 Вт', 1200, 'Platinum', 19990],
+        ['p1600',  'Блок питания 1600 Вт', 1600, 'Titanium', 34990]
+    ])
 };
 
 function specOf(key, o) {
     switch (key) {
-        case 'case':   return o.forms.join(' / ') + ' · видеокарта до ' + o.gpuMax + ' см · кулер до ' + o.coolerMax + ' см' + (o.aio ? ' · СЖО 240' : '');
+        case 'case':   return o.forms.join(' / ') + ' · видеокарта до ' + o.gpuMax + ' см · кулер до ' + o.coolerMax + ' см · ' + (o.radMax ? 'СЖО до ' + o.radMax + ' мм' : 'без СЖО');
         case 'mb':     return o.socket + ' · ' + o.form + ' · ' + o.mem;
         case 'cpu':    return o.socket + ' · ' + o.cores + ' ядер / ' + o.threads + ' потоков · ' + o.tdp + ' Вт';
         case 'cooler': return o.kind + ' · до ' + o.tdpMax + ' Вт';
         case 'ram':    return o.type + ' · ' + o.kit;
-        case 'gpu':    return o.vram + ' ГБ · ' + o.tdp + ' Вт · длина ' + o.len + ' см';
+        case 'gpu':    return o.vram + ' ГБ · ' + o.tdp + ' Вт · длина ' + o.len + ' см · толщина ' + o.thick + ' см';
         case 'ssd':    return o.spec;
         case 'psu':    return o.watt + ' Вт · 80+ ' + o.cert;
     }
@@ -348,17 +472,23 @@ function check(key, o, s) {
             break;
         case 'cpu':
             if (mb && mb.socket !== o.socket) return 'Сокет ' + o.socket + ' не подходит к плате (' + mb.socket + ')';
+            if (c && c.cpuTdpMax && o.tdp > c.cpuTdpMax) return 'Корпус охлаждает процессоры не выше ' + c.cpuTdpMax + ' Вт';
             break;
         case 'cooler':
-            if (o.type === 'aio') { if (c && !c.aio) return 'Корпус не поддерживает СЖО 240 мм'; }
+            if (o.type === 'aio') {
+                if (c && !c.radMax) return 'Корпус не поддерживает СЖО';
+                if (c && o.rad > c.radMax) return 'Корпус принимает радиатор не больше ' + c.radMax + ' мм';
+            }
             else if (c && o.height > c.coolerMax) return 'Высота ' + o.height + ' см больше допустимых ' + c.coolerMax + ' см';
             if (cpu && cpu.tdp > o.tdpMax) return 'Не справится с процессором на ' + cpu.tdp + ' Вт';
             break;
         case 'ram':
             if (mb && mb.mem !== o.type) return 'Плата поддерживает только ' + mb.mem;
+            if (mb && o.n > (mb.form === 'ITX' ? 2 : 4)) return 'В плате только 2 слота памяти';
             break;
         case 'gpu':
             if (c && o.len > c.gpuMax) return 'Длина ' + o.len + ' см больше допустимых ' + c.gpuMax + ' см';
+            if (c && o.thick > c.thickMax) return 'Толщина ' + o.thick + ' см больше допустимых ' + c.thickMax + ' см';
             break;
         case 'psu': {
             const r = requiredPower(s);
@@ -624,264 +754,4 @@ const BUILDERS = {
         });
         const rf = fan(12); rf.rotation.y = Math.PI / 2; at(rf, 1.8, D.y - 9.5, 8); g.add(rf);   // задний вентилятор
         const glass = new T.Mesh(new T.BoxGeometry(D.x, D.y, 0.2),
-            mat('#9bb8ff', { transparent: true, opacity: 0.14, roughness: 0.05, metalness: 0.2, depthWrite: false }));
-        at(glass, D.x / 2, D.y / 2, D.z + 0.1);
-        glass.visible = glassOn;
-        g.userData.glass = glass;
-        g.add(glass);
-        return g;
-    },
-
-    mb() {
-        const L = layoutNow(), mb = state.mb, g = new T.Group();
-        const amd = mb.vendor === 'amd';
-        const pcb = amd ? '#1c1117' : '#0e1a2c', acc = amd ? '#ef4444' : '#38bdf8', hs = '#2b303c';
-        const metal = { metalness: 0.7, roughness: 0.4 };
-        g.add(at(box(L.bw, L.bh, 0.18, pcb, { metalness: 0.2, roughness: 0.7 }), L.bx + L.bw / 2, L.top - L.bh / 2, L.zb));
-        // кожух портов ввода-вывода
-        g.add(at(box(4.2, L.bh * 0.5, 2.6, '#1c1d26'), L.bx + 2.1, L.top - L.bh * 0.25, L.zs + 1.3));
-        g.add(at(box(4.25, 0.25, 2.65, acc, { emissive: acc, emissiveIntensity: 0.5 }), L.bx + 2.1, L.top - L.bh * 0.5, L.zs + 1.3));
-        const ioLabel = labelPlane(mb.chip, 3.4, 1.2, '#e9d5ff');
-        g.add(at(ioLabel, L.bx + 2.1, L.top - L.bh * 0.2, L.zs + 2.62));
-        // радиаторы VRM
-        g.add(at(box(L.bw * 0.34, 2.2, 2.0, hs, metal), L.bx + L.bw * 0.38, L.top - 1.3, L.zs + 1.0));
-        if (!L.itx) g.add(at(box(1.8, L.bh * 0.3, 2.0, hs, metal), L.cpu.x - 3.9, L.cpu.y, L.zs + 1.0));
-        // сокет
-        g.add(at(box(5.2, 5.2, 0.3, '#8b909b', { metalness: 0.8, roughness: 0.35 }), L.cpu.x, L.cpu.y, L.zs + 0.15));
-        // слоты ОЗУ
-        for (let i = 0; i < L.ram.n; i++) g.add(at(box(0.7, 13.5, 1.1, '#17151d'), L.ram.x + i * 0.85, L.ram.y, L.zs + 0.55));
-        // слоты PCIe
-        g.add(at(box(8.9, 0.8, 1.1, '#17151d'), L.bx + 5.4, L.gpuY, L.zs + 0.55));
-        if (!L.itx) g.add(at(box(4.5, 0.8, 1.1, '#17151d'), L.bx + 3.4, L.top - L.bh * 0.80, L.zs + 0.55));
-        // чипсет
-        if (!L.itx) {
-            g.add(at(box(4.2, 4.2, 1.0, hs, metal), L.bx + L.bw * 0.70, L.top - L.bh * 0.84, L.zs + 0.5));
-            g.add(at(labelPlane(mb.chip, 3.4, 1.2, '#e9d5ff'), L.bx + L.bw * 0.70, L.top - L.bh * 0.84, L.zs + 1.02));
-        }
-        // разъём 24-pin
-        g.add(at(box(1.2, 5.0, 1.6, '#e8e8ee'), L.bx + L.bw - 0.9, L.top - L.bh * 0.55, L.zs + 0.8));
-        return g;
-    },
-
-    cpu() {
-        const L = layoutNow(), cpu = state.cpu, g = new T.Group();
-        g.add(at(box(3.9, 3.9, 0.35, '#c8ccd4', { metalness: 0.85, roughness: 0.3 }), L.cpu.x, L.cpu.y, L.zs + 0.47));
-        g.add(at(labelPlane(cpu.short, 3.4, 1.3, '#1a1a22'), L.cpu.x, L.cpu.y, L.zs + 0.66));
-        return g;
-    },
-
-    cooler() {
-        const L = layoutNow(), cl = state.cooler, g = new T.Group();
-        const zc = L.zs + 0.7, p = L.cpu;
-        if (cl.type === 'low') {
-            g.add(at(box(9, 9, 0.6, '#4a4f5a', { metalness: 0.6 }), p.x, p.y, zc + 0.3));
-            g.add(at(cyl(4.3, 2.7, '#9aa1ad', { metalness: 0.7, roughness: 0.4 }), p.x, p.y, zc + 0.6 + 1.35));
-            const f = fan(8.6, 1.4); at(f, p.x, p.y, zc + 3.3 + 0.7); g.add(f);
-        } else if (cl.type === 'tower') {
-            const h = 15.5;
-            g.add(at(box(4.2, 4.2, 0.8, '#b87333', { metalness: 0.9, roughness: 0.3 }), p.x, p.y, zc + 0.4));
-            for (let i = 0; i < 9; i++) g.add(at(box(0.12, 12, h - 1, '#9aa1ad', { metalness: 0.75, roughness: 0.4 }), p.x - 3.4 + i * 0.5, p.y, zc + 1 + (h - 1) / 2));
-            g.add(at(box(5.2, 12.2, 0.3, '#1b1b24'), p.x - 1.0, p.y, zc + h - 0.15));
-            const f = fan(12); f.rotation.y = Math.PI / 2; at(f, p.x + 2.75, p.y, zc + 1 + 6); g.add(f);
-        } else { // СЖО
-            const D = L.D, ry = D.y - 2.85, rz = 12;
-            g.add(at(cyl(3.7, 5.0, '#15121f', { metalness: 0.6, roughness: 0.35 }), p.x, p.y, zc + 2.5));
-            const ring = new T.Mesh(new T.TorusGeometry(2.7, 0.14, 8, 40), rgbMat());
-            at(ring, p.x, p.y, zc + 5.05); g.add(ring);
-            g.add(at(box(27.5, 2.7, 12, '#20202a', { metalness: 0.5, roughness: 0.5 }), 20, ry, rz));
-            [13.8, 26.2].forEach(x => {
-                const f = fan(12); f.rotation.x = Math.PI / 2; at(f, x, ry - 1.35 - 1.25, rz); g.add(f);
-            });
-            const midY = Math.min(p.y + 5, ry - 2);
-            g.add(tube([[p.x - 1.6, p.y + 3.6, zc + 2.5], [p.x - 3, midY, zc + 4], [9, ry - 2.5, zc + 5], [6.5, ry, 8.8]], 0.45, '#0d0d12'));
-            g.add(tube([[p.x + 1.6, p.y + 3.6, zc + 2.5], [p.x, midY, zc + 6], [9.5, ry - 3, zc + 8], [6.5, ry, 15.2]], 0.45, '#0d0d12'));
-        }
-        return g;
-    },
-
-    ram() {
-        const L = layoutNow(), r = state.ram, g = new T.Group();
-        const idx = L.ram.n === 4 ? [1, 3] : [0, 1];
-        const col = r.type === 'DDR5' ? '#e8e9ef' : '#33384a';
-        idx.forEach(i => {
-            const x = L.ram.x + i * 0.85;
-            g.add(at(box(0.8, 13.3, 3.9, col, { metalness: 0.5, roughness: 0.4 }), x, L.ram.y, L.zs + 0.5 + 1.95));
-            const strip = new T.Mesh(new T.BoxGeometry(0.55, 12.2, 0.14), rgbMat());
-            g.add(at(strip, x, L.ram.y, L.zs + 0.5 + 3.9 + 0.05));
-        });
-        return g;
-    },
-
-    gpu() {
-        const L = layoutNow(), gpu = state.gpu, g = new T.Group();
-        const G = gpuGeom(L, gpu), len = gpu.len, th = gpu.thick, H = G.z1 - G.z0;
-        const nv = gpu.brand === 'nvidia', brandCol = nv ? '#76b900' : '#ef4444';
-        g.add(at(box(len, th, H, '#1b1b24', { metalness: 0.5, roughness: 0.45 }), G.x0 + len / 2, (G.y0 + G.y1) / 2, G.z0 + H / 2));
-        g.add(at(box(0.3, th + 0.5, H + 0.5, '#b8bcc6', { metalness: 0.8, roughness: 0.3 }), G.x0 - 0.15, (G.y0 + G.y1) / 2, G.z0 + H / 2));
-        const strip = new T.Mesh(new T.BoxGeometry(len * 0.92, 0.3, 0.1), rgbMat());
-        g.add(at(strip, G.x0 + len / 2, G.y1 - th * 0.18, G.z1 + 0.05));
-        g.add(at(labelPlane(gpu.short, len * 0.5, th * 0.5, brandCol), G.x0 + len * 0.45, (G.y0 + G.y1) / 2 - th * 0.08, G.z1 + 0.03));
-        const fs = Math.min(9.6, (len - 2) / gpu.fans);
-        for (let i = 0; i < gpu.fans; i++) {
-            const f = fan(fs - 0.3, 1.2); f.rotation.x = Math.PI / 2;
-            at(f, G.x0 + 1 + fs * (i + 0.5), G.y0 + 0.05, G.z0 + H / 2); g.add(f);
-        }
-        return g;
-    },
-
-    ssd() {
-        const L = layoutNow(), s = state.ssd, g = new T.Group();
-        const x = L.m2.x, y = L.m2.y, z = L.zs + 0.4;
-        g.add(at(box(8.0, 2.2, 0.25, '#1b3a2a', { metalness: 0.2, roughness: 0.7 }), x, y, z));
-        if (s.gen >= 4) {
-            g.add(at(box(7.2, 2.3, 0.45, '#4b5563', { metalness: 0.85, roughness: 0.3 }), x, y, z + 0.35));
-            g.add(at(box(7.2, 0.18, 0.1, '#06b6d4', { emissive: '#06b6d4', emissiveIntensity: 0.6 }), x, y + 0.5, z + 0.62));
-        } else {
-            g.add(at(box(6.6, 2.0, 0.12, '#cbd0d8', { metalness: 0.4 }), x, y, z + 0.2));
-        }
-        g.add(at(labelPlane(s.cap, 3.4, 0.9, s.gen >= 4 ? '#e5e7eb' : '#1a1a22'), x, y - 0.1, z + (s.gen >= 4 ? 0.6 : 0.28)));
-        return g;
-    },
-
-    psu() {
-        const L = layoutNow(), p = state.psu, g = new T.Group(), B = PSU_BOX;
-        const cx = (B.x0 + B.x1) / 2, cy = (B.y0 + B.y1) / 2, cz = (B.z0 + B.z1) / 2;
-        g.add(at(box(B.x1 - B.x0, B.y1 - B.y0, B.z1 - B.z0, '#1c1c24', { metalness: 0.4, roughness: 0.6 }), cx, cy, cz));
-        g.add(at(box(B.x1 - B.x0, 0.35, B.z1 - B.z0 + 0.05, '#facc15', { emissive: '#facc15', emissiveIntensity: 0.25 }), cx, B.y1 - 0.6, cz));
-        g.add(at(labelPlane(p.watt + ' W', 8, 3.0, '#e9d5ff'), cx, cy - 0.4, B.z1 + 0.03));
-        if (L) { // кабели питания
-            const cable = (pts) => g.add(tube(pts, 0.42, '#0b0b10'));
-            const yc = L.top - L.bh * 0.55, xr = L.bx + L.bw;
-            cable([[B.x1 + 0.1, 4.5, 8], [xr + 0.6, 5, 7.5], [xr + 0.9, yc - 5, 5.5], [xr - 0.9, yc - 2.6, L.zs + 1.4]]);
-            cable([[B.x1 + 0.1, 7.2, 12], [2.2, 12, 14.5], [2.2, L.top - 3, 14.5], [L.bx + 5.0, L.top - 1.0, L.zs + 2.4]]);
-            if (state.gpu) {
-                const G = gpuGeom(L, state.gpu), gy = (G.y0 + G.y1) / 2;
-                cable([[B.x1 + 0.1, 3.6, 11], [(B.x1 + G.x1) / 2, 3.4, G.z1 + 0.8], [G.x1 - 1.4, (3.4 + gy) / 2, G.z1 + 1.0], [G.x1 - 3, gy, G.z1 + 0.2]]);
-            }
-        }
-        return g;
-    }
-};
-
-// От чего зависит деталь: req — обязательные, opt — влияют на геометрию (кабели)
-const PARTSPEC = {
-    case:   { req: ['case'] },
-    mb:     { req: ['case', 'mb'] },
-    cpu:    { req: ['case', 'mb', 'cpu'] },
-    cooler: { req: ['case', 'mb', 'cpu', 'cooler'] },
-    ram:    { req: ['case', 'mb', 'ram'] },
-    gpu:    { req: ['case', 'mb', 'gpu'] },
-    ssd:    { req: ['case', 'mb', 'ssd'] },
-    psu:    { req: ['case', 'psu'], opt: ['mb', 'gpu'] }
-};
-const OFFS = {
-    case:   new T.Vector3(0, 16, 0),  mb:  new T.Vector3(0, 0, 18),  cpu:  new T.Vector3(0, 0, 16),
-    cooler: new T.Vector3(0, 0, 20),  ram: new T.Vector3(0, 12, 10), gpu:  new T.Vector3(14, 0, 8),
-    ssd:    new T.Vector3(0, 0, 12),  psu: new T.Vector3(-16, 0, 0)
-};
-
-/* =====================================================================
-   3D: УПРАВЛЕНИЕ ДЕТАЛЯМИ В СЦЕНЕ (появление, удаление, синхронизация)
-   ===================================================================== */
-const parts = {};   // key -> { key, group }
-
-function buildPart(key) {
-    CTX = { rgb: [], spin: [] };
-    const g = BUILDERS[key]();
-    g.userData.rgb = CTX.rgb;
-    g.userData.spin = CTX.spin;
-    CTX = null;
-    return g;
-}
-function eachMat(obj, fn) {
-    obj.traverse(o => {
-        if (!o.material) return;
-        (Array.isArray(o.material) ? o.material : [o.material]).forEach(fn);
-    });
-}
-function disposePart(g) {
-    rig.remove(g);
-    g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
-    eachMat(g, m => { if (m.map) m.map.dispose(); m.dispose(); });
-}
-function startAnim(g, off, delay) {
-    g.userData.anim = { t0: performance.now() + delay, off: off, dur: reduceMotion ? 1 : 750 };
-    g.position.copy(off);
-    eachMat(g, m => {
-        if (m.userData.o === undefined) { m.userData.o = m.opacity; m.userData.tr = m.transparent; }
-        m.transparent = true; m.opacity = 0;
-    });
-}
-function stepAnims(now) {
-    for (const key in parts) {
-        const g = parts[key].group, a = g.userData.anim;
-        if (!a) continue;
-        const t = clamp((now - a.t0) / a.dur, 0, 1), e = 1 - Math.pow(1 - t, 3);
-        g.position.set(a.off.x * (1 - e), a.off.y * (1 - e), a.off.z * (1 - e));
-        eachMat(g, m => { m.opacity = m.userData.o * e; });
-        if (t >= 1) {
-            eachMat(g, m => { m.opacity = m.userData.o; m.transparent = m.userData.tr; });
-            g.position.set(0, 0, 0);
-            delete g.userData.anim;
-        }
-    }
-}
-function wantKey(key) {
-    const sp = PARTSPEC[key];
-    if (!sp.req.every(k => state[k])) return null;
-    return sp.req.concat(sp.opt || []).map(k => state[k] ? state[k].id : '-').join('|');
-}
-function sync() {
-    let delay = 0;
-    STEPS.forEach(step => {
-        const key = step.key, want = wantKey(key), have = parts[key];
-        if (have && have.key === want) return;
-        if (have) { disposePart(have.group); delete parts[key]; }
-        if (want) {
-            const g = buildPart(key);
-            rig.add(g);
-            parts[key] = { key: want, group: g };
-            startAnim(g, OFFS[key], delay);
-            delay += 130;
-        }
-    });
-    const D = caseDims();
-    rig.position.set(-D.x / 2, -D.y / 2, -D.z / 2);
-    floor.position.y = -D.y / 2 - 0.5;
-    applyGlass();
-    $('emptyHint').hidden = !!state.case;
-}
-function applyGlass() {
-    if (parts.case && parts.case.group.userData.glass) parts.case.group.userData.glass.visible = glassOn;
-}
-
-/* =====================================================================
-   ЦИКЛ ОТРИСОВКИ
-   ===================================================================== */
-let lastT = performance.now();
-function frame(now) {
-    const dt = Math.min(0.05, (now - lastT) / 1000);
-    lastT = now;
-    stepAnims(now);
-    for (const key in parts) {
-        const ud = parts[key].group.userData;
-        ud.spin.forEach(s => { s.o.rotation.z += dt * s.sp; });
-        ud.rgb.forEach(m => {
-            if (rgbOn) m.emissive.setHSL((now * 0.0001 + m.userData.off) % 1, 1, 0.5);
-            else m.emissive.setRGB(0, 0, 0);
-        });
-    }
-    updateCamera(dt);
-    renderer.render(scene, camera);
-    requestAnimationFrame(frame);
-}
-
-/* =====================================================================
-   ИНТЕРФЕЙС
-   ===================================================================== */
-const stepperEl = $('stepper'), headEl = $('stepHead'), optionsEl = $('options'), bannerEl = $('banner');
-let advanceTimer = null;
-
-function stepHint(key) {
-    switch (key) {
-        case 'case': return 'К... (залишилося: 9 КБ)
+            mat('#9bb8ff', { transparent: true, opacity: 0.14, roughness: 0.05, metalness: ... (залишилося: 23 КБ)
