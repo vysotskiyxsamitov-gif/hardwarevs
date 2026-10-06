@@ -132,6 +132,19 @@
             color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; transition: border-color .2s, background-color .2s; }
         .tb-btn:hover { border-color: var(--accent); }
         .tb-btn[aria-pressed="true"] { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); color: #fff; border-color: #a855f7; }
+        .light-panel { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); width: min(320px, calc(100vw - 24px));
+            padding: 12px; background: var(--glass); border: 1px solid var(--border-strong); border-radius: 10px;
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 12px 30px rgba(0,0,0,.35); }
+        .light-panel[hidden] { display: none; }
+        .lp-title { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 8px; }
+        .lp-swatches { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-bottom: 12px; }
+        .lp-sw { aspect-ratio: 1 / 1; border-radius: 50%; border: 2px solid var(--border-strong); cursor: pointer; padding: 0; transition: transform .15s, box-shadow .15s; }
+        .lp-sw:hover { transform: scale(1.1); }
+        .lp-sw[aria-pressed="true"] { border-color: var(--text); box-shadow: 0 0 0 2px var(--accent), 0 0 12px var(--accent); }
+        .lp-sw:focus-visible, .lp-row input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .lp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; margin-top: 8px; }
+        .lp-row input[type="color"] { width: 44px; height: 30px; padding: 0; border: 1px solid var(--border-strong); border-radius: 6px; background: none; cursor: pointer; }
+        .lp-row input[type="range"] { flex: 1; max-width: 170px; accent-color: var(--accent); }
         .toast { position: absolute; top: 16px; left: 50%; transform: translate(-50%, -12px); max-width: 80%;
             padding: 10px 16px; border-radius: 8px; background: var(--glass); border: 1px solid var(--warn);
             font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; text-align: center; }
@@ -269,8 +282,16 @@
             <button class="tb-btn" id="tbRotate" type="button" aria-pressed="true">↻ Покачивание</button>
             <button class="tb-btn" id="tbGlass" type="button" aria-pressed="false">◻ Стекло</button>
             <button class="tb-btn" id="tbRgb" type="button" aria-pressed="true">✦ RGB</button>
+            <button class="tb-btn" id="tbLight" type="button" aria-expanded="false" aria-controls="lightPanel">🎨 Цвет</button>
             <button class="tb-btn" id="tbCam" type="button">⌖ Камера</button>
             <button class="tb-btn" id="tbShot" type="button">⬇ PNG</button>
+
+            <div class="light-panel" id="lightPanel" role="group" aria-label="Подсветка" hidden>
+                <div class="lp-title">Цвет подсветки</div>
+                <div class="lp-swatches" id="lpSwatches"></div>
+                <label class="lp-row">Свой цвет <input type="color" id="lpCustom" value="#a855f7"></label>
+                <label class="lp-row">Яркость <input type="range" id="lpBright" min="0.2" max="2.5" step="0.1" value="1.4"></label>
+            </div>
         </div>
 
         <div class="settings" id="settings">
@@ -347,9 +368,22 @@ const DATA = {
         { id: 'crystal', name: 'Crystal ATX White',         price: 10990, dims: { x: 44, y: 43, z: 21 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 36,   thickMax: 7.5, coolerMax: 17, radMax: 280, color: '#e9e7f2', frame: '#a9a4c4', fronts: [13, 25, 37] },
         { id: 'forge',   name: 'Forge Full-Tower',          price: 17990, dims: { x: 52, y: 52, z: 23 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 44,   thickMax: 9,   coolerMax: 18, radMax: 360, color: '#14111d', frame: '#7c3aed', fronts: [14, 27, 40] },
         { id: 'nova',    name: 'Nova mATX Compact',         price: 6490,  dims: { x: 40, y: 38, z: 19 }, forms: ['mATX', 'ITX'],        gpuMax: 32.5, thickMax: 7,   coolerMax: 16, radMax: 240, color: '#d8d5e6', frame: '#9b97b3', fronts: [12, 26] },
-        { id: 'mesh',    name: 'Vent mATX Mesh',            price: 5490,  dims: { x: 39, y: 38, z: 19.5 }, forms: ['mATX', 'ITX'],      gpuMax: 31.5, thickMax: 6.5, coolerMax: 16, radMax: 240, color: '#22303a', frame: '#3b82a0', fronts: [12, 26] },
+        { id: 'mesh',    name: 'Vent mATX Mesh',            price: 5490,  dims: { x: 39, y: 38, z: 19.5 }, forms: ['mATX', 'ITX'],      gpuMax: 31.5, thickMax: 6.5, coolerMax: 16, radMax: 240, color: '#22303a', frame: '#3b82a0', fronts: [12, 26], panel: 'mesh' },
         { id: 'pico',    name: 'Pico Mini-ITX',             price: 11990, dims: { x: 36, y: 34, z: 17 }, forms: ['ITX'],                gpuMax: 28,   thickMax: 6,   coolerMax: 7,  radMax: 0,   cpuTdpMax: 125, color: '#2b3340', frame: '#5b6b86', fronts: [15] },
-        { id: 'cube',    name: 'Cube ITX Slim',             price: 9490,  dims: { x: 34, y: 34, z: 17 }, forms: ['ITX'],                gpuMax: 26.5, thickMax: 5.5, coolerMax: 7,  radMax: 0,   cpuTdpMax: 125, color: '#d9cbb4', frame: '#a08b6b', fronts: [15] }
+        { id: 'cube',    name: 'Cube ITX Slim',             price: 9490,  dims: { x: 34, y: 34, z: 17 }, forms: ['ITX'],                gpuMax: 26.5, thickMax: 5.5, coolerMax: 7,  radMax: 0,   cpuTdpMax: 125, color: '#d9cbb4', frame: '#a08b6b', fronts: [15] },
+        // ---- Аквариумы: панорамное стекло спереди и сбоку ----
+        { id: 'aqua',    name: 'Aqua ATX Panorama',         price: 14990, dims: { x: 47, y: 46, z: 23 },   forms: ['ATX', 'mATX', 'ITX'], gpuMax: 39,   thickMax: 9,   coolerMax: 16.5, radMax: 360, color: '#0f1a28', frame: '#06b6d4', fronts: [],             panel: 'aquarium' },
+        { id: 'prism',   name: 'Prism ATX White',           price: 16990, dims: { x: 46, y: 47, z: 22.5 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 38,   thickMax: 8.5, coolerMax: 16,   radMax: 360, color: '#eef0f7', frame: '#f472b6', fronts: [],             panel: 'aquarium' },
+        { id: 'orb',     name: 'Orb ITX Aquarium',          price: 15490, dims: { x: 36, y: 36, z: 17.5 }, forms: ['ITX'],                gpuMax: 28,   thickMax: 6,   coolerMax: 7.5,  radMax: 0,   cpuTdpMax: 150, color: '#101a24', frame: '#38bdf8', fronts: [],      panel: 'aquarium' },
+        // ---- Закрытые: глухая боковая панель ----
+        { id: 'stealth', name: 'Stealth ATX Silent',        price: 9990,  dims: { x: 45, y: 44, z: 21 },   forms: ['ATX', 'mATX', 'ITX'], gpuMax: 37,   thickMax: 7.5, coolerMax: 16.5, radMax: 280, color: '#15161b', frame: '#4b5563', fronts: [14, 28],       panel: 'solid' },
+        { id: 'vault',   name: 'Vault Full-Tower Steel',    price: 15990, dims: { x: 54, y: 53, z: 24 },   forms: ['ATX', 'mATX', 'ITX'], gpuMax: 46,   thickMax: 10,  coolerMax: 19,   radMax: 420, color: '#2a2d34', frame: '#9ca3af', fronts: [14, 27, 40],   panel: 'solid' },
+        { id: 'retro',   name: 'Retro Wood ATX',            price: 12490, dims: { x: 45, y: 44, z: 21.5 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 37,   thickMax: 7.5, coolerMax: 16,   radMax: 240, color: '#7a5230', frame: '#d6b27a', fronts: [14, 28],       panel: 'solid' },
+        // ---- Сетка и стекло разных размеров ----
+        { id: 'airflow', name: 'Airflow ATX Mesh',          price: 7990,  dims: { x: 46, y: 44, z: 20.5 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 38,   thickMax: 7,   coolerMax: 17,   radMax: 360, color: '#1d2228', frame: '#22c55e', fronts: [13, 26, 39],   panel: 'mesh' },
+        { id: 'sakura',  name: 'Sakura ATX White-Pink',     price: 11490, dims: { x: 44, y: 43, z: 21 },   forms: ['ATX', 'mATX', 'ITX'], gpuMax: 36,   thickMax: 7.5, coolerMax: 16.5, radMax: 280, color: '#f7e8ef', frame: '#ec4899', fronts: [13, 25, 37] },
+        { id: 'micro',   name: 'Micro mATX Tower',          price: 4990,  dims: { x: 37, y: 36, z: 19 },   forms: ['mATX', 'ITX'],        gpuMax: 29,   thickMax: 6.5, coolerMax: 15,   radMax: 120, color: '#262b36', frame: '#64748b', fronts: [12, 25] },
+        { id: 'pixel',   name: 'Pixel ITX Glass',           price: 12990, dims: { x: 37, y: 35, z: 17 },   forms: ['ITX'],                gpuMax: 29,   thickMax: 5.5, coolerMax: 7.5,  radMax: 0,   cpuTdpMax: 150, color: '#e5e7eb', frame: '#a78bfa', fronts: [15] }
     ],
     mb: mk(['id', 'name', 'chip', 'vendor', 'socket', 'form', 'mem', 'price'], [
         // LGA1700
@@ -689,9 +723,10 @@ const DATA = {
     ])
 };
 
+const PANEL_LABEL = { glass: 'Стекло', solid: 'Закрытый', mesh: 'Сетка', aquarium: 'Аквариум' };
 function specOf(key, o) {
     switch (key) {
-        case 'case':   return o.forms.join(' / ') + ' · видеокарта до ' + o.gpuMax + ' см · кулер до ' + o.coolerMax + ' см · ' + (o.radMax ? 'СЖО до ' + o.radMax + ' мм' : 'без СЖО');
+        case 'case':   return PANEL_LABEL[o.panel || 'glass'] + ' · ' + o.forms.join(' / ') + ' · видеокарта до ' + o.gpuMax + ' см · кулер до ' + o.coolerMax + ' см · ' + (o.radMax ? 'СЖО до ' + o.radMax + ' мм' : 'без СЖО');
         case 'mb':     return o.socket + ' · ' + o.form + ' · ' + o.mem;
         case 'cpu':    return o.socket + ' · ' + o.cores + ' ядер / ' + o.threads + ' потоков · ' + o.tdp + ' Вт';
         case 'cooler': return o.kind + ' · до ' + o.tdpMax + ' Вт';
@@ -820,6 +855,7 @@ function applySceneTheme() {
 // --- Камера (орбита без внешних библиотек) ---
 const cam = { base: 0.55, phi: 1.28, tPhi: 1.28, theta: 0.55, zoom: 1, tZoom: 1, auto: 0 };
 let autoRotate = true, glassOn = false, rgbOn = true, dragging = false;
+let rgbColor = null, rgbHex = null, rgbBright = 1.4;   // rgbColor = null — радуга, иначе однотонный цвет
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 function caseDims() { return state.case ? state.case.dims : { x: 46, y: 45, z: 21 }; }
@@ -996,7 +1032,11 @@ const BUILDERS = {
         g.add(at(box(D.x, D.y, 0.4, body, mo), D.x / 2, D.y / 2, -0.2));        // тыльная панель (tray)
         g.add(at(box(D.x, 0.4, D.z, body, mo), D.x / 2, -0.2, D.z / 2));        // дно
         g.add(at(box(0.4, D.y, D.z, body, mo), -0.2, D.y / 2, D.z / 2));        // задняя стенка
-        g.add(at(box(0.4, D.y, D.z, body, mo), D.x + 0.2, D.y / 2, D.z / 2));   // передняя панель
+        if (c.panel === 'aquarium') {                    // аквариум: передняя панель из стекла
+            g.add(at(new T.Mesh(new T.BoxGeometry(0.3, D.y, D.z), mat('#7dd3fc', { transparent: true, opacity: 0.16, roughness: 0.05, metalness: 0.2, depthWrite: false })), D.x + 0.15, D.y / 2, D.z / 2));
+        } else {
+            g.add(at(box(0.4, D.y, D.z, body, mo), D.x + 0.2, D.y / 2, D.z / 2));   // передняя панель
+        }
         const bar = (w, h, d, x, y, z) => g.add(at(box(w, h, d, fr, { metalness: 0.6, roughness: 0.4 }), x, y, z));
         bar(D.x, 0.6, 0.6, D.x / 2, D.y, 0.3);        bar(D.x, 0.6, 0.6, D.x / 2, D.y, D.z - 0.3);
         bar(0.6, 0.6, D.z, 0.3, D.y, D.z / 2);        bar(0.6, 0.6, D.z, D.x - 0.3, D.y, D.z / 2);
@@ -1006,9 +1046,24 @@ const BUILDERS = {
             const f = fan(12); f.rotation.y = Math.PI / 2; at(f, D.x - 1.8, y, D.z / 2); g.add(f);
         });
         const rf = fan(12); rf.rotation.y = Math.PI / 2; at(rf, 1.8, D.y - 9.5, 8); g.add(rf);   // задний вентилятор
-        const glass = new T.Mesh(new T.BoxGeometry(D.x, D.y, 0.2),
-            mat('#9bb8ff', { transparent: true, opacity: 0.14, roughness: 0.05, metalness: 0.2, depthWrite: false }));
-        at(glass, D.x / 2, D.y / 2, D.z + 0.1);
+        // боковая панель (кнопка «Стекло» её показывает): стекло, глухой металл или перфорированная сетка
+        let glass;
+        if (c.panel === 'solid') {
+            glass = box(D.x, D.y, 0.4, body, mo);
+        } else if (c.panel === 'mesh') {
+            const tc = document.createElement('canvas'); tc.width = tc.height = 64;
+            const tx = tc.getContext('2d');
+            tx.fillStyle = '#fff'; tx.fillRect(0, 0, 64, 64);
+            tx.fillStyle = '#000';
+            for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { tx.beginPath(); tx.arc(8 + i * 16, 8 + j * 16, 5.5, 0, Math.PI * 2); tx.fill(); }
+            const tex = new T.CanvasTexture(tc);
+            tex.wrapS = tex.wrapT = T.RepeatWrapping; tex.repeat.set(D.x / 4, D.y / 4);
+            glass = new T.Mesh(new T.BoxGeometry(D.x, D.y, 0.3), mat(body, { alphaMap: tex, alphaTest: 0.5, metalness: 0.5, roughness: 0.55 }));
+        } else {
+            glass = new T.Mesh(new T.BoxGeometry(D.x, D.y, 0.2),
+                mat(c.panel === 'aquarium' ? '#7dd3fc' : '#9bb8ff', { transparent: true, opacity: c.panel === 'aquarium' ? 0.16 : 0.14, roughness: 0.05, metalness: 0.2, depthWrite: false }));
+        }
+        at(glass, D.x / 2, D.y / 2, D.z + 0.2);
         glass.visible = glassOn;
         g.userData.glass = glass;
         g.add(glass);
@@ -1239,8 +1294,10 @@ function sync() {
     applyGlass();
     $('emptyHint').hidden = !!state.case;
 }
+const PANEL_BTN = { solid: 'Панель', mesh: 'Сетка' };
 function applyGlass() {
     if (parts.case && parts.case.group.userData.glass) parts.case.group.userData.glass.visible = glassOn;
+    $('tbGlass').textContent = '◻ ' + ((state.case && PANEL_BTN[state.case.panel]) || 'Стекло');
 }
 
 /* =====================================================================
@@ -1255,8 +1312,10 @@ function frame(now) {
         const ud = parts[key].group.userData;
         ud.spin.forEach(s => { s.o.rotation.z += dt * s.sp; });
         ud.rgb.forEach(m => {
-            if (rgbOn) m.emissive.setHSL((now * 0.0001 + m.userData.off) % 1, 1, 0.5);
-            else m.emissive.setRGB(0, 0, 0);
+            if (!rgbOn) m.emissive.setRGB(0, 0, 0);
+            else if (rgbColor) m.emissive.copy(rgbColor);
+            else m.emissive.setHSL((now * 0.0001 + m.userData.off) % 1, 1, 0.5);
+            m.emissiveIntensity = rgbBright;
         });
     }
     updateCamera(dt);
@@ -1408,6 +1467,56 @@ function toggle(btn, get, set) {
 toggle($('tbRotate'), () => autoRotate, v => { autoRotate = v; });
 toggle($('tbGlass'), () => glassOn, v => { glassOn = v; applyGlass(); });
 toggle($('tbRgb'), () => rgbOn, v => { rgbOn = v; });
+
+/* ---------- Подсветка: цвет и яркость ---------- */
+const LIGHT_KEY = 'hardwarevs-rgb';
+const LIGHT_COLORS = [
+    ['Радуга', null], ['Красный', '#ff1744'], ['Оранжевый', '#ff7a00'], ['Жёлтый', '#ffd600'], ['Зелёный', '#00e676'], ['Бирюзовый', '#00e5ff'],
+    ['Синий', '#2979ff'], ['Фиолетовый', '#a855f7'], ['Розовый', '#ff4fa3'], ['Белый', '#ffffff']
+];
+const lpSw = $('lpSwatches'), lpCustom = $('lpCustom'), lpBright = $('lpBright'), lightPanel = $('lightPanel'), tbLight = $('tbLight');
+
+function paintSwatches() {
+    lpSw.querySelectorAll('.lp-sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.hex === (rgbHex || '') ? 'true' : 'false'));
+}
+function saveLight() {
+    try { localStorage.setItem(LIGHT_KEY, JSON.stringify({ hex: rgbHex, bright: rgbBright })); } catch (e) {}
+}
+function setRgbColor(hex, turnOn) {
+    rgbHex = hex ? hex.toLowerCase() : null;
+    rgbColor = rgbHex ? new T.Color(rgbHex) : null;
+    if (rgbHex) lpCustom.value = rgbHex;
+    if (turnOn) { rgbOn = true; $('tbRgb').setAttribute('aria-pressed', 'true'); }   // выбор цвета включает подсветку
+    paintSwatches();
+    saveLight();
+}
+LIGHT_COLORS.forEach(c => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'lp-sw'; b.dataset.hex = c[1] || '';
+    b.title = c[0]; b.setAttribute('aria-label', c[0]);
+    b.style.background = c[1] || 'conic-gradient(#ff1744, #ffd600, #00e676, #00e5ff, #2979ff, #a855f7, #ff1744)';
+    b.addEventListener('click', () => setRgbColor(c[1], true));
+    lpSw.appendChild(b);
+});
+lpCustom.addEventListener('input', () => setRgbColor(lpCustom.value, true));
+lpBright.addEventListener('input', () => { rgbBright = parseFloat(lpBright.value); saveLight(); });
+
+try {
+    const saved = JSON.parse(localStorage.getItem(LIGHT_KEY) || 'null');
+    if (saved) {
+        if (typeof saved.bright === 'number' && saved.bright >= 0.2 && saved.bright <= 2.5) { rgbBright = saved.bright; lpBright.value = saved.bright; }
+        if (typeof saved.hex === 'string' && /^#[0-9a-f]{6}$/i.test(saved.hex)) setRgbColor(saved.hex, false);
+    }
+} catch (e) {}
+paintSwatches();
+
+function setLightPanel(open) {
+    lightPanel.hidden = !open;
+    tbLight.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+tbLight.addEventListener('click', e => { e.stopPropagation(); setLightPanel(lightPanel.hidden); });
+document.addEventListener('click', e => { if (!lightPanel.contains(e.target)) setLightPanel(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') setLightPanel(false); });
 $('tbCam').addEventListener('click', () => { cam.base = 0.55; cam.tPhi = 1.28; cam.tZoom = 1; });
 
 function saveShot() {
