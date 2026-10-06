@@ -12,7 +12,7 @@
 
     // Папка сайта: .../hardwarevs/
     var BASE = location.href.split('#')[0].split('?')[0].replace(/[^\/]*$/, '');
-    var NEXT_OK = ['index.html', 'builder.html', 'cpu.html', 'gpu.html', 'guide.html'];
+    var NEXT_OK = ['index.html', 'builder.html', 'cpu.html', 'gpu.html', 'guide.html', 'reviews.html'];
 
     // Куда вернуться после входа (только свои страницы, чтобы нельзя было увести пользователя на чужой сайт)
     function safeNext() {
