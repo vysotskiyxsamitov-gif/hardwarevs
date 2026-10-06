@@ -17,6 +17,8 @@
 
     <!-- 3D-библиотека -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+    <script src="auth.js"></script>
 
     <style>
         :root, :root[data-theme="dark"] {
@@ -159,6 +161,37 @@
         .theme-option[aria-pressed="true"] { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%);
             border-color: #a855f7; color: #fff; }
 
+
+        /* ---------- АККАУНТ И СОХРАНЁННЫЕ СБОРКИ ---------- */
+        .save-row { display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-top: 1px solid var(--border); background: var(--panel); flex-wrap: wrap; }
+        .save-row[hidden] { display: none; }
+        .save-row .btn { padding: 8px 12px; }
+        .who { margin-left: auto; display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12px; color: var(--muted); }
+        .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 130px; }
+        .who button { background: none; border: 0; padding: 2px; cursor: pointer; font: inherit; font-weight: 600; color: var(--accent); }
+        .who button:hover { text-decoration: underline; }
+        .who button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+        .modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, .55); }
+        .modal[hidden] { display: none; }
+        .m-card { width: 100%; max-width: 460px; max-height: 85vh; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border-strong);
+            border-radius: 12px; box-shadow: 0 20px 50px rgba(0, 0, 0, .5); }
+        .m-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+        .m-head h3 { font-size: 17px; }
+        .m-x { background: none; border: 0; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; padding: 2px 6px; }
+        .m-x:hover { color: var(--accent); }
+        .m-body { padding: 16px 18px; overflow-y: auto; }
+        .m-input { width: 100%; padding: 10px 12px; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+        .m-input:focus { border-color: var(--accent); }
+        .m-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+        .m-msg { margin-top: 10px; font-size: 13px; color: var(--bad); min-height: 16px; }
+        .m-muted { color: var(--muted); font-size: 13px; text-align: center; padding: 14px 0; }
+        .b-item { padding: 10px 12px; margin-bottom: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; }
+        .b-name { font-weight: 700; font-size: 14px; overflow-wrap: anywhere; }
+        .b-meta { font-size: 12px; color: var(--muted); margin: 2px 0 8px; }
+        .b-item .m-actions { margin-top: 0; }
+        .b-item .btn { padding: 7px 12px; }
+        .btn.danger:hover { border-color: var(--bad); box-shadow: 0 0 12px rgba(248, 113, 113, .3); color: var(--bad); }
+
         /* ---------- МОБИЛЬНАЯ ВЕРСТКА ---------- */
         @media (max-width: 860px) {
             .app { grid-template-columns: 1fr; grid-template-rows: 46dvh 1fr; }
@@ -196,6 +229,12 @@
                 <summary>Состав сборки</summary>
                 <div id="buildList"></div>
             </details>
+        </div>
+
+        <div class="save-row" id="saveRow" hidden>
+            <button class="btn" id="saveBtn" type="button">💾 Сохранить</button>
+            <button class="btn" id="myBuildsBtn" type="button">📂 Мои сборки</button>
+            <div class="who"><span id="whoMail">Не вошли</span><button id="authBtn" type="button">Войти</button></div>
         </div>
 
         <div class="footer">
@@ -238,6 +277,13 @@
             </div>
         </div>
     </main>
+</div>
+
+<div class="modal" id="modal" hidden>
+    <div class="m-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <div class="m-head"><h3 id="modalTitle"></h3><button class="m-x" id="modalClose" type="button" aria-label="Закрыть">×</button></div>
+        <div class="m-body" id="modalBody"></div>
+    </div>
 </div>
 
 <script>
@@ -1384,11 +1430,151 @@ $('back-link').addEventListener('click', e => {
 });
 window.addEventListener('pageshow', e => { if (e.persisted) root.classList.remove('leaving'); });
 
+/* ---------- Аккаунт и сохранённые сборки (Supabase) ---------- */
+const AUTH = window.HW_AUTH;
+const DRAFT_KEY = 'hardwarevs-draft';
+let user = null, currentBuild = null;   // currentBuild = { id, name } открытая сохранённая сборка
+
+function partsOf() { const p = {}; STEPS.forEach(s => { if (state[s.key]) p[s.key] = state[s.key].id; }); return p; }
+function totalOf() { return STEPS.reduce((t, s) => t + (state[s.key] ? state[s.key].price : 0), 0); }
+
+// Подставляет сохранённый состав: что пропало из каталога или стало несовместимым, убирается
+function applyParts(parts) {
+    const s = {}; let lost = 0;
+    STEPS.forEach(st => {
+        const id = parts && parts[st.key];
+        if (!id) return;
+        const o = DATA[st.key].find(x => x.id === id);
+        if (o) s[st.key] = o; else lost++;
+    });
+    const removed = revalidate(s);
+    clearTimeout(advanceTimer);
+    state = s;
+    sync();
+    const fm = firstMissing();
+    setActive(fm === -1 ? 0 : fm);
+    if (removed.length || lost) toast('Часть деталей недоступна или несовместима и была убрана');
+}
+
+const modal = $('modal'), modalBody = $('modalBody');
+function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+function openModal(title) { $('modalTitle').textContent = title; modalBody.textContent = ''; modal.hidden = false; }
+function closeModal() { modal.hidden = true; }
+$('modalClose').addEventListener('click', closeModal);
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+
+function goLogin() {
+    try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(partsOf())); } catch (e) {}   // чтобы сборка не пропала после входа
+    window.location.href = 'login.html?next=builder.html';
+}
+function dateStr(iso) { try { return new Date(iso).toLocaleDateString('ru-RU'); } catch (e) { return ''; } }
+
+function setUser(u) {
+    user = u;
+    if (!u) currentBuild = null;
+    $('whoMail').textContent = u ? (u.email || 'Аккаунт') : 'Не вошли';
+    $('authBtn').textContent = u ? 'Выйти' : 'Войти';
+}
+
+if (AUTH) {
+    $('saveRow').hidden = false;
+    AUTH.getUser().then(setUser);
+    AUTH.client.auth.onAuthStateChange((ev, session) => setUser(session ? session.user : null));
+
+    $('authBtn').addEventListener('click', () => { if (user) AUTH.client.auth.signOut(); else goLogin(); });
+
+    async function doSave(name, asNew, msgEl, btns) {
+        name = (name || '').trim().slice(0, 80) || 'Моя сборка';
+        const row = { name: name, parts: partsOf(), total_price: totalOf() };
+        btns.forEach(b => { b.disabled = true; });
+        try {
+            const q = AUTH.client.from('builds');
+            const res = (currentBuild && !asNew)
+                ? await q.update(row).eq('id', currentBuild.id).select('id,name').single()
+                : await q.insert(row).select('id,name').single();
+            if (res.error) throw res.error;
+            currentBuild = { id: res.data.id, name: res.data.name };
+            closeModal();
+            toast('Сборка сохранена');
+        } catch (err) {
+            msgEl.textContent = 'Не удалось сохранить: ' + (err && err.message ? err.message : 'ошибка сети');
+            btns.forEach(b => { b.disabled = false; });
+        }
+    }
+
+    $('saveBtn').addEventListener('click', () => {
+        if (!user) { goLogin(); return; }
+        if (!state.case) { toast('Сначала выберите хотя бы корпус'); return; }
+        openModal('Сохранить сборку');
+        const input = el('input', 'm-input'); input.type = 'text'; input.maxLength = 80;
+        input.placeholder = 'Название сборки';
+        input.value = currentBuild ? currentBuild.name : 'Моя сборка';
+        const msg = el('div', 'm-msg'); msg.setAttribute('role', 'alert');
+        const actions = el('div', 'm-actions');
+        const main = el('button', 'btn primary', currentBuild ? 'Обновить' : 'Сохранить'); main.type = 'button';
+        const btns = [main];
+        actions.appendChild(main);
+        main.addEventListener('click', () => doSave(input.value, false, msg, btns));
+        if (currentBuild) {
+            const copy = el('button', 'btn', 'Сохранить как новую'); copy.type = 'button';
+            btns.push(copy); actions.appendChild(copy);
+            copy.addEventListener('click', () => doSave(input.value, true, msg, btns));
+        }
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') main.click(); });
+        modalBody.appendChild(input); modalBody.appendChild(actions); modalBody.appendChild(msg);
+        input.focus(); input.select();
+    });
+
+    $('myBuildsBtn').addEventListener('click', async () => {
+        if (!user) { goLogin(); return; }
+        openModal('Мои сборки');
+        modalBody.appendChild(el('div', 'm-muted', 'Загрузка…'));
+        const res = await AUTH.client.from('builds').select('id,name,parts,total_price,created_at').order('created_at', { ascending: false }).limit(50);
+        modalBody.textContent = '';
+        if (res.error) { modalBody.appendChild(el('div', 'm-msg', 'Не удалось загрузить: ' + res.error.message)); return; }
+        if (!res.data.length) { modalBody.appendChild(el('div', 'm-muted', 'Пока нет сохранённых сборок.')); return; }
+        res.data.forEach(bld => {
+            const item = el('div', 'b-item');
+            item.appendChild(el('div', 'b-name', bld.name));
+            item.appendChild(el('div', 'b-meta', (bld.total_price != null ? fmt(bld.total_price) + ' · ' : '') + dateStr(bld.created_at)));
+            const act = el('div', 'm-actions');
+            const open = el('button', 'btn primary', 'Открыть'); open.type = 'button';
+            const del = el('button', 'btn danger', 'Удалить'); del.type = 'button';
+            open.addEventListener('click', () => {
+                applyParts(bld.parts);
+                currentBuild = { id: bld.id, name: bld.name };
+                closeModal();
+            });
+            del.addEventListener('click', async () => {
+                if (!window.confirm('Удалить сборку «' + bld.name + '»?')) return;
+                del.disabled = true;
+                const r = await AUTH.client.from('builds').delete().eq('id', bld.id);
+                if (r.error) { del.disabled = false; toast('Не удалось удалить: ' + r.error.message); return; }
+                if (currentBuild && currentBuild.id === bld.id) currentBuild = null;
+                item.remove();
+                if (!modalBody.children.length) modalBody.appendChild(el('div', 'm-muted', 'Пока нет сохранённых сборок.'));
+            });
+            act.appendChild(open); act.appendChild(del); item.appendChild(act);
+            modalBody.appendChild(item);
+        });
+    });
+}
+
 /* ---------- Старт ---------- */
 applyTheme(root.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
 resize();
 sync();
 render();
+// Вернулись со страницы входа: восстанавливаем сборку, которую собирали до этого
+try {
+    const d = sessionStorage.getItem(DRAFT_KEY);
+    if (d) {
+        sessionStorage.removeItem(DRAFT_KEY);
+        const p = JSON.parse(d);
+        if (p && typeof p === 'object' && Object.keys(p).length) applyParts(p);
+    }
+} catch (e) {}
 requestAnimationFrame(frame);
 
 })();
