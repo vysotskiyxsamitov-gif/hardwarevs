@@ -17,7 +17,6 @@
 
     <!-- 3D-библиотека -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
     <script src="auth.js"></script>
     <script src="cookies.js"></script>
@@ -1050,42 +1049,8 @@ function layoutNow() {
 }
 function gpuGeom(L, gpu) {
     const x0 = L.bx + 0.4, y1 = L.gpuY + 0.3, y0 = y1 - gpu.thick, z0 = L.zs + 0.9;
-    return { x0: x0, x1: x0 + gpu.len, y0: y0, y1: y1, z0: z0, z1: z0 + (gpu.model ? gpu.len * 0.47 : 11.5) };
+    return { x0: x0, x1: x0 + gpu.len, y0: y0, y1: y1, z0: z0, z1: z0 + 11.5 };
 }
-/* ---------- Готовая 3D-модель видеокарты (GLB) ---------- */
-DATA.gpu.find(x => x.id === 'rtx3070ti').model = 'models/gpu_rtx3070ti_tuf.glb';
-const MODEL_CACHE = {};
-function loadModel(url) {
-    if (MODEL_CACHE[url] || !T.GLTFLoader) return MODEL_CACHE[url];
-    MODEL_CACHE[url] = 'loading';
-    new T.GLTFLoader().load(url, gltf => {
-        MODEL_CACHE[url] = gltf;
-        if (parts.gpu && state.gpu && state.gpu.model === url) { disposePart(parts.gpu.group); delete parts.gpu; sync(); }
-    }, undefined, () => { MODEL_CACHE[url] = 'failed'; });
-    return MODEL_CACHE[url];
-}
-const FAN_NODES = { Cylinder: 1, Cylinder001: 1, Cylinder002: 1, Cylinder003: 1, Object4001: 1, Object4002: 1 };
-function gpuFromModel(gpu, G, g) {
-    const gltf = loadModel(gpu.model);
-    if (!gltf || !gltf.scene) return null;
-    const s = gpu.len / 4.89, H = G.z1 - G.z0, m = gltf.scene.clone(true);
-    m.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.material = o.material.clone(); } });
-    m.rotation.x = Math.PI / 2;
-    m.scale.setScalar(s);
-    m.position.set(G.x0 + 2.27 * s, G.y1 - 0.69 * s, G.z0 + 1.02 * s);
-    g.add(m);
-    const fans = [];
-    m.traverse(o => { if (FAN_NODES[o.name.replace(/[^A-Za-z0-9]/g, '')]) fans.push(o); });
-    fans.filter(o => fans.indexOf(o.parent) === -1).forEach(node => {
-        const proxy = { rotation: { _z: 0, get z() { return this._z; }, set z(v) { node.rotateY(v - this._z); this._z = v; } } };
-        CTX.spin.push({ o: proxy, sp: 7 });
-    });
-    const gy = (G.y0 + G.y1) / 2;
-    g.add(at(box(0.3, gpu.thick + 0.5, H + 0.5, '#b8bcc6', { metalness: 0.8, roughness: 0.3 }), G.x0 - 0.15, gy, G.z0 + H / 2));
-    for (let i = 0; i < 4; i++) g.add(at(box(0.12, gpu.thick * 0.16, H * 0.3, '#050507'), G.x0 - 0.35, G.y0 + gpu.thick * (0.2 + i * 0.2), G.z0 + H / 2));
-    return g;
-}
-
 const PSU_BOX = { x0: 0.5, x1: 14.5, y0: 0.5, y1: 9.1, z0: 1.5, z1: 16.5 };
 
 /* =====================================================================
@@ -1279,7 +1244,6 @@ const BUILDERS = {
         const L = layoutNow(), gpu = state.gpu, g = new T.Group();
         const G = gpuGeom(L, gpu), len = gpu.len, th = gpu.thick, H = G.z1 - G.z0;
         const brandCol = gpu.brand === 'nvidia' ? '#76b900' : gpu.brand === 'amd' ? '#ef4444' : '#38bdf8';
-        if (gpu.model) { const mg = gpuFromModel(gpu, G, g); if (mg) return mg; }
         g.add(at(box(len, th, H, '#1b1b24', { metalness: 0.5, roughness: 0.45 }), G.x0 + len / 2, (G.y0 + G.y1) / 2, G.z0 + H / 2));
         g.add(at(box(0.3, th + 0.5, H + 0.5, '#b8bcc6', { metalness: 0.8, roughness: 0.3 }), G.x0 - 0.15, (G.y0 + G.y1) / 2, G.z0 + H / 2));
         const strip = new T.Mesh(new T.BoxGeometry(len * 0.92, 0.3, 0.1), rgbMat());
@@ -1348,8 +1312,7 @@ const BUILDERS = {
             strap(h2[0], h2[1] - 4.5, 2.6, 0.8); strap(h3[0], h3[1] - 4.5, 2.2, 0.8);
             if (state.gpu) {
                 const G = gpuGeom(L, state.gpu), gy = (G.y0 + G.y1) / 2;
-                const cx = state.gpu.model ? G.x0 + 3.805 * state.gpu.len / 4.89 : G.x1 - 3;
-                [-0.4, 0.4].forEach(d => cable([[B.x1 + 0.1, 3.6, 11], [(B.x1 + cx) / 2, 3.4, G.z1 + 0.8], [cx + 1.6, (3.4 + gy) / 2 + d, G.z1 + 1.0], [cx, gy + d, G.z1 + 0.2]], 0.42));
+                [-0.4, 0.4].forEach(d => cable([[B.x1 + 0.1, 3.6, 11], [(B.x1 + G.x1) / 2, 3.4, G.z1 + 0.8], [G.x1 - 1.4, (3.4 + gy) / 2 + d, G.z1 + 1.0], [G.x1 - 3, gy + d, G.z1 + 0.2]], 0.42));
             }
             const hdr = i => [L.bx + L.bw * (0.3 + 0.1 * i), L.top - L.bh + 0.5];       // разъёмы вентиляторов на плате
             state.case.fronts.slice(0, 3).forEach((y, i) => { const h = hdr(i); cable([[D.x - 2.6, y - 6, D.z / 2], [D.x - 3.5, Math.max(3, y - 9), D.z / 2 - 3], [h[0] + 1, h[1] + 3, zs + 4], [h[0], h[1], zs + 0.9]], 0.17); });
