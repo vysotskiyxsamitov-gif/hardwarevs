@@ -1486,3 +1486,521 @@ const OFFS = {
     cooler: new T.Vector3(0, 0, 20),  ram: new T.Vector3(0, 12, 10), gpu:  new T.Vector3(14, 0, 8),
     ssd:    new T.Vector3(0, 0, 12),  psu: new T.Vector3(-16, 0, 0), fig: new T.Vector3(0, 14, 0)
 };
+/* =====================================================================
+   3D: УПРАВЛЕНИЕ ДЕТАЛЯМИ В СЦЕНЕ (появление, удаление, синхронизация)
+   ===================================================================== */
+const parts = {};   // key -> { key, group }
+
+function buildPart(key) {
+    CTX = { rgb: [], spin: [] };
+    const g = BUILDERS[key]();
+    g.userData.rgb = CTX.rgb;
+    g.userData.spin = CTX.spin;
+    CTX = null;
+    return g;
+}
+function eachMat(obj, fn) {
+    obj.traverse(o => {
+        if (!o.material) return;
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach(fn);
+    });
+}
+function disposePart(g) {
+    rig.remove(g);
+    g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
+    eachMat(g, m => { if (m.map) m.map.dispose(); m.dispose(); });
+}
+function startAnim(g, off, delay) {
+    g.userData.anim = { t0: performance.now() + delay, off: off, dur: reduceMotion ? 1 : 750 };
+    g.position.copy(off);
+    eachMat(g, m => {
+        if (m.userData.o === undefined) { m.userData.o = m.opacity; m.userData.tr = m.transparent; }
+        m.transparent = true; m.opacity = 0;
+    });
+}
+function stepAnims(now) {
+    for (const key in parts) {
+        const g = parts[key].group, a = g.userData.anim;
+        if (!a) continue;
+        const t = clamp((now - a.t0) / a.dur, 0, 1), e = 1 - Math.pow(1 - t, 3);
+        g.position.set(a.off.x * (1 - e), a.off.y * (1 - e), a.off.z * (1 - e));
+        eachMat(g, m => { m.opacity = m.userData.o * e; });
+        if (t >= 1) {
+            eachMat(g, m => { m.opacity = m.userData.o; m.transparent = m.userData.tr; });
+            g.position.set(0, 0, 0);
+            delete g.userData.anim;
+        }
+    }
+}
+function wantKey(key) {
+    const sp = PARTSPEC[key];
+    if (!sp.req.every(k => state[k])) return null;
+    return sp.req.concat(sp.opt || []).map(k => state[k] ? state[k].id : '-').join('|');
+}
+function sync() {
+    let delay = 0;
+    STEPS.forEach(step => {
+        const key = step.key, want = wantKey(key), have = parts[key];
+        if (have && have.key === want) return;
+        if (have) { disposePart(have.group); delete parts[key]; }
+        if (want) {
+            const g = buildPart(key);
+            rig.add(g);
+            parts[key] = { key: want, group: g };
+            startAnim(g, OFFS[key], delay);
+            delay += 130;
+        }
+    });
+    const D = caseDims();
+    rig.position.set(-D.x / 2, -D.y / 2, -D.z / 2);
+    floor.position.y = -D.y / 2 - 0.5;
+    applyGlass();
+    $('emptyHint').hidden = !!state.case;
+}
+const PANEL_BTN = { solid: 'Панель', mesh: 'Сетка' };
+function applyGlass() {
+    if (parts.case && parts.case.group.userData.back) parts.case.group.userData.back.visible = backOn;
+    if (parts.case && parts.case.group.userData.glass) parts.case.group.userData.glass.visible = glassOn;
+    $('tbGlass').textContent = '◻ ' + ((state.case && PANEL_BTN[state.case.panel]) || 'Стекло');
+}
+
+/* =====================================================================
+   ЦИКЛ ОТРИСОВКИ
+   ===================================================================== */
+let lastT = performance.now();
+function frame(now) {
+    const dt = Math.min(0.05, (now - lastT) / 1000);
+    lastT = now;
+    stepAnims(now);
+    for (const key in parts) {
+        const ud = parts[key].group.userData;
+        ud.spin.forEach(s => { s.o.rotation.z += dt * s.sp; });
+        ud.rgb.forEach(m => {
+            if (!rgbOn) m.emissive.setRGB(0, 0, 0);
+            else if (rgbColor) m.emissive.copy(rgbColor);
+            else m.emissive.setHSL((now * 0.0001 + m.userData.off) % 1, 1, 0.5);
+            m.emissiveIntensity = rgbBright;
+        });
+    }
+    updateCamera(dt);
+    renderer.render(scene, camera);
+    requestAnimationFrame(frame);
+}
+
+/* =====================================================================
+   ИНТЕРФЕЙС
+   ===================================================================== */
+const stepperEl = $('stepper'), headEl = $('stepHead'), optionsEl = $('options'), bannerEl = $('banner');
+let advanceTimer = null;
+
+function stepHint(key) {
+    switch (key) {
+        case 'case': return 'Корпус определяет, какие платы, кулеры и видеокарты поместятся.';
+        case 'mb':   return state.case ? 'Корпус поддерживает форматы: ' + state.case.forms.join(', ') + '.' : '';
+        case 'cpu':  return state.mb ? 'Сокет платы: ' + state.mb.socket + '.' : '';
+        case 'cooler': return state.cpu ? 'Тепловыделение процессора: ' + state.cpu.tdp + ' Вт.' : '';
+        case 'ram':  return state.mb ? 'Плата поддерживает память ' + state.mb.mem + '.' : '';
+        case 'gpu':  return state.case ? 'Максимальная длина видеокарты в корпусе: ' + state.case.gpuMax + ' см.' : '';
+        case 'ssd':  return 'Накопитель M.2 NVMe устанавливается в слот на плате.';
+        case 'fig':  return 'Фигурка стоит на видеокарте. Это декор, цена указана в печеньках 🍪.';
+        case 'psu': { const r = requiredPower(); return r ? 'Рекомендуемая мощность — от ' + r + ' Вт.' : ''; }
+    }
+    return '';
+}
+
+function renderStepper() {
+    const fm = firstMissing(), reach = fm === -1 ? STEPS.length - 1 : fm;
+    stepperEl.innerHTML = STEPS.map((s, i) => {
+        const done = !!state[s.key];
+        return '<button class="chip' + (i === active ? ' active' : '') + (done ? ' done' : '') + '" data-i="' + i + '"' +
+            (i > reach ? ' disabled' : '') + ' title="' + s.title + '" aria-label="Шаг ' + (i + 1) + ': ' + s.title + '">' + s.icon + '</button>';
+    }).join('');
+}
+
+let filterText = '', onlyOk = true;
+
+function renderOptions() {
+    const step = STEPS[active], key = step.key;
+    headEl.innerHTML = '<div class="eyebrow">Шаг ' + (active + 1) + ' из ' + STEPS.length + '</div><h2>' + step.title + '</h2><p>' + stepHint(key) + '</p>';
+
+    const all = DATA[key].map(o => ({ o: o, reason: check(key, o), sel: !!(state[key] && state[key].id === o.id) }));
+    const anyOk = all.some(x => !x.reason);
+    const q = filterText.trim().toLowerCase();
+    let list = all.filter(x => (!q || x.o.name.toLowerCase().includes(q)) && (!onlyOk || !x.reason || x.sel));
+    list = list.filter(x => !x.reason).concat(list.filter(x => x.reason));   // совместимые — выше
+
+    optionsEl.innerHTML = list.length ? list.map(x => {
+        const o = x.o, reason = x.reason, sel = x.sel;
+        let note = '';
+        if (reason) note = '<div class="opt-note bad">✕ ' + reason + '</div>';
+        else if (sel) note = '<div class="opt-note ok">✓ Установлено</div>';
+        else if (state[key]) {
+            const sim = Object.assign({}, state); sim[key] = o;
+            const removed = revalidate(sim);
+            if (removed.length) note = '<div class="opt-note warn">⚠ Будет убрано: ' + removed.join(', ') + '</div>';
+        }
+        return '<button class="opt' + (sel ? ' sel' : '') + '" data-id="' + o.id + '"' + (reason ? ' disabled' : '') + '>' +
+            '<div class="opt-top"><span class="opt-name">' + o.name + '</span><span class="opt-price">' + priceTxt(o) + '</span></div>' +
+            '<div class="opt-spec">' + specOf(key, o) + '</div>' + note + '</button>';
+    }).join('') : '<div class="empty-opts">Ничего не найдено. Измените поиск или снимите «Только совместимые».</div>';
+    $('optCount').textContent = 'Показано ' + list.length + ' из ' + all.length;
+
+    let banner = '';
+    if (!anyOk) {
+        banner = '<div class="banner warn"><b>Нет подходящих вариантов.</b> Вернитесь на предыдущие шаги и выберите другие компоненты.</div>';
+    } else if (firstMissing() === -1) {
+        banner = '<div class="banner"><b>✅ Сборка готова!</b> Крутите модель мышью, включайте стекло и RGB. Любой шаг можно изменить — несовместимые детали уберутся сами.' +
+            '<div><button class="btn primary" type="button" id="bannerShot">Сохранить картинку</button></div></div>';
+    }
+    bannerEl.innerHTML = banner;
+    const bs = $('bannerShot');
+    if (bs) bs.addEventListener('click', saveShot);
+}
+
+function setActive(i) {
+    active = i;
+    filterText = '';
+    $('optSearch').value = '';
+    render();
+    $('scroll').scrollTop = 0;
+}
+$('optSearch').addEventListener('input', e => { filterText = e.target.value; renderOptions(); });
+$('onlyOk').addEventListener('change', e => { onlyOk = e.target.checked; renderOptions(); });
+
+function renderSummary() {
+    let total = 0, ck = 0, rows = '';
+    STEPS.forEach(s => {
+        const o = state[s.key];
+        if (o) { total += o.price; ck += o.cookies || 0; rows += '<div class="build-row"><span>' + s.title + '</span><span>' + o.name + ' · ' + priceTxt(o) + '</span></div>'; }
+    });
+    $('buildList').innerHTML = rows || '<div class="build-row"><span>Пока ничего не выбрано</span><span></span></div>';
+    $('total').textContent = fmt(total) + (ck ? ' + ' + ck + ' 🍪' : '');
+    $('power').textContent = state.cpu ? 'Оценка потребления: ≈ ' + (state.cpu.tdp + (state.gpu ? state.gpu.tdp : 0) + 60) + ' Вт' : '';
+}
+
+function render() { renderStepper(); renderOptions(); renderSummary(); }
+
+function toast(text) {
+    const t = $('toast');
+    t.textContent = text;
+    t.classList.add('show');
+    clearTimeout(toast.t);
+    toast.t = setTimeout(() => t.classList.remove('show'), 3800);
+}
+
+function choose(key, id) {
+    const o = DATA[key].find(x => x.id === id);
+    if (!o || check(key, o)) return;
+    clearTimeout(advanceTimer);
+    if (!(state[key] && state[key].id === id)) {
+        state[key] = o;
+        const removed = revalidate(state);
+        sync();
+        if (removed.length) toast('Убрано как несовместимое: ' + removed.join(', '));
+    }
+    render();
+    const fm = firstMissing();
+    if (fm !== -1) advanceTimer = setTimeout(() => setActive(fm), 550);
+}
+
+stepperEl.addEventListener('click', e => {
+    const b = e.target.closest('.chip');
+    if (!b || b.disabled) return;
+    clearTimeout(advanceTimer);
+    setActive(+b.dataset.i);
+});
+optionsEl.addEventListener('click', e => {
+    const b = e.target.closest('.opt');
+    if (b && !b.disabled) choose(STEPS[active].key, b.dataset.id);
+});
+$('resetBtn').addEventListener('click', () => {
+    if (!Object.keys(state).length) return;
+    if (!window.confirm('Сбросить всю сборку?')) return;
+    clearTimeout(advanceTimer);
+    state = {};
+    sync(); setActive(0);
+});
+    /* ---------- Панель инструментов 3D ---------- */
+function toggle(btn, get, set) {
+    btn.addEventListener('click', () => {
+        const v = !get();
+        set(v);
+        btn.setAttribute('aria-pressed', v ? 'true' : 'false');
+    });
+}
+toggle($('tbRotate'), () => autoRotate, v => { autoRotate = v; });
+toggle($('tbBack'), () => backOn, v => { backOn = v; applyGlass(); cam.base = v ? 0.55 : Math.PI + 0.55; });   // снятая крышка: камера уходит назад
+toggle($('tbGlass'), () => glassOn, v => { glassOn = v; applyGlass(); });
+toggle($('tbRgb'), () => rgbOn, v => { rgbOn = v; });
+
+/* ---------- Подсветка: цвет и яркость ---------- */
+const LIGHT_KEY = 'hardwarevs-rgb';
+const LIGHT_COLORS = [
+    ['Радуга', null], ['Красный', '#ff1744'], ['Оранжевый', '#ff7a00'], ['Жёлтый', '#ffd600'], ['Зелёный', '#00e676'], ['Бирюзовый', '#00e5ff'],
+    ['Синий', '#2979ff'], ['Фиолетовый', '#a855f7'], ['Розовый', '#ff4fa3'], ['Белый', '#ffffff']
+];
+const lpSw = $('lpSwatches'), lpCustom = $('lpCustom'), lpBright = $('lpBright'), lightPanel = $('lightPanel'), tbLight = $('tbLight');
+
+function paintSwatches() {
+    lpSw.querySelectorAll('.lp-sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.hex === (rgbHex || '') ? 'true' : 'false'));
+}
+function saveLight() {
+    try { localStorage.setItem(LIGHT_KEY, JSON.stringify({ hex: rgbHex, bright: rgbBright })); } catch (e) {}
+}
+function setRgbColor(hex, turnOn) {
+    rgbHex = hex ? hex.toLowerCase() : null;
+    rgbColor = rgbHex ? new T.Color(rgbHex) : null;
+    if (rgbHex) lpCustom.value = rgbHex;
+    if (turnOn) { rgbOn = true; $('tbRgb').setAttribute('aria-pressed', 'true'); }   // выбор цвета включает подсветку
+    paintSwatches();
+    saveLight();
+}
+LIGHT_COLORS.forEach(c => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'lp-sw'; b.dataset.hex = c[1] || '';
+    b.title = c[0]; b.setAttribute('aria-label', c[0]);
+    b.style.background = c[1] || 'conic-gradient(#ff1744, #ffd600, #00e676, #00e5ff, #2979ff, #a855f7, #ff1744)';
+    b.addEventListener('click', () => setRgbColor(c[1], true));
+    lpSw.appendChild(b);
+});
+lpCustom.addEventListener('input', () => setRgbColor(lpCustom.value, true));
+lpBright.addEventListener('input', () => { rgbBright = parseFloat(lpBright.value); saveLight(); });
+
+try {
+    const saved = JSON.parse(localStorage.getItem(LIGHT_KEY) || 'null');
+    if (saved) {
+        if (typeof saved.bright === 'number' && saved.bright >= 0.2 && saved.bright <= 2.5) { rgbBright = saved.bright; lpBright.value = saved.bright; }
+        if (typeof saved.hex === 'string' && /^#[0-9a-f]{6}$/i.test(saved.hex)) setRgbColor(saved.hex, false);
+    }
+} catch (e) {}
+paintSwatches();
+
+function setLightPanel(open) {
+    lightPanel.hidden = !open;
+    tbLight.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+tbLight.addEventListener('click', e => { e.stopPropagation(); setLightPanel(lightPanel.hidden); });
+document.addEventListener('click', e => { if (!lightPanel.contains(e.target)) setLightPanel(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') setLightPanel(false); });
+$('tbCam').addEventListener('click', () => { cam.base = 0.55; cam.tPhi = 1.28; cam.tZoom = 1; });
+
+function saveShot() {
+    renderer.render(scene, camera);
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    a.download = 'hardwarevs-build.png';
+    document.body.appendChild(a); a.click(); a.remove();
+}
+$('tbShot').addEventListener('click', saveShot);
+
+/* ---------- Тема и окно настроек ---------- */
+const THEME_KEY = 'hardwarevs-theme';
+const themeButtons = document.querySelectorAll('.theme-option');
+function applyTheme(theme) {
+    root.setAttribute('data-theme', theme);
+    themeButtons.forEach(b => b.setAttribute('aria-pressed', b.dataset.themeValue === theme ? 'true' : 'false'));
+    applySceneTheme();
+}
+themeButtons.forEach(b => b.addEventListener('click', () => {
+    applyTheme(b.dataset.themeValue);
+    try { localStorage.setItem(THEME_KEY, b.dataset.themeValue); } catch (e) {}
+}));
+
+const gearBtn = $('gear-btn'), panel = $('settings-panel'), settingsBox = $('settings');
+function setPanel(open) {
+    panel.classList.toggle('open', open);
+    gearBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+gearBtn.addEventListener('click', e => { e.stopPropagation(); setPanel(!panel.classList.contains('open')); });
+document.addEventListener('click', e => { if (!settingsBox.contains(e.target)) setPanel(false); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') setPanel(false); });
+
+/* ---------- Плавный уход на главную ---------- */
+$('back-link').addEventListener('click', e => {
+    if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    e.preventDefault();
+    const href = e.currentTarget.getAttribute('href');
+    root.classList.add('leaving');
+    setTimeout(() => { window.location.href = href; }, reduceMotion ? 0 : 400);
+});
+window.addEventListener('hw-cookies', () => render());
+window.addEventListener('pageshow', e => { if (e.persisted) root.classList.remove('leaving'); });
+
+/* ---------- Аккаунт и сохранённые сборки (Supabase) ---------- */
+const AUTH = window.HW_AUTH;
+const DRAFT_KEY = 'hardwarevs-draft';
+let user = null, currentBuild = null;   // currentBuild = { id, name } открытая сохранённая сборка
+
+function partsOf() { const p = {}; STEPS.forEach(s => { if (state[s.key]) p[s.key] = state[s.key].id; }); return p; }
+function totalOf() { return STEPS.reduce((t, s) => t + (state[s.key] ? state[s.key].price : 0), 0); }
+
+// Подставляет сохранённый состав: что пропало из каталога или стало несовместимым, убирается
+function applyParts(parts) {
+    const s = {}; let lost = 0;
+    STEPS.forEach(st => {
+        const id = parts && parts[st.key];
+        if (!id) return;
+        const o = DATA[st.key].find(x => x.id === id);
+        if (o) s[st.key] = o; else lost++;
+    });
+    const removed = revalidate(s);
+    clearTimeout(advanceTimer);
+    state = s;
+    sync();
+    const fm = firstMissing();
+    setActive(fm === -1 ? 0 : fm);
+    if (removed.length || lost) toast('Часть деталей недоступна или несовместима и была убрана');
+}
+
+const modal = $('modal'), modalBody = $('modalBody');
+function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+function openModal(title) { $('modalTitle').textContent = title; modalBody.textContent = ''; modal.hidden = false; }
+function closeModal() { modal.hidden = true; }
+$('modalClose').addEventListener('click', closeModal);
+modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+
+function goLogin() {
+    try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(partsOf())); } catch (e) {}   // чтобы сборка не пропала после входа
+    window.location.href = 'login.html?next=builder.html';
+}
+function dateStr(iso) { try { return new Date(iso).toLocaleDateString('ru-RU'); } catch (e) { return ''; } }
+
+function setUser(u) {
+    user = u;
+    if (!u) currentBuild = null;
+    $('whoMail').textContent = u ? (u.email || 'Аккаунт') : 'Не вошли';
+    $('authBtn').textContent = u ? 'Выйти' : 'Войти';
+}
+
+if (AUTH) {
+    $('saveRow').hidden = false;
+    AUTH.getUser().then(setUser);
+    AUTH.client.auth.onAuthStateChange((ev, session) => setUser(session ? session.user : null));
+
+    $('authBtn').addEventListener('click', () => { if (user) AUTH.client.auth.signOut(); else goLogin(); });
+
+    async function doSave(name, asNew, msgEl, btns) {
+        name = (name || '').trim().slice(0, 80) || 'Моя сборка';
+        const row = { name: name, parts: partsOf(), total_price: totalOf() };
+        btns.forEach(b => { b.disabled = true; });
+        try {
+            const q = AUTH.client.from('builds');
+            const res = (currentBuild && !asNew)
+                ? await q.update(row).eq('id', currentBuild.id).select('id,name').single()
+                : await q.insert(row).select('id,name').single();
+            if (res.error) throw res.error;
+            currentBuild = { id: res.data.id, name: res.data.name };
+            closeModal();
+            toast('Сборка сохранена');
+        } catch (err) {
+            msgEl.textContent = 'Не удалось сохранить: ' + (err && err.message ? err.message : 'ошибка сети');
+            btns.forEach(b => { b.disabled = false; });
+        }
+    }
+
+    $('saveBtn').addEventListener('click', () => {
+        if (!user) { goLogin(); return; }
+        if (!state.case) { toast('Сначала выберите хотя бы корпус'); return; }
+        openModal('Сохранить сборку');
+        const input = el('input', 'm-input'); input.type = 'text'; input.maxLength = 80;
+        input.placeholder = 'Название сборки';
+        input.value = currentBuild ? currentBuild.name : 'Моя сборка';
+        const msg = el('div', 'm-msg'); msg.setAttribute('role', 'alert');
+        const actions = el('div', 'm-actions');
+        const main = el('button', 'btn primary', currentBuild ? 'Обновить' : 'Сохранить'); main.type = 'button';
+        const btns = [main];
+        actions.appendChild(main);
+        main.addEventListener('click', () => doSave(input.value, false, msg, btns));
+        if (currentBuild) {
+            const copy = el('button', 'btn', 'Сохранить как новую'); copy.type = 'button';
+            btns.push(copy); actions.appendChild(copy);
+            copy.addEventListener('click', () => doSave(input.value, true, msg, btns));
+        }
+        input.addEventListener('keydown', e => { if (e.key === 'Enter') main.click(); });
+        modalBody.appendChild(input); modalBody.appendChild(actions); modalBody.appendChild(msg);
+        input.focus(); input.select();
+    });
+
+    $('myBuildsBtn').addEventListener('click', async () => {
+        if (!user) { goLogin(); return; }
+        openModal('Мои сборки');
+        modalBody.appendChild(el('div', 'm-muted', 'Загрузка…'));
+        const res = await AUTH.client.from('builds').select('id,name,parts,total_price,created_at').order('created_at', { ascending: false }).limit(50);
+        modalBody.textContent = '';
+        if (res.error) { modalBody.appendChild(el('div', 'm-msg', 'Не удалось загрузить: ' + res.error.message)); return; }
+        if (!res.data.length) { modalBody.appendChild(el('div', 'm-muted', 'Пока нет сохранённых сборок.')); return; }
+        res.data.forEach(bld => {
+            const item = el('div', 'b-item');
+            item.appendChild(el('div', 'b-name', bld.name));
+            item.appendChild(el('div', 'b-meta', (bld.total_price != null ? fmt(bld.total_price) + ' · ' : '') + dateStr(bld.created_at)));
+            const act = el('div', 'm-actions');
+            const open = el('button', 'btn primary', 'Открыть'); open.type = 'button';
+            const del = el('button', 'btn danger', 'Удалить'); del.type = 'button';
+            open.addEventListener('click', () => {
+                applyParts(bld.parts);
+                currentBuild = { id: bld.id, name: bld.name };
+                closeModal();
+            });
+            del.addEventListener('click', async () => {
+                if (!window.confirm('Удалить сборку «' + bld.name + '»?')) return;
+                del.disabled = true;
+                const r = await AUTH.client.from('builds').delete().eq('id', bld.id);
+                if (r.error) { del.disabled = false; toast('Не удалось удалить: ' + r.error.message); return; }
+                if (currentBuild && currentBuild.id === bld.id) currentBuild = null;
+                item.remove();
+                if (!modalBody.children.length) modalBody.appendChild(el('div', 'm-muted', 'Пока нет сохранённых сборок.'));
+            });
+            act.appendChild(open); act.appendChild(del); item.appendChild(act);
+            modalBody.appendChild(item);
+        });
+    });
+}
+
+/* ---------- Старт ---------- */
+applyTheme(root.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
+resize();
+sync();
+render();
+// Вернулись со страницы входа: восстанавливаем сборку, которую собирали до этого
+try {
+    const d = sessionStorage.getItem(DRAFT_KEY);
+    if (d) {
+        sessionStorage.removeItem(DRAFT_KEY);
+        const p = JSON.parse(d);
+        if (p && typeof p === 'object' && Object.keys(p).length) applyParts(p);
+    }
+} catch (e) {}
+requestAnimationFrame(frame);
+
+})();
+</script>
+<script>
+(function () {
+    const gate = document.getElementById('vipGate'), text = document.getElementById('vipGateText'), box = document.getElementById('vipGateActions');
+    const C = window.HW_COOKIES;
+    function show(msg, links) {
+        text.textContent = msg; box.textContent = '';
+        links.forEach(function (l) {
+            const a = document.createElement('a');
+            a.href = l.href; a.className = 'vip-btn' + (l.ghost ? ' ghost' : ''); a.textContent = l.label;
+            box.appendChild(a);
+        });
+        gate.hidden = false;
+    }
+    const HOME = { href: 'index.html', label: '← На главную', ghost: true };
+    // Если проверить VIP нельзя, доступ остаётся закрытым
+    if (!C) { show('Не удалось проверить VIP-статус. Обновите страницу.', [HOME]); return; }
+    C.onChange(function (w) {
+        window.HW_CK = w || null; try { window.dispatchEvent(new Event('hw-cookies')); } catch (e) {}
+        if (w === undefined) show('Не удалось проверить VIP-статус. Обновите страницу.', [HOME]);
+        else if (w === null) show('Конфигуратор доступен только с VIP. Войдите в аккаунт, чтобы продолжить.', [
+            { href: 'login.html?next=builder.html', label: 'Войти' }, { href: 'register.html?next=builder.html', label: 'Регистрация', ghost: true }, HOME]);
+        else if (!w.vip_active) show('Нужен VIP: ' + w.vip_price + ' 🍪 на ' + w.vip_days + ' дней. У вас ' + w.cookies + ' 🍪.', [{ href: 'index.html', label: 'Перейти в магазин' }]);
+        else gate.hidden = true;
+    });
+    C.refresh();
+})();
+</script>
+</body>
+</html>
