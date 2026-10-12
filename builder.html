@@ -1962,7 +1962,7 @@ function saveLight() {
 }
 function paintLight() {
     const L = lightFor(zone);
-    lpSw.querySelectorAll('.lp-sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.hex === (L.hex || '') ? 'true' : 'false');
+    lpSw.querySelectorAll('.lp-sw').forEach(b => b.setAttribute('aria-pressed',        lpSw.querySelectorAll('.lp-sw').forEach(b => b.setAttribute('aria-pressed', b.dataset.hex === (L.hex || '') ? 'true' : 'false')); ? 'true' : 'false');
     if (L.hex) lpCustom.value = L.hex;
     lpBright.value = L.bright; lpSpeed.value = L.speed; lpGlow.value = rgbGlow;
     fxBtns.forEach(b => b.setAttribute('aria-pressed', b.dataset.fx === L.fx ? 'true' : 'false'));
