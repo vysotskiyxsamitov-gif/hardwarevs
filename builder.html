@@ -6,13 +6,13 @@
     <title>HardwareVS — 3D-конфигуратор ПК</title>
 
     <!-- Тема применяется до отрисовки (тот же ключ, что и на главной) -->
-    <script>
-        try {
-            var savedTheme = localStorage.getItem('hardwarevs-theme');
-            if (savedTheme === 'light' || savedTheme === 'dark') {
-                document.documentElement.setAttribute('data-theme', savedTheme);
-            }
-        } catch (e) {}
+      <script>
+        window.addEventListener('error', function (e) {
+            var d = document.createElement('div');
+            d.style.cssText = 'position:fixed;z-index:99999;left:0;right:0;bottom:0;background:#7f1d1d;color:#fff;padding:10px;font:13px monospace;white-space:pre-wrap';
+            d.textContent = 'Ошибка: ' + e.message + ' (строка ' + e.lineno + ')';
+            (document.body || document.documentElement).appendChild(d);
+        });
     </script>
 
     <!-- 3D-библиотека и свечение (bloom): порядок важен -->
