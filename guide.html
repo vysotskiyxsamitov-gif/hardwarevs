@@ -17,7 +17,7 @@
         #video-viewport {
             width: 1280px; height: 720px; flex: none; background: #060412; border: 4px solid #3d2475;
             position: relative; overflow: hidden; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            transform-origin: center center;
+            transform-origin: center center; transition: background-color .4s, border-color .4s;
         }
         .page { position: absolute; width: 100%; height: 100%; top: 0; left: 0; display: none; opacity: 0; padding: 40px;
             flex-direction: column; align-items: center; justify-content: center; }
@@ -51,16 +51,72 @@
         .result-box { width: 560px; background: #1a0f47; border-left: 5px solid #a855f7; border-radius: 4px; padding: 15px; font-size: 14px; line-height: 1.4; }
         .back-link { position: absolute; top: 30px; left: 30px; color: #9aa0a6; text-decoration: none; font-size: 14px; }
 
+        /* Подпись к текущему шагу (сверху по центру) */
+        #caption { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); z-index: 9000; max-width: 560px; padding: 9px 18px;
+            border: 1px solid #442a7a; border-radius: 20px; background: rgba(19,13,51,.94); color: #e9d5ff; font-size: 14px; font-weight: 600;
+            text-align: center; opacity: 0; pointer-events: none; }
+
         /* Блок аккаунта на главной (слева сверху, как на настоящем сайте) */
-        .acc-mock { position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 16px;
+        .acc-mock { position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 16px;
             border: 1px solid #442a7a; border-radius: 22px; background: rgba(19,13,51,.92); font-size: 13px; color: #e9d5ff; font-weight: 600; }
         .acc-mock .sep { color: #442a7a; }
         .acc-mock .mail { color: #9aa0a6; font-weight: 400; }
         #acc-user { display: none; align-items: center; gap: 10px; }
         #acc-guest { display: flex; align-items: center; gap: 10px; }
 
+        /* Плашка VIP под аккаунтом */
+        .shop-mock { position: absolute; top: 72px; left: 20px; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 6px 0 14px;
+            border: 1px solid #442a7a; border-radius: 20px; background: rgba(19,13,51,.92); font-size: 13px; color: #e9d5ff; }
+        .shop-mock .vip { font-weight: 700; }
+        .shop-mock .st { color: #9aa0a6; }
+        .shop-mock .q { width: 26px; height: 26px; border-radius: 50%; background: #24194f; border: 1px solid #442a7a; display: flex; align-items: center; justify-content: center; font-weight: 700; }
+        .shop-mock .buy { border-radius: 14px; padding: 7px 12px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #f59e0b, #b45309); }
+
+        /* Круглые кнопки справа сверху: настройки, отзывы, предложить */
+        .round { position: absolute; top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid #442a7a; background: rgba(19,13,51,.92);
+            display: flex; align-items: center; justify-content: center; font-size: 20px; color: #e9d5ff; }
+        #mock-gear { right: 20px; }
+        #mock-reviews { right: 74px; color: #f59e0b; }
+        #mock-suggest { right: 128px; color: #06b6d4; }
+
+        /* Окно выбора темы */
+        .theme-pop { position: absolute; top: 74px; right: 20px; width: 220px; padding: 14px; border: 1px solid #442a7a; border-radius: 10px;
+            background: rgba(19,13,51,.96); opacity: 0; visibility: hidden; z-index: 20; }
+        .theme-pop .ttl { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #9aa0a6; margin-bottom: 10px; }
+        .theme-pop .row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+        .topt { padding: 10px 0; border-radius: 6px; background: #24194f; color: #e9d5ff; border: 1px solid transparent; font-size: 13px; font-weight: 600; text-align: center; }
+        .topt.on { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); border-color: #a855f7; color: #fff; }
+
+        /* Соцсети внизу по центру */
+        .soc { position: absolute; bottom: 20px; left: 50%; margin-left: -61px; display: flex; gap: 10px; padding: 6px; border: 1px solid #442a7a; border-radius: 30px; background: rgba(19,13,51,.92); }
+        .soc div { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff; }
+        #mock-tg { background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); }
+        #mock-tt { background: linear-gradient(135deg, #111 0%, #2a2a2a 100%); text-shadow: 1.5px 1.5px 0 #ff0050, -1.5px -1.5px 0 #00f2ea; }
+
+        /* Всплывающее окно (VIP и «Предложить») */
+        .mm-ov { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: rgba(6,2,11,.65); opacity: 0; visibility: hidden; }
+        .mm { width: 380px; padding: 20px; border: 1px solid #442a7a; border-radius: 12px; background: rgba(19,13,51,.97); color: #e9d5ff; box-shadow: 0 20px 50px rgba(0,0,0,.45); }
+        .mm-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+        .mm-head h3 { font-size: 18px; }
+        #mm-close { font-size: 24px; line-height: 1; padding: 4px 8px; color: #9aa0a6; }
+        .mm p { font-size: 14px; line-height: 1.6; margin-bottom: 8px; }
+        .mm ul { margin: 0 0 12px; padding-left: 20px; line-height: 1.7; font-size: 14px; }
+        .mm .hint { font-size: 12px; color: #9aa0a6; }
+        .mm .kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
+        .mm .kinds div { padding: 11px 0; border-radius: 6px; background: #24194f; text-align: center; font-size: 13px; font-weight: 600; }
+        .mm .inp { padding: 12px; border-radius: 8px; background: #24194f; border: 1px solid #442a7a; color: #9aa0a6; font-size: 14px; }
+        .mm .send { margin-top: 14px; padding: 12px 0; border-radius: 8px; text-align: center; font-weight: 700; font-size: 14px; background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; }
+
+        /* Светлая тема (демонстрация переключателя) */
+        #video-viewport.light { background: #f3f0fa; border-color: #d4c4f2; }
+        .light .acc-mock, .light .shop-mock, .light .round, .light .theme-pop, .light .soc { background: rgba(255,255,255,.94); border-color: #d4c4f2; color: #2a1a5e; }
+        .light .topt { background: #ece6fa; color: #2a1a5e; }
+        .light .topt.on { color: #fff; }
+        .light .shop-mock .q { background: #ece6fa; border-color: #d4c4f2; }
+        .light .acc-mock .sep { color: #d4c4f2; }
+
         /* Кнопка выхода на главный экран сайта (всегда в углу) */
-        .exit-btn { position: absolute; top: 20px; right: 20px; z-index: 9000; padding: 11px 22px;
+        .exit-btn { position: absolute; bottom: 20px; left: 20px; z-index: 9000; padding: 11px 22px;
             background: linear-gradient(180deg, #1c1245 0%, #130d33 100%); color: #e9d5ff; border: 1px solid #442a7a; border-bottom: 2px solid #a855f7;
             border-radius: 6px; font-size: 12px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; text-decoration: none;
             transition: background 0.2s, border-color 0.2s, box-shadow 0.2s; }
@@ -128,6 +184,9 @@
         <!-- Автоматический курсор для имитации кликов -->
         <div id="virtual-cursor"><div class="pulse"></div></div>
 
+        <!-- Подпись к текущему шагу -->
+        <div id="caption"></div>
+
         <!-- Кнопка выхода на главный экран сайта -->
         <a href="https://vysotskiyxsamitov-gif.github.io/hardwarevs/index.html" class="exit-btn" id="exit-btn">На главный экран сайта</a>
 
@@ -146,11 +205,41 @@
                 <div id="acc-guest"><span>Войти</span><span class="sep">|</span><span>Регистрация</span></div>
                 <div id="acc-user"><span class="mail">alex@mail.ru</span><span class="sep">·</span><span>Выйти</span></div>
             </div>
+            <div class="shop-mock">
+                <span class="vip">👑 VIP</span>
+                <span class="st" id="shop-st">войдите</span>
+                <div class="q" id="mock-vip-info">?</div>
+                <div class="buy">Купить · 75 🍪</div>
+            </div>
+
+            <div class="round" id="mock-suggest">💡</div>
+            <div class="round" id="mock-reviews">⭐</div>
+            <div class="round" id="mock-gear">⚙️</div>
+            <div class="theme-pop" id="theme-pop">
+                <div class="ttl">Тема оформления</div>
+                <div class="row">
+                    <div class="topt on" id="mock-theme-dark">🌙 Тёмная</div>
+                    <div class="topt" id="mock-theme-light">☀️ Светлая</div>
+                </div>
+            </div>
+
             <h1 class="logo">HardwareVS</h1>
             <button class="btn btn-build" id="mock-btn-build">🛠️ ПОСТРОИТЬ КОМПЬЮТЕР</button>
             <button class="btn btn-cpu" id="mock-btn-cpu">💻 СРАВНИТЬ ПРОЦЕССОРЫ</button>
-            <button class="btn btn-gpu" id="mock-btn-gpu">🔮 СРАВНИТЬ ВИДЕОКАРТЫ</button>
-            <button class="btn btn-guide">📖 ПОШАГОВЫЙ ГАЙД</button>
+            <button class="btn btn-gpu" id="mock-btn-gpu">🎮 СРАВНИТЬ ВИДЕОКАРТЫ</button>
+            <button class="btn btn-guide" id="mock-btn-guide">📖 ПОШАГОВЫЙ ГАЙД</button>
+
+            <div class="soc">
+                <div id="mock-tg">✈</div>
+                <div id="mock-tt">♪</div>
+            </div>
+
+            <div class="mm-ov" id="mm-ov">
+                <div class="mm">
+                    <div class="mm-head"><h3 id="mm-title"></h3><span id="mm-close">×</span></div>
+                    <div id="mm-body"></div>
+                </div>
+            </div>
         </div>
 
         <!-- СЦЕНА 2: СРАВНЕНИЕ ПРОЦЕССОРОВ -->
@@ -261,7 +350,7 @@
             <h1 class="logo" style="font-size: 44px; margin-bottom: 22px;">HardwareVS</h1>
             <div class="reg-card">
                 <h3>Регистрация</h3>
-                <p class="reg-sub">Аккаунт нужен, чтобы сохранять свои сборки ПК. Это бесплатно.</p>
+                <p class="reg-sub">Аккаунт нужен, чтобы сохранять сборки ПК, оставлять отзывы и предлагать новинки. Это бесплатно.</p>
                 <div class="reg-lbl">Почта</div>
                 <div class="fld" id="fld-email"><span id="txt-email"></span><i class="caret"></i></div>
                 <div class="reg-lbl">Пароль (от 8 символов)</div>
@@ -359,6 +448,42 @@
             document.querySelectorAll('.fld').forEach(f => f.classList.toggle('focus', f.id === id));
         }
         function pause(tl, s) { tl.to({}, { duration: s }); }
+
+        // Подпись к шагу (сверху по центру)
+        function cap(text) {
+            const c = $('caption');
+            c.textContent = text;
+            gsap.fromTo(c, { opacity: 0, y: -6 }, { opacity: 1, y: 0, duration: 0.3 });
+        }
+
+        // ------------------------------------------
+        //   ГЛАВНЫЙ ЭКРАН: тема, окна, статус VIP
+        // ------------------------------------------
+        function setTheme(light) {
+            viewport.classList.toggle('light', light);
+            $('mock-theme-dark').classList.toggle('on', !light);
+            $('mock-theme-light').classList.toggle('on', light);
+        }
+        function openPanel() { gsap.to('#theme-pop', { autoAlpha: 1, duration: 0.25 }); }
+        function closePanel() { gsap.to('#theme-pop', { autoAlpha: 0, duration: 0.2 }); }
+        function openModal(title, html) {
+            $('mm-title').textContent = title;
+            $('mm-body').innerHTML = html;
+            gsap.to('#mm-ov', { autoAlpha: 1, duration: 0.25 });
+        }
+        function closeModal() { gsap.to('#mm-ov', { autoAlpha: 0, duration: 0.2 }); }
+
+        const VIP_HTML =
+            '<p>Что даёт VIP на 30 дней:</p>' +
+            '<ul><li>доступ к 3D-конфигуратору ПК</li><li>3 печеньки в день вместо 1</li></ul>' +
+            '<p class="hint">Стоимость: 75 🍪. Повторная покупка продлевает VIP ещё на 30 дней.</p>' +
+            '<p class="hint">Печеньку можно забрать раз в сутки: новый день начинается в 12:00 по Москве.</p>';
+        const SUG_HTML =
+            '<p class="hint" style="margin-bottom:8px">Что вы хотите добавить?</p>' +
+            '<div class="kinds"><div>💻 Процессор</div><div>🎮 Видеокарта</div></div>' +
+            '<p class="hint" style="margin-bottom:8px">Точное название</p>' +
+            '<div class="inp">Например: Ryzen 7 7800X3D</div>' +
+            '<div class="send">Отправить предложение</div>';
 
         // ------------------------------------------
         //   3D-ДВИЖОК (тот же, что в конфигураторе builder.html)
@@ -952,6 +1077,7 @@
         function setLoggedIn(on) {
             $('acc-guest').style.display = on ? 'none' : 'flex';
             $('acc-user').style.display = on ? 'flex' : 'none';
+            $('shop-st').textContent = on ? 'не активен' : 'войдите';
         }
 
         // Полный сброс состояния в начале каждого цикла
@@ -978,6 +1104,11 @@
             focusField('');
             gsap.set('#reg-msg', { opacity: 0, y: 8 });
             setLoggedIn(false);
+            // тема, окна, подпись
+            setTheme(false);
+            gsap.set('#theme-pop', { autoAlpha: 0 });
+            gsap.set('#mm-ov', { autoAlpha: 0 });
+            gsap.set('#caption', { opacity: 0 });
         }
 
         // ------------------------------------------
@@ -990,6 +1121,7 @@
         const endOverlay = $('end-overlay');
 
         function showEndQuestion() {
+            gsap.to('#caption', { opacity: 0, duration: 0.2 });
             endOverlay.style.display = 'flex';
             gsap.to(endOverlay, { opacity: 1, duration: 0.4 });
         }
@@ -1012,9 +1144,60 @@
 
         // Старт: проявляем главное меню
         tl.to('#page-index', { opacity: 1, duration: 0.4 });
+        tl.call(() => cap('Главный экран: все функции сайта под рукой'));
+        pause(tl, 1.0);
+
+        // ШАГ 0а: тема оформления (шестерёнка → светлая → тёмная)
+        tl.call(() => cap('⚙️ Настройки: тёмная и светлая тема'));
+        moveTo(tl, 'mock-gear', 0.8);
+        tl.add(playClick());
+        tl.call(openPanel);
+        moveTo(tl, 'mock-theme-light', 0.5);
+        tl.add(playClick());
+        tl.call(() => setTheme(true));
+        pause(tl, 0.9);
+        moveTo(tl, 'mock-theme-dark', 0.5);
+        tl.add(playClick());
+        tl.call(() => setTheme(false));
+        pause(tl, 0.4);
+        tl.call(closePanel);
+
+        // ШАГ 0б: VIP и печеньки
+        tl.call(() => cap('👑 VIP: конфигуратор и 3 печеньки в день'));
+        moveTo(tl, 'mock-vip-info', 0.8);
+        tl.add(playClick());
+        tl.call(() => openModal('VIP-статус', VIP_HTML));
+        pause(tl, 2.0);
+        moveTo(tl, 'mm-close', 0.5);
+        tl.add(playClick());
+        tl.call(closeModal);
+        pause(tl, 0.3);
+
+        // ШАГ 0в: предложить добавить процессор или видеокарту
+        tl.call(() => cap('💡 Нет нужной модели? Предложите добавить'));
+        moveTo(tl, 'mock-suggest', 0.8);
+        tl.add(playClick());
+        tl.call(() => openModal('Предложить добавить', SUG_HTML));
+        pause(tl, 1.8);
+        moveTo(tl, 'mm-close', 0.5);
+        tl.add(playClick());
+        tl.call(closeModal);
+        pause(tl, 0.3);
+
+        // ШАГ 0г: отзывы и соцсети
+        tl.call(() => cap('⭐ Отзывы о сайте: читайте и пишите свои'));
+        moveTo(tl, 'mock-reviews', 0.7);
+        tl.add(playClick());
+        pause(tl, 1.0);
+        tl.call(() => cap('📣 Telegram и TikTok: новости и обновления'));
+        moveTo(tl, 'mock-tg', 0.9);
+        pause(tl, 0.7);
+        moveTo(tl, 'mock-tt', 0.4);
+        pause(tl, 0.8);
 
         // ШАГ 1: мышь на «Процессоры» и клик
-        moveTo(tl, 'mock-btn-cpu', 1.2);
+        tl.call(() => cap('💻 Сравнение процессоров'));
+        moveTo(tl, 'mock-btn-cpu', 1.0);
         tl.add(playClick());
         tl.add(changeScene('#page-index', '#page-cpu'));
 
@@ -1022,7 +1205,7 @@
         moveTo(tl, 'mock-compare-cpu', 0.7);
         tl.add(playClick());
         tl.add(runBars('#page-cpu'));
-        pause(tl, 2.5); // пауза для просмотра результатов
+        pause(tl, 2.2); // пауза для просмотра результатов
 
         // ШАГ 3: возврат на главную
         // Шкалы не сбрасываем: их обнуляет resetAll в начале следующего показа
@@ -1031,6 +1214,7 @@
         tl.add(changeScene('#page-cpu', '#page-index'));
 
         // ШАГ 4: курсор к «Видеокартам»
+        tl.call(() => cap('🎮 Сравнение видеокарт'));
         moveTo(tl, 'mock-btn-gpu', 1.0);
         tl.add(playClick());
         tl.add(changeScene('#page-index', '#page-gpu'));
@@ -1039,7 +1223,7 @@
         moveTo(tl, 'mock-compare-gpu', 0.7);
         tl.add(playClick());
         tl.add(runBars('#page-gpu'));
-        pause(tl, 2.5); // пауза для просмотра результатов
+        pause(tl, 2.2); // пауза для просмотра результатов
 
         // ШАГ 6: возврат на главную
         moveTo(tl, 'mock-back-gpu', 0.8);
@@ -1047,6 +1231,7 @@
         tl.add(changeScene('#page-gpu', '#page-index'));
 
         // ШАГ 7: «Построить компьютер» — выбираем детали шаг за шагом
+        tl.call(() => cap('🛠️ 3D-конфигуратор доступен с VIP (в гайде открыт для примера)'));
         moveTo(tl, 'mock-btn-build', 1.0);
         tl.add(playClick());
         tl.add(changeScene('#page-index', '#page-builder'));
@@ -1063,6 +1248,7 @@
         pause(tl, 1.4);
 
         // ШАГ 8: пробуем сохранить без аккаунта — сайт предлагает зарегистрироваться
+        tl.call(() => cap('💾 Сохранить сборку можно только с аккаунтом'));
         moveTo(tl, 'mock-save', 0.8);
         tl.add(playClick());
         tl.call(() => bToast('🔒 Чтобы сохранить сборку, войдите или зарегистрируйтесь'));
@@ -1071,6 +1257,7 @@
         tl.add(changeScene('#page-builder', '#page-register'));
 
         // ШАГ 9: регистрация — почта, пароль, повтор пароля
+        tl.call(() => cap('📝 Регистрация: почта и пароль'));
         moveTo(tl, 'fld-email', 0.8);
         tl.add(playClick());
         tl.call(() => focusField('fld-email'));
@@ -1091,16 +1278,18 @@
         // ШАГ 10: возвращаемся к сборке и сохраняем её
         tl.add(changeScene('#page-register', '#page-builder'));
         pause(tl, 0.5);
+        tl.call(() => cap('✅ Теперь сборка сохраняется'));
         moveTo(tl, 'mock-save', 0.7);
         tl.add(playClick());
         tl.call(() => bToast('✅ Сборка сохранена. Её можно открыть в «Мои сборки»', true));
         pause(tl, 2.0);
         tl.call(bToastHide);
 
-        // ШАГ 11: «На главную» — теперь вверху виден аккаунт
+        // ШАГ 11: «На главную» — теперь вверху виден аккаунт и статус VIP
         moveTo(tl, 'mock-back-builder', 0.8);
         tl.add(playClick());
         tl.add(changeScene('#page-builder', '#page-index'));
+        tl.call(() => cap('Готово! Теперь вы знаете всё о HardwareVS'));
         pause(tl, 1.8);
     </script>
 </body>
