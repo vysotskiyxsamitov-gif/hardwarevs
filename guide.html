@@ -1,565 +1,695 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HardwareVS - Интерактивный гайд</title>
-    <!-- Библиотека анимаций GSAP -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-    <!-- 3D-библиотека (как в конфигураторе) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HardwareVS — Интерактивный гайд</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+html, body { height: 100%; }
+body { background: #08090b; color: #ededef; overflow: hidden; display: flex; justify-content: center; align-items: center; }
+.mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace; }
 
-    <!-- СТИЛИ И ОФОРМЛЕНИЕ ИНТЕРФЕЙСА -->
-    <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
-        html, body { height: 100%; }
-        body { background: #0b071e; color: #fff; overflow: hidden; display: flex; justify-content: center; align-items: center; }
-        #video-viewport {
-            width: 1280px; height: 720px; flex: none; background: #060412; border: 4px solid #3d2475;
-            position: relative; overflow: hidden; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.8);
-            transform-origin: center center; transition: background-color .4s, border-color .4s;
-        }
-        .page { position: absolute; width: 100%; height: 100%; top: 0; left: 0; display: none; opacity: 0; padding: 40px;
-            flex-direction: column; align-items: center; justify-content: center; }
-        .active-page { display: flex; }
-        /* Центрирование курсора делается через GSAP (xPercent/yPercent), без CSS-transform */
-        #virtual-cursor { width: 24px; height: 24px; background: rgba(255,255,255,0.8); border: 2px solid #000; border-radius: 50%;
-            position: absolute; top: 85%; left: 50%; z-index: 9999; pointer-events: none; box-shadow: 0 0 10px rgba(255,255,255,0.5); }
-        #virtual-cursor .pulse { position: absolute; inset: -4px; border: 2px solid #a855f7; border-radius: 50%; opacity: 0; }
-        .logo { font-size: 54px; font-weight: 800; margin-bottom: 40px; background: linear-gradient(45deg, #38bdf8, #facc15);
-            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-        .btn { width: 320px; padding: 16px; margin: 10px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; color: #fff;
-            text-transform: uppercase; cursor: pointer; letter-spacing: 1px; display: flex; align-items: center; justify-content: center; gap: 10px; }
-        .btn-cpu { background: #a855f7; }
-        .btn-gpu { background: #c084fc; }
-        .btn-guide { background: #06b6d4; }
-        .btn-build { background: #ec4899; }
-        .page-title { font-size: 36px; color: #c084fc; margin-bottom: 30px; font-weight: bold; text-align: center; }
-        .select-container { display: flex; gap: 20px; align-items: center; margin-bottom: 25px; background: #130d33; padding: 15px 30px;
-            border-radius: 10px; border: 1px solid #2e1a53; }
-        .dropdown { background: #24194f; color: #fff; border: 1px solid #442a7a; padding: 10px 15px; border-radius: 6px; font-size: 14px; width: 260px; }
-        .vs-label { font-weight: bold; color: #a855f7; }
-        .btn-compare { background: #d946ef; width: 500px; padding: 14px; border: none; border-radius: 8px; font-weight: bold; color: #fff; font-size: 16px; margin-bottom: 30px; }
-        .stat-block { width: 560px; background: #130d3a; border-radius: 8px; border: 1px solid #23154c; padding: 15px; margin-bottom: 15px; }
-        .stat-title { font-size: 15px; font-weight: bold; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
-        .item-label { font-size: 12px; color: #9aa0a6; margin-top: 5px; }
-        .bar-wrapper { width: 100%; height: 24px; background: #1f1547; border-radius: 4px; overflow: hidden; margin-bottom: 8px; position: relative; }
-        .bar { height: 100%; width: 0%; display: flex; align-items: center; padding-left: 10px; font-size: 12px; font-weight: bold; color: #fff; white-space: nowrap; }
-        .bar-blue { background: #3b82f6; }
-        .bar-red { background: #ef4444; }
-        .bar-green { background: #22c55e; }
-        .result-box { width: 560px; background: #1a0f47; border-left: 5px solid #a855f7; border-radius: 4px; padding: 15px; font-size: 14px; line-height: 1.4; }
-        .back-link { position: absolute; top: 30px; left: 30px; color: #9aa0a6; text-decoration: none; font-size: 14px; }
+#video-viewport {
+    --bg: #08090b; --text: #ededef; --panel-bg: rgba(16,17,20,.86); --panel-text: #e4e5e8; --muted: #8a8f98;
+    --option-bg: rgba(255,255,255,.05); --accent: #6f7dff; --acc-rgb: 111,125,255; --b: #2fd3b0;
+    --line: rgba(255,255,255,.08); --line-strong: rgba(255,255,255,.16); --surface: rgba(255,255,255,.03);
+    --surface-hover: rgba(255,255,255,.07); --vig: 8,9,11; --grid: rgba(255,255,255,.045); --star: #e3b341; --dd: #14161c;
+    width: 1280px; height: 720px; flex: none; background: var(--bg); color: var(--text); border: 1px solid var(--line-strong);
+    position: relative; overflow: hidden; border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.7);
+    transform-origin: center center; transition: background-color .4s, color .4s;
+}
+#video-viewport.light {
+    --bg: #f4f4f6; --text: #0f1014; --panel-bg: rgba(255,255,255,.9); --panel-text: #1a1c22; --muted: #666b76;
+    --option-bg: rgba(15,16,20,.05); --accent: #4f5ce0; --acc-rgb: 79,92,224; --b: #0fa88a;
+    --line: rgba(15,16,20,.1); --line-strong: rgba(15,16,20,.2); --surface: rgba(255,255,255,.6);
+    --surface-hover: rgba(255,255,255,.95); --vig: 244,244,246; --grid: rgba(15,16,20,.06); --star: #d39a12; --dd: #fff;
+}
 
-        /* Подпись к текущему шагу (сверху по центру) */
-        #caption { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); z-index: 9000; max-width: 560px; padding: 9px 18px;
-            border: 1px solid #442a7a; border-radius: 20px; background: rgba(19,13,51,.94); color: #e9d5ff; font-size: 14px; font-weight: 600;
-            text-align: center; opacity: 0; pointer-events: none; }
+/* фон */
+.vp-glow { position: absolute; inset: 0; z-index: 0; pointer-events: none; background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(var(--acc-rgb), .16), transparent 70%); }
+.vp-grid { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 64px 64px; background-position: center top;
+    -webkit-mask-image: radial-gradient(ellipse at 50% 40%, #000 0%, transparent 72%); mask-image: radial-gradient(ellipse at 50% 40%, #000 0%, transparent 72%); }
+.vp-vig { position: absolute; inset: 0; z-index: 1; pointer-events: none;
+    background: radial-gradient(ellipse at 50% 46%, rgba(var(--vig),0) 40%, rgba(var(--vig),.9) 100%),
+                linear-gradient(to top, rgba(var(--vig),.95) 0%, rgba(var(--vig),0) 30%),
+                linear-gradient(to bottom, rgba(var(--vig),.9) 0%, rgba(var(--vig),0) 14%); }
 
-        /* Блок аккаунта на главной (слева сверху, как на настоящем сайте) */
-        .acc-mock { position: absolute; top: 20px; left: 20px; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 16px;
-            border: 1px solid #442a7a; border-radius: 22px; background: rgba(19,13,51,.92); font-size: 13px; color: #e9d5ff; font-weight: 600; }
-        .acc-mock .sep { color: #442a7a; }
-        .acc-mock .mail { color: #9aa0a6; font-weight: 400; }
-        #acc-user { display: none; align-items: center; gap: 10px; }
-        #acc-guest { display: flex; align-items: center; gap: 10px; }
+.page { position: absolute; inset: 0; z-index: 2; display: none; opacity: 0; flex-direction: column; align-items: center; justify-content: center; }
+.active-page { display: flex; }
+#page-builder.active-page { display: block; }
 
-        /* Плашка VIP под аккаунтом */
-        .shop-mock { position: absolute; top: 72px; left: 20px; display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 0 6px 0 14px;
-            border: 1px solid #442a7a; border-radius: 20px; background: rgba(19,13,51,.92); font-size: 13px; color: #e9d5ff; }
-        .shop-mock .vip { font-weight: 700; }
-        .shop-mock .st { color: #9aa0a6; }
-        .shop-mock .q { width: 26px; height: 26px; border-radius: 50%; background: #24194f; border: 1px solid #442a7a; display: flex; align-items: center; justify-content: center; font-weight: 700; }
-        .shop-mock .buy { border-radius: 14px; padding: 7px 12px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #f59e0b, #b45309); }
+/* курсор */
+#virtual-cursor { width: 24px; height: 24px; background: rgba(255,255,255,.85); border: 2px solid #000; border-radius: 50%; position: absolute; top: 88%; left: 50%; z-index: 9999; pointer-events: none; box-shadow: 0 0 10px rgba(255,255,255,.5); }
+#virtual-cursor .pulse { position: absolute; inset: -4px; border: 2px solid var(--accent); border-radius: 50%; opacity: 0; }
 
-        /* Круглые кнопки справа сверху: настройки, отзывы, предложить */
-        .round { position: absolute; top: 20px; width: 44px; height: 44px; border-radius: 50%; border: 1px solid #442a7a; background: rgba(19,13,51,.92);
-            display: flex; align-items: center; justify-content: center; font-size: 20px; color: #e9d5ff; }
-        #mock-gear { right: 20px; }
-        #mock-reviews { right: 74px; color: #f59e0b; }
-        #mock-suggest { right: 128px; color: #06b6d4; }
+/* подпись шага */
+#caption { position: absolute; top: 68px; left: 50%; transform: translateX(-50%); z-index: 9000; max-width: 620px; padding: 8px 18px;
+    border: 1px solid var(--line-strong); border-radius: 99px; background: var(--panel-bg); color: var(--text); font-size: 13.5px; font-weight: 600;
+    text-align: center; opacity: 0; pointer-events: none; backdrop-filter: blur(10px); }
 
-        /* Окно выбора темы */
-        .theme-pop { position: absolute; top: 74px; right: 20px; width: 220px; padding: 14px; border: 1px solid #442a7a; border-radius: 10px;
-            background: rgba(19,13,51,.96); opacity: 0; visibility: hidden; z-index: 20; }
-        .theme-pop .ttl { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #9aa0a6; margin-bottom: 10px; }
-        .theme-pop .row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-        .topt { padding: 10px 0; border-radius: 6px; background: #24194f; color: #e9d5ff; border: 1px solid transparent; font-size: 13px; font-weight: 600; text-align: center; }
-        .topt.on { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); border-color: #a855f7; color: #fff; }
+/* верхняя панель */
+.topbar { position: absolute; top: 0; left: 0; right: 0; height: 60px; z-index: 40; display: flex; align-items: center; gap: 28px; padding: 0 24px;
+    background: rgba(var(--vig),.55); border-bottom: 1px solid var(--line); backdrop-filter: blur(14px); }
+.brand { display: flex; align-items: center; gap: 10px; color: var(--text); font-weight: 700; font-size: 15px; letter-spacing: -.01em; }
+.brand svg { width: 22px; height: 22px; fill: none; stroke: var(--text); stroke-width: 1.7; stroke-linejoin: round; stroke-linecap: round; }
+.brand b { color: var(--muted); font-weight: 700; }
+.topnav { display: flex; gap: 4px; }
+.topnav span { padding: 7px 12px; border-radius: 7px; font-size: 13.5px; font-weight: 500; color: var(--muted); }
+.topnav span.on { color: var(--text); background: var(--surface-hover); }
+.back-pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 13px; border: 1px solid var(--line-strong); border-radius: 99px; background: var(--surface); color: var(--muted); font-size: 12px; white-space: nowrap; }
 
-        /* Соцсети внизу по центру */
-        .soc { position: absolute; bottom: 20px; left: 50%; margin-left: -61px; display: flex; gap: 10px; padding: 6px; border: 1px solid #442a7a; border-radius: 30px; background: rgba(19,13,51,.92); }
-        .soc div { width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 700; color: #fff; }
-        #mock-tg { background: linear-gradient(135deg, #38bdf8 0%, #0284c7 100%); }
-        #mock-tt { background: linear-gradient(135deg, #111 0%, #2a2a2a 100%); text-shadow: 1.5px 1.5px 0 #ff0050, -1.5px -1.5px 0 #00f2ea; }
+/* аккаунт и VIP */
+.userbar { position: absolute; top: 10px; right: 168px; z-index: 50; display: flex; align-items: center; gap: 10px; }
+.account, .shop { display: flex; align-items: center; gap: 8px; min-height: 38px; padding: 0 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 9px; font-size: 13px; color: var(--panel-text); }
+.shop { padding: 0 5px 0 12px; }
+.acc-link { font-weight: 600; white-space: nowrap; }
+.acc-sep { color: var(--line-strong); }
+.acc-mail { color: var(--muted); white-space: nowrap; }
+#acc-user { display: none; align-items: center; gap: 8px; }
+#acc-guest { display: flex; align-items: center; gap: 8px; }
+.shop-vip { font-weight: 700; letter-spacing: .12em; font-size: 11px; padding: 3px 6px; border-radius: 5px; color: #d9b25a; border: 1px solid rgba(217,178,90,.45); }
+.shop-status { color: var(--muted); white-space: nowrap; }
+.shop-info { width: 24px; height: 24px; border-radius: 6px; font-weight: 600; font-size: 12px; color: var(--muted); border: 1px solid var(--line); display: flex; align-items: center; justify-content: center; }
+.shop-buy { border-radius: 6px; padding: 6px 11px; font-weight: 600; font-size: 12.5px; color: #08090b; white-space: nowrap; background: var(--text); }
+.light .shop-buy { color: #fff; }
 
-        /* Всплывающее окно (VIP и «Предложить») */
-        .mm-ov { position: absolute; inset: 0; z-index: 30; display: flex; align-items: center; justify-content: center; background: rgba(6,2,11,.65); opacity: 0; visibility: hidden; }
-        .mm { width: 380px; padding: 20px; border: 1px solid #442a7a; border-radius: 12px; background: rgba(19,13,51,.97); color: #e9d5ff; box-shadow: 0 20px 50px rgba(0,0,0,.45); }
-        .mm-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-        .mm-head h3 { font-size: 18px; }
-        #mm-close { font-size: 24px; line-height: 1; padding: 4px 8px; color: #9aa0a6; }
-        .mm p { font-size: 14px; line-height: 1.6; margin-bottom: 8px; }
-        .mm ul { margin: 0 0 12px; padding-left: 20px; line-height: 1.7; font-size: 14px; }
-        .mm .hint { font-size: 12px; color: #9aa0a6; }
-        .mm .kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 14px; }
-        .mm .kinds div { padding: 11px 0; border-radius: 6px; background: #24194f; text-align: center; font-size: 13px; font-weight: 600; }
-        .mm .inp { padding: 12px; border-radius: 8px; background: #24194f; border: 1px solid #442a7a; color: #9aa0a6; font-size: 14px; }
-        .mm .send { margin-top: 14px; padding: 12px 0; border-radius: 8px; text-align: center; font-weight: 700; font-size: 14px; background: linear-gradient(135deg, #06b6d4, #0891b2); color: #fff; }
+.ibtn { position: absolute; top: 11px; width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: var(--surface); color: var(--muted); border: 1px solid var(--line); border-radius: 9px; z-index: 50; }
+.ibtn svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+#mock-gear { right: 20px; } #mock-reviews { right: 64px; } #mock-suggest { right: 108px; }
+.theme-pop { position: absolute; top: 56px; right: 20px; width: 220px; padding: 14px; background: var(--panel-bg); border: 1px solid var(--line-strong); border-radius: 12px; opacity: 0; visibility: hidden; z-index: 60; backdrop-filter: blur(14px); box-shadow: 0 12px 30px rgba(0,0,0,.35); }
+.theme-pop .ttl { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+.theme-pop .row { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.topt { padding: 10px 0; border-radius: 8px; background: var(--option-bg); color: var(--panel-text); border: 1px solid var(--line-strong); font-size: 13px; font-weight: 600; text-align: center; }
+.topt.on { background: var(--accent); border-color: var(--accent); color: #fff; }
 
-        /* Светлая тема (демонстрация переключателя) */
-        #video-viewport.light { background: #f3f0fa; border-color: #d4c4f2; }
-        .light .acc-mock, .light .shop-mock, .light .round, .light .theme-pop, .light .soc { background: rgba(255,255,255,.94); border-color: #d4c4f2; color: #2a1a5e; }
-        .light .topt { background: #ece6fa; color: #2a1a5e; }
-        .light .topt.on { color: #fff; }
-        .light .shop-mock .q { background: #ece6fa; border-color: #d4c4f2; }
-        .light .acc-mock .sep { color: #d4c4f2; }
+/* главный экран */
+.hero-center { display: flex; flex-direction: column; align-items: center; text-align: center; margin-top: -110px; }
+.pill { display: inline-flex; align-items: center; gap: 9px; padding: 6px 13px 6px 11px; border: 1px solid var(--line-strong); border-radius: 99px; background: var(--surface); font-size: 12px; color: var(--muted); }
+.pill i { width: 6px; height: 6px; border-radius: 50%; background: #3ecf8e; box-shadow: 0 0 0 3px rgba(62,207,142,.18); }
+h1.hero-title { margin: 20px 0 16px; font-weight: 700; font-size: 128px; line-height: .95; letter-spacing: -.045em; color: var(--text); }
+h1.hero-title span { color: var(--muted); font-weight: 600; opacity: .85; }
+.hero-sub { max-width: 500px; font-size: 15px; line-height: 1.65; opacity: .78; }
+.menu { position: absolute; left: 100px; right: 100px; bottom: 72px; display: grid; grid-template-columns: repeat(4,1fr); border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden; background: rgba(var(--vig),.55); backdrop-filter: blur(16px); }
+.menu-card { position: relative; display: flex; flex-direction: column; gap: 22px; padding: 18px 20px 20px; border-left: 1px solid var(--line); color: var(--text); }
+.menu-card:first-child { border-left: 0; }
+.menu-card.primary::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--accent); }
+.menu-card.hl { background: var(--surface-hover); }
+.menu-card.hl::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--accent); }
+.mc-top { display: flex; align-items: center; justify-content: space-between; color: var(--muted); font-size: 11px; letter-spacing: .1em; }
+.mc-arrow { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.mc-txt { display: flex; flex-direction: column; gap: 5px; text-align: left; }
+.mc-title { font-size: 16px; font-weight: 600; letter-spacing: -.01em; }
+.mc-sub { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.foot { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; align-items: center; justify-content: center; gap: 14px; }
+.foot-label { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.social-bar { display: flex; gap: 6px; }
+.social-link { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 8px; color: var(--muted); border: 1px solid var(--line); }
+.social-link svg { width: 17px; height: 17px; fill: currentColor; }
 
-        /* Кнопка выхода на главный экран сайта (всегда в углу) */
-        .exit-btn { position: absolute; bottom: 20px; left: 20px; z-index: 9000; padding: 11px 22px;
-            background: linear-gradient(180deg, #1c1245 0%, #130d33 100%); color: #e9d5ff; border: 1px solid #442a7a; border-bottom: 2px solid #a855f7;
-            border-radius: 6px; font-size: 12px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; cursor: pointer; text-decoration: none;
-            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s; }
-        .exit-btn:hover { background: linear-gradient(180deg, #2a1a66 0%, #1c1245 100%); border-color: #a855f7; box-shadow: 0 0 14px rgba(168, 85, 247, 0.35); }
+/* общая модалка */
+.mm-ov { position: absolute; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; background: rgba(4,5,9,.65); backdrop-filter: blur(4px); opacity: 0; visibility: hidden; }
+.mm { width: 380px; padding: 22px; border: 1px solid var(--line-strong); border-radius: 14px; background: var(--dd); color: var(--panel-text); box-shadow: 0 24px 60px rgba(0,0,0,.5); }
+.mm-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.mm-head h3 { font-size: 18px; }
+#mm-close { font-size: 24px; line-height: 1; padding: 4px 8px; color: var(--muted); }
+.mm p { font-size: 14px; line-height: 1.6; margin-bottom: 8px; }
+.mm ul { margin: 0 0 12px; padding-left: 20px; line-height: 1.7; font-size: 14px; }
+.mm .hint { font-size: 12px; color: var(--muted); margin: 6px 0 0; }
+.mm .lbl { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.mm .kinds { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 16px; }
+.mm .kinds div { padding: 11px 0; border-radius: 8px; background: var(--option-bg); border: 1px solid var(--line-strong); text-align: center; font-size: 13px; font-weight: 600; }
+.mm .kinds div.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+.mm .inp { padding: 12px; border-radius: 8px; background: var(--option-bg); border: 1px solid var(--line-strong); font-size: 14px; min-height: 44px; display: flex; align-items: center; }
+.mm .inp.ph { color: var(--muted); }
+.mm .send { margin-top: 16px; padding: 12px 0; border-radius: 8px; text-align: center; font-weight: 700; font-size: 14px; background: var(--accent); color: #fff; }
+.mm .mmsg { margin-top: 10px; min-height: 18px; font-size: 13px; color: #4ade80; }
+.mm .b-item { padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.mm .b-name { font-weight: 700; font-size: 14px; }
+.mm .b-meta { font-size: 12px; color: var(--muted); margin: 2px 0 8px; }
+.mm .acts { display: flex; gap: 8px; }
+.mm .acts div { padding: 7px 12px; border-radius: 10px; border: 1px solid var(--line-strong); font-size: 12px; font-weight: 600; letter-spacing: .6px; text-transform: uppercase; }
+.mm .acts div.p { background: var(--accent); border-color: transparent; color: #fff; }
 
-        /* Финальное окно с вопросом */
-        .end-overlay { position: absolute; inset: 0; z-index: 9500; background: rgba(6, 4, 18, 0.88); display: none; flex-direction: column;
-            align-items: center; justify-content: center; opacity: 0; }
-        .end-overlay h2 { font-size: 28px; font-weight: 600; letter-spacing: 0.3px; line-height: 1.35; color: #c084fc; margin-bottom: 30px; text-align: center; max-width: 800px; }
-        .end-buttons { display: flex; gap: 16px; }
-        .end-buttons .btn { width: 280px; margin: 0; padding: 15px 20px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 1.5px;
-            transition: background 0.2s, border-color 0.2s, box-shadow 0.2s; }
-        .btn-exit { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); border: 1px solid #a855f7; color: #fff; }
-        .btn-exit:hover { background: linear-gradient(180deg, #8b5cf6 0%, #6d28d9 100%); box-shadow: 0 0 18px rgba(168, 85, 247, 0.45); }
-        .btn-replay { background: #130d33; border: 1px solid #442a7a; color: #e9d5ff; }
-        .btn-replay:hover { background: #1c1245; border-color: #a855f7; box-shadow: 0 0 14px rgba(168, 85, 247, 0.3); }
+/* кнопка выхода и финал */
+.exit-btn { position: absolute; bottom: 20px; right: 20px; z-index: 9000; padding: 10px 18px; background: var(--panel-bg); color: var(--text); border: 1px solid var(--line-strong);
+    border-radius: 9px; font-size: 12px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; text-decoration: none; backdrop-filter: blur(10px); }
+.exit-btn:hover { border-color: var(--accent); }
+.end-overlay { position: absolute; inset: 0; z-index: 9500; background: rgba(6,8,12,.88); display: none; flex-direction: column; align-items: center; justify-content: center; opacity: 0; backdrop-filter: blur(6px); }
+.end-overlay h2 { font-size: 28px; font-weight: 600; line-height: 1.35; color: var(--text); margin-bottom: 30px; text-align: center; max-width: 800px; letter-spacing: -.02em; }
+.end-buttons { display: flex; gap: 14px; }
+.end-btn { width: 280px; padding: 15px 20px; border-radius: 10px; font-size: 13px; font-weight: 600; letter-spacing: 1.2px; text-transform: uppercase; cursor: pointer; font-family: inherit; }
+.btn-exit { background: var(--accent); border: 1px solid transparent; color: #fff; }
+.btn-replay { background: var(--surface); border: 1px solid var(--line-strong); color: var(--text); }
+.end-btn:hover { border-color: var(--accent); box-shadow: 0 0 18px -6px var(--accent); }
 
-        /* ---------- СЦЕНА: КОНФИГУРАТОР ПК ---------- */
-        .bld { display: grid; grid-template-columns: 340px 820px; width: 1160px; height: 570px; border: 1px solid #2e1a53; border-radius: 12px; overflow: hidden; background: #0e0820; }
-        .bld-side { padding: 16px 18px; border-right: 1px solid #2e1a53; display: flex; flex-direction: column; }
-        .bld-h { font-size: 20px; font-weight: 800; margin-bottom: 14px; background: linear-gradient(90deg, #a855f7, #06b6d4, #f59e0b);
-            -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
-        .bld-stepper { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; margin-bottom: 14px; }
-        .bchip { position: relative; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center; background: #150d33; border: 1px solid #2e1a53; border-radius: 7px; font-size: 15px; }
-        .bchip.active { border-color: #a855f7; box-shadow: 0 0 10px rgba(168,85,247,.5); }
-        .bchip.done::after { content: '✓'; position: absolute; top: -5px; right: -5px; width: 15px; height: 15px; border-radius: 50%; background: #22c55e; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
-        .bld-eyebrow { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #9aa0a6; }
-        .bld-step { font-size: 22px; margin: 2px 0 10px; }
-        .bld-opts { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-        .bopt { padding: 10px 12px; background: #150d33; border: 1px solid #2e1a53; border-radius: 10px; }
-        .bopt.sel { border-color: #a855f7; box-shadow: 0 0 0 1px #a855f7, 0 0 16px rgba(168,85,247,.3); }
-        .bopt-top { display: flex; justify-content: space-between; gap: 8px; }
-        .bopt-n { font-weight: 700; font-size: 13px; }
-        .bopt-p { font-size: 12px; color: #06b6d4; font-weight: 600; white-space: nowrap; }
-        .bopt-s { font-size: 11px; color: #9aa0a6; margin-top: 3px; }
-        .bld-done { padding: 12px 14px; border: 1px solid #22c55e; border-radius: 10px; background: rgba(34,197,94,.08); font-size: 13px; line-height: 1.45; }
-        .bld-done b { color: #22c55e; }
-        .bld-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px solid #2e1a53; }
-        .bld-tl { font-size: 11px; letter-spacing: 1.5px; color: #9aa0a6; }
-        .bld-total { font-size: 20px; font-weight: 800; }
-        .bld-save { padding: 10px 14px; border-radius: 6px; border: 1px solid #a855f7; background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); color: #fff; font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-        .bld-view { position: relative; overflow: hidden; background: #06020b; }
-        #canvas3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-        .bld-hint { position: absolute; z-index: 2; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; color: #9aa0a6; font-size: 16px; text-align: center; padding: 20px; }
-        .bld-toast { position: absolute; z-index: 3; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 18px; border-radius: 8px; background: rgba(14,8,32,.92); border: 1px solid #f59e0b; font-size: 13px; opacity: 0; white-space: nowrap; }
-        .bld-toast.ok { border-color: #22c55e; }
+/* сравнение */
+.cmp { width: 1000px; margin-top: 64px; }
+.cmp h1 { text-align: center; font-size: 34px; letter-spacing: -.04em; margin-bottom: 4px; }
+.cmp .lead { text-align: center; color: var(--muted); font-size: 13.5px; margin-bottom: 18px; }
+.arena { display: grid; grid-template-columns: 1fr 90px 1fr; align-items: start; gap: 10px; }
+.side { display: flex; flex-direction: column; align-items: center; gap: 10px; position: relative; }
+.side.a { --c: var(--accent); } .side.b { --c: var(--b); }
+.sbox { position: relative; width: 100%; max-width: 330px; z-index: 30; }
+.trig { padding: 11px 36px 11px 14px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); font-weight: 600; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; position: relative; }
+.trig::after { content: ''; position: absolute; right: 15px; top: 50%; width: 7px; height: 7px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-70%) rotate(45deg); }
+.trig.open { border-color: var(--c); box-shadow: 0 0 22px -8px var(--c); }
+.dd { position: absolute; top: calc(100% + 6px); left: 0; right: 0; min-width: 300px; background: var(--dd); border: 1px solid var(--line-strong); border-radius: 10px; box-shadow: 0 18px 40px rgba(0,0,0,.45); opacity: 0; visibility: hidden; overflow: hidden; }
+.side.b .dd { left: auto; }
+.dd .ddin { padding: 11px 14px; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+.dd ul { list-style: none; padding: 4px; }
+.dd li { padding: 8px 10px; border-radius: 7px; font-size: 13.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dd li.sel { background: rgba(var(--acc-rgb), .22); }
+.dd li.hv { background: rgba(var(--acc-rgb), .32); }
+.stage { height: 150px; width: 100%; display: flex; align-items: center; justify-content: center; position: relative; }
+.shadow { position: absolute; bottom: 8px; left: 50%; width: 55%; height: 18px; margin-left: -27.5%; border-radius: 50%; background: radial-gradient(ellipse, color-mix(in srgb, var(--c) 50%, transparent), transparent 70%); filter: blur(6px); }
+.crown { position: absolute; top: 0; left: 50%; translate: -50% 0; z-index: 5; padding: 4px 11px; border-radius: 99px; font-size: 10.5px; letter-spacing: .14em; color: #1a1300; background: linear-gradient(90deg,#f3d27a,#d9b25a); box-shadow: 0 0 22px -2px rgba(217,178,90,.7); opacity: 0; scale: .6; white-space: nowrap; }
+.side.lead .crown { opacity: 1; scale: 1; }
+.chip { position: relative; width: 120px; height: 120px; border-radius: 14px; border: 1px solid var(--line-strong); background: linear-gradient(135deg, color-mix(in srgb, var(--c) 14%, #3a3f4d), #1a1d26 60%, color-mix(in srgb, var(--c) 10%, #3a3f4d)); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; transform: rotateX(18deg) rotateZ(-6deg); box-shadow: 0 18px 30px -12px rgba(0,0,0,.6); }
+.side.b .chip { transform: rotateX(18deg) rotateZ(6deg); }
+.chip::before { content: ''; position: absolute; inset: 12px; border-radius: 8px; border: 1px solid var(--c); box-shadow: inset 0 0 22px -4px var(--c), 0 0 24px -6px var(--c); }
+.chip .l1 { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: #cbd0dc; position: relative; }
+.chip .l2 { font-size: 14px; font-weight: 700; color: #fff; position: relative; padding: 0 16px; word-break: break-word; }
+.gcard { position: relative; width: 230px; height: 96px; border-radius: 12px; border: 1px solid var(--line-strong); background: linear-gradient(135deg, #262a35, #14161c); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; transform: rotateX(14deg) rotateZ(-5deg); box-shadow: 0 18px 30px -12px rgba(0,0,0,.6); }
+.side.b .gcard { transform: rotateX(14deg) rotateZ(5deg); }
+.gcard::before { content: ''; position: absolute; left: 10px; right: 10px; top: 8px; height: 3px; border-radius: 2px; background: var(--c); box-shadow: 0 0 12px var(--c); }
+.gfans { display: flex; gap: 12px; }
+.gfans i { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #0c0b12; background: radial-gradient(circle, #0c0b12 0 22%, #25222f 24% 100%); box-shadow: 0 0 0 2px color-mix(in srgb, var(--c) 60%, transparent); }
+.gname { font-size: 11px; font-weight: 700; color: #cbd0dc; letter-spacing: .04em; }
+.cap { font-size: 11px; letter-spacing: .1em; color: var(--muted); text-transform: uppercase; }
+.mid { display: flex; flex-direction: column; align-items: center; gap: 12px; padding-top: 48px; }
+.vs { width: 58px; height: 58px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; border: 1px solid var(--line-strong); background: var(--surface); position: relative; }
+.vs::before { content: ''; position: absolute; inset: -7px; border-radius: 50%; border: 1px dashed var(--line-strong); }
+.swapbtn { border: 1px solid var(--line); background: var(--surface); color: var(--muted); border-radius: 8px; padding: 6px 10px; font-weight: 500; font-size: 12px; }
+.score { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; margin: 6px 0 10px; padding: 10px 20px; border: 1px solid var(--line-strong); border-radius: 14px; background: rgba(var(--vig),.55); backdrop-filter: blur(12px); }
+.score .n { font-size: 40px; font-weight: 700; letter-spacing: -.04em; }
+.score .n.a { color: var(--accent); text-align: right; } .score .n.b { color: var(--b); }
+.score .t { font-size: 11px; letter-spacing: .14em; color: var(--muted); text-transform: uppercase; text-align: center; }
+.verdict { text-align: center; margin: 0 0 10px; font-size: 13.5px; color: var(--muted); }
+.verdict b { color: var(--text); }
+.rows { border: 1px solid var(--line-strong); border-radius: 14px; overflow: hidden; background: rgba(var(--vig),.55); backdrop-filter: blur(12px); }
+.crow { display: grid; grid-template-columns: 84px 1fr 150px 1fr 84px; align-items: center; gap: 10px; padding: 11px 18px; border-top: 1px solid var(--line); }
+.crow:first-child { border-top: 0; }
+.cv { font-size: 13px; font-weight: 600; }
+.cv.a { text-align: right; --c: var(--accent); } .cv.b { --c: var(--b); }
+.cv.w { color: var(--c); }
+.ck { text-align: center; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); line-height: 1.3; }
+.bar { height: 8px; border-radius: 5px; background: var(--line); position: relative; overflow: hidden; }
+.bar i { position: absolute; top: 0; bottom: 0; width: 0; border-radius: 5px; opacity: .5; }
+.bar.a i { right: 0; background: var(--accent); } .bar.b i { left: 0; background: var(--b); }
+.bar.win i { opacity: 1; }
 
-        /* ---------- СЦЕНА: РЕГИСТРАЦИЯ ---------- */
-        .reg-card { width: 400px; background: rgba(19,13,51,.92); border: 1px solid #442a7a; border-radius: 14px; padding: 24px; box-shadow: 0 12px 30px rgba(0,0,0,.3); }
-        .reg-card h3 { font-size: 22px; margin-bottom: 6px; }
-        .reg-sub { color: #9aa0a6; font-size: 13px; line-height: 1.45; margin-bottom: 6px; }
-        .reg-lbl { font-size: 11px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: #9aa0a6; margin: 12px 0 6px; }
-        .fld { height: 44px; background: #150d33; border: 1px solid #442a7a; border-radius: 8px; display: flex; align-items: center; padding: 0 14px; font-size: 15px; }
-        .fld.focus { border-color: #a855f7; box-shadow: 0 0 0 3px rgba(168,85,247,.25); }
-        .caret { display: none; width: 1px; height: 18px; background: #fff; margin-left: 2px; }
-        .fld.focus .caret { display: inline-block; animation: blink 1s steps(1) infinite; }
-        @keyframes blink { 50% { opacity: 0; } }
-        .reg-btn { width: 100%; margin-top: 18px; padding: 13px; border: 1px solid #a855f7; border-radius: 10px; color: #fff; font-size: 13px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-            background: linear-gradient(135deg, #a855f7 0%, #6d28d9 100%); box-shadow: 0 4px 15px rgba(168,85,247,.3); }
-        .reg-msg { margin-top: 12px; padding: 10px 12px; border: 1px solid #22c55e; border-radius: 8px; background: rgba(34,197,94,.08); color: #22c55e; font-size: 13px; line-height: 1.45; opacity: 0; }
-    </style>
+/* конфигуратор */
+.bld { display: grid; grid-template-columns: 400px 1fr; width: 100%; height: 100%; }
+.bld-side { display: flex; flex-direction: column; min-height: 0; background: linear-gradient(180deg, rgba(var(--acc-rgb),.08), transparent 260px), #0d0f14; border-right: 1px solid var(--line); }
+.light .bld-side { background: linear-gradient(180deg, rgba(var(--acc-rgb),.08), transparent 260px), #fff; }
+.sb-head { padding: 16px 20px 12px; border-bottom: 1px solid var(--line); }
+.sb-head .back-link { display: inline-block; color: var(--muted); font-size: 13px; font-weight: 500; margin-bottom: 8px; }
+.sb-head h2 { font-size: 22px; font-weight: 800; letter-spacing: -.02em; background: linear-gradient(90deg, var(--accent), var(--b)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.sb-scroll { flex: 1; padding: 14px 20px 6px; min-height: 0; }
+.stepper { display: grid; grid-template-columns: repeat(9,1fr); gap: 6px; margin-bottom: 14px; }
+.bchip { position: relative; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; background: var(--surface); border: 1px solid var(--line); border-radius: 9px; font-size: 15px; }
+.bchip.active { border-color: var(--accent); background: rgba(var(--acc-rgb),.16); box-shadow: 0 0 14px -2px rgba(var(--acc-rgb),.6); }
+.bchip.done::after { content: '✓'; position: absolute; top: -5px; right: -5px; width: 15px; height: 15px; border-radius: 50%; background: #2fd3b0; color: #04130f; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.eyebrow { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+.step-t { font-size: 24px; font-weight: 800; letter-spacing: -.03em; margin: 3px 0 4px; }
+.step-p { font-size: 12.5px; color: var(--muted); min-height: 18px; margin-bottom: 10px; line-height: 1.4; }
+.filters { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+.fin { flex: 1; padding: 9px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; font-size: 13px; color: var(--muted); }
+.only-ok { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+.only-ok i { width: 13px; height: 13px; border-radius: 3px; background: var(--accent); display: inline-block; }
+.opts { display: flex; flex-direction: column; gap: 8px; min-height: 216px; }
+.bopt { padding: 11px 13px; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; position: relative; }
+.bopt.sel { border-color: var(--accent); background: rgba(var(--acc-rgb),.1); box-shadow: 0 0 0 1px var(--accent), 0 0 22px -6px rgba(var(--acc-rgb),.7); }
+.bopt.sel::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--accent); }
+.bopt-top { display: flex; justify-content: space-between; gap: 8px; }
+.bopt-n { font-weight: 700; font-size: 13.5px; }
+.bopt-p { font-size: 12.5px; color: var(--b); font-weight: 600; white-space: nowrap; }
+.bopt-s { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+.bopt-ok { font-size: 12px; margin-top: 5px; color: #2fd3b0; }
+.banner { padding: 11px 13px; border: 1px solid #2fd3b0; border-radius: 12px; background: rgba(47,211,176,.1); font-size: 13px; line-height: 1.45; }
+.banner b { color: #2fd3b0; }
+.banner .pb { display: inline-block; margin-top: 8px; padding: 8px 14px; border-radius: 10px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; }
+.build-box { margin: 12px 0 6px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); padding: 11px 14px; font-size: 13px; font-weight: 600; }
+.save-row { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-top: 1px solid var(--line); }
+.sbtn { padding: 8px 12px; border-radius: 10px; border: 1px solid var(--line-strong); background: var(--surface); font-size: 12px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase; white-space: nowrap; }
+.who { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--muted); }
+.who b { color: var(--accent); font-weight: 600; }
+.bfoot { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid var(--line); }
+.tl { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
+.total { font-size: 22px; font-weight: 800; letter-spacing: -.02em; font-family: 'JetBrains Mono', monospace; }
+.bld-view { position: relative; overflow: hidden; background: #08090b; }
+#canvas3d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.bld-hint { position: absolute; z-index: 2; inset: 0; display: flex; align-items: center; justify-content: center; pointer-events: none; color: var(--muted); font-size: 16px; text-align: center; padding: 20px; }
+.bld-toast { position: absolute; z-index: 5; top: 16px; left: 50%; transform: translateX(-50%); padding: 10px 18px; border-radius: 12px; background: rgba(13,15,20,.9); border: 1px solid #f59e0b; font-size: 13px; opacity: 0; white-space: nowrap; color: #ededef; }
+.bld-toast.ok { border-color: #2fd3b0; }
+.toolbar { position: absolute; z-index: 4; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 6px; padding: 8px; background: rgba(13,15,20,.72); border: 1px solid rgba(255,255,255,.18); border-radius: 16px; backdrop-filter: blur(14px); color: #ededef; }
+.tb { padding: 8px 12px; border-radius: 10px; background: rgba(255,255,255,.04); border: 1px solid transparent; font-size: 12px; font-weight: 600; white-space: nowrap; }
+.tb.on { background: linear-gradient(135deg, #6f7dff, #9b6bff); color: #fff; }
+.lpanel { position: absolute; z-index: 4; left: 50%; bottom: 84px; transform: translateX(-50%); width: 300px; padding: 14px; background: rgba(13,15,20,.88); border: 1px solid rgba(255,255,255,.18); border-radius: 14px; backdrop-filter: blur(16px); opacity: 0; visibility: hidden; color: #ededef; }
+.lp-t { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: #8a8f98; margin-bottom: 8px; }
+.sws { display: grid; grid-template-columns: repeat(6,1fr); gap: 8px; }
+.sw { aspect-ratio: 1/1; border-radius: 50%; border: 2px solid rgba(255,255,255,.2); }
+.sw.on { border-color: #fff; box-shadow: 0 0 0 2px #6f7dff; }
+
+/* регистрация и отзывы */
+.auth-top { position: absolute; top: 0; left: 0; right: 0; height: 60px; display: flex; align-items: center; padding: 0 24px; background: rgba(var(--vig),.55); border-bottom: 1px solid var(--line); backdrop-filter: blur(14px); }
+.eyebrow2 { margin-bottom: 14px; font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); }
+.eyebrow2::before { content: '— '; opacity: .5; }
+.reg-card { position: relative; width: 400px; padding: 24px 24px 20px; overflow: hidden; background: var(--panel-bg); border: 1px solid var(--line-strong); border-radius: 14px; box-shadow: 0 24px 60px rgba(0,0,0,.35); }
+.reg-card::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--accent); }
+.reg-card h3 { font-size: 26px; font-weight: 700; letter-spacing: -.03em; margin-bottom: 6px; }
+.reg-sub { color: var(--muted); font-size: 13px; line-height: 1.5; margin-bottom: 4px; }
+.reg-lbl { font-size: 12px; font-weight: 500; color: var(--muted); margin: 12px 0 6px; }
+.fld { min-height: 44px; background: var(--option-bg); border: 1px solid var(--line-strong); border-radius: 8px; display: flex; align-items: center; padding: 0 12px; font-size: 14px; }
+.fld.focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(var(--acc-rgb),.18); }
+.caret { display: none; width: 1px; height: 18px; background: var(--text); margin-left: 2px; }
+.fld.focus .caret { display: inline-block; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+.reg-btn { width: 100%; margin-top: 18px; padding: 12px 0; border-radius: 8px; background: var(--accent); color: #fff; text-align: center; font-weight: 700; font-size: 14px; }
+.reg-msg { margin-top: 12px; padding: 10px 12px; border: 1px solid rgba(74,222,128,.3); border-radius: 8px; background: rgba(74,222,128,.08); color: #4ade80; font-size: 13px; line-height: 1.45; opacity: 0; }
+
+.rv-wrap { width: 700px; margin-top: 56px; }
+.rv-h1 { font-size: 56px; font-weight: 700; letter-spacing: -.045em; line-height: .98; margin: 6px 0 16px; }
+.rv-h1 span { color: var(--muted); font-weight: 600; opacity: .85; }
+.rcard { position: relative; margin-bottom: 10px; padding: 14px 18px; background: var(--panel-bg); border: 1px solid var(--line-strong); border-radius: 12px; color: var(--panel-text); overflow: hidden; }
+.rcard.form::after { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 2px; background: var(--accent); }
+.rcard h4 { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
+.rstars { display: flex; gap: 4px; margin-bottom: 10px; }
+.rstars span { font-size: 30px; line-height: 1; color: var(--line-strong); }
+.rstars span.on { color: var(--star); text-shadow: 0 0 12px rgba(227,179,65,.5); }
+.rta { min-height: 66px; padding: 10px 12px; background: var(--option-bg); border: 1px solid var(--line-strong); border-radius: 8px; font-size: 14px; line-height: 1.5; }
+.rrow { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+.rcount { font-size: 11px; letter-spacing: .08em; color: var(--muted); }
+.rsend { padding: 10px 22px; border-radius: 8px; background: var(--accent); color: #fff; font-weight: 700; font-size: 14px; }
+.rmsg { margin-top: 8px; font-size: 13px; color: #4ade80; min-height: 18px; }
+.rsum { display: flex; align-items: baseline; gap: 12px; margin: 14px 2px 10px; }
+.rsum b { font-size: 30px; font-weight: 700; letter-spacing: -.03em; }
+.rsum .st { color: var(--star); letter-spacing: 2px; }
+.rsum .ct { font-size: 12px; letter-spacing: .1em; color: var(--muted); }
+.rtop { display: flex; justify-content: space-between; align-items: baseline; }
+.rname { font-weight: 600; }
+.rdate { font-size: 11px; letter-spacing: .08em; color: var(--muted); }
+.rst { color: var(--star); letter-spacing: 2px; margin: 3px 0 6px; }
+.rtx { font-size: 14px; line-height: 1.55; }
+</style>
 </head>
 <body>
-    <div id="video-viewport">
-        <!-- Автоматический курсор для имитации кликов -->
-        <div id="virtual-cursor"><div class="pulse"></div></div>
+<div id="video-viewport">
+    <div class="vp-glow"></div><div class="vp-grid"></div><div class="vp-vig"></div>
 
-        <!-- Подпись к текущему шагу -->
-        <div id="caption"></div>
+    <div id="virtual-cursor"><div class="pulse"></div></div>
+    <div id="caption"></div>
+    <a href="https://vysotskiyxsamitov-gif.github.io/hardwarevs/index.html" class="exit-btn mono" id="exit-btn">На главную сайта</a>
 
-        <!-- Кнопка выхода на главный экран сайта -->
-        <a href="https://vysotskiyxsamitov-gif.github.io/hardwarevs/index.html" class="exit-btn" id="exit-btn">На главный экран сайта</a>
+    <div id="end-overlay" class="end-overlay">
+        <h2>Хотите выйти на главный экран или посмотреть ещё раз?</h2>
+        <div class="end-buttons">
+            <button class="end-btn btn-exit" id="end-exit" type="button">Выйти на главный экран</button>
+            <button class="end-btn btn-replay" id="end-replay" type="button">Посмотреть ещё раз</button>
+        </div>
+    </div>
 
-        <!-- Вопрос после окончания анимации -->
-        <div id="end-overlay" class="end-overlay">
-            <h2>Хотите ли вы выйти на главный экран или посмотреть ещё раз?</h2>
-            <div class="end-buttons">
-                <button class="btn btn-exit" id="end-exit">Выйти на главный экран</button>
-                <button class="btn btn-replay" id="end-replay">Посмотреть ещё раз</button>
+    <div class="mm-ov" id="mm-ov">
+        <div class="mm"><div class="mm-head"><h3 id="mm-title"></h3><span id="mm-close">×</span></div><div id="mm-body"></div></div>
+    </div>
+
+    <!-- СЦЕНА 1: ГЛАВНЫЙ ЭКРАН -->
+    <div id="page-index" class="page active-page">
+        <header class="topbar">
+            <div class="brand"><svg viewBox="0 0 24 24"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4L12 2.5z"/><path d="M12 12l8.5-4.6M12 12L3.5 7.4M12 12v9.5"/></svg><span>Hardware<b>VS</b></span></div>
+            <nav class="topnav"><span>Конструктор</span><span>Процессоры</span><span>Видеокарты</span><span>Гайд</span></nav>
+        </header>
+
+        <div class="userbar">
+            <div class="account">
+                <div id="acc-guest"><span class="acc-link">Войти</span><span class="acc-sep">|</span><span class="acc-link">Регистрация</span></div>
+                <div id="acc-user"><span class="acc-mail">alex@mail.ru</span><span class="acc-link">Выйти</span></div>
+            </div>
+            <div class="shop">
+                <span class="shop-vip mono">VIP</span><span class="shop-status" id="shop-st">войдите</span>
+                <span class="shop-info" id="mock-vip-info">?</span><span class="shop-buy">Купить · 75 🍪</span>
             </div>
         </div>
 
-        <!-- СЦЕНА 1: ГЛАВНЫЙ ЭКРАН -->
-        <div id="page-index" class="page active-page">
-            <div class="acc-mock" id="acc-mock">
-                <div id="acc-guest"><span>Войти</span><span class="sep">|</span><span>Регистрация</span></div>
-                <div id="acc-user"><span class="mail">alex@mail.ru</span><span class="sep">·</span><span>Выйти</span></div>
-            </div>
-            <div class="shop-mock">
-                <span class="vip">👑 VIP</span>
-                <span class="st" id="shop-st">войдите</span>
-                <div class="q" id="mock-vip-info">?</div>
-                <div class="buy">Купить · 75 🍪</div>
-            </div>
+        <div class="ibtn" id="mock-suggest"><svg viewBox="0 0 24 24"><path d="M9 18h6M10 21h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2V17h5v-1.1c0-.8.4-1.5 1-2A6 6 0 0 0 12 3z"/></svg></div>
+        <div class="ibtn" id="mock-reviews"><svg viewBox="0 0 24 24"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9L12 16.9 6.8 19.7l1-5.9L3.5 9.7l5.9-.8L12 3.5z"/></svg></div>
+        <div class="ibtn" id="mock-gear"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></div>
+        <div class="theme-pop" id="theme-pop">
+            <div class="ttl">Тема оформления</div>
+            <div class="row"><div class="topt on" id="mock-theme-dark">Тёмная</div><div class="topt" id="mock-theme-light">Светлая</div></div>
+        </div>
 
-            <div class="round" id="mock-suggest">💡</div>
-            <div class="round" id="mock-reviews">⭐</div>
-            <div class="round" id="mock-gear">⚙️</div>
-            <div class="theme-pop" id="theme-pop">
-                <div class="ttl">Тема оформления</div>
-                <div class="row">
-                    <div class="topt on" id="mock-theme-dark">🌙 Тёмная</div>
-                    <div class="topt" id="mock-theme-light">☀️ Светлая</div>
+        <div class="hero-center">
+            <span class="pill mono"><i></i>3D-конфигуратор ПК</span>
+            <h1 class="hero-title">Hardware<span>VS</span></h1>
+            <p class="hero-sub">Собирайте ПК в 3D, сравнивайте комплектующие и проверяйте совместимость до покупки.</p>
+        </div>
+
+        <nav class="menu">
+            <div class="menu-card primary" id="mock-btn-build"><span class="mc-top mono"><span>01</span><svg class="mc-arrow" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span><span class="mc-txt"><span class="mc-title">Конструктор ПК</span><span class="mc-sub">3D-сборка с проверкой совместимости</span></span></div>
+            <div class="menu-card" id="mock-btn-cpu"><span class="mc-top mono"><span>02</span><svg class="mc-arrow" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span><span class="mc-txt"><span class="mc-title">Процессоры</span><span class="mc-sub">Сравнение характеристик и тестов</span></span></div>
+            <div class="menu-card" id="mock-btn-gpu"><span class="mc-top mono"><span>03</span><svg class="mc-arrow" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span><span class="mc-txt"><span class="mc-title">Видеокарты</span><span class="mc-sub">Сравнение характеристик и тестов</span></span></div>
+            <div class="menu-card" id="mock-btn-guide"><span class="mc-top mono"><span>04</span><svg class="mc-arrow" viewBox="0 0 24 24"><path d="M7 17L17 7M8 7h9v9"/></svg></span><span class="mc-txt"><span class="mc-title">Гайд</span><span class="mc-sub">Пошаговая инструкция по сборке</span></span></div>
+        </nav>
+
+        <div class="foot">
+            <span class="foot-label mono">Мы в соцсетях</span>
+            <div class="social-bar">
+                <div class="social-link" id="mock-tg"><svg viewBox="0 0 24 24"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg></div>
+                <div class="social-link" id="mock-tt"><svg viewBox="0 0 24 24"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- СЦЕНЫ СРАВНЕНИЯ (заполняются скриптом) -->
+    <div id="page-cpu" class="page"></div>
+    <div id="page-gpu" class="page"></div>
+
+    <!-- СЦЕНА: КОНФИГУРАТОР -->
+    <div id="page-builder" class="page">
+        <div class="bld">
+            <aside class="bld-side">
+                <div class="sb-head"><span class="back-link" id="mock-back-builder">← На главную</span><h2>3D-конфигуратор ПК</h2></div>
+                <div class="sb-scroll">
+                    <div class="stepper" id="bld-stepper"></div>
+                    <div class="eyebrow mono" id="bld-eyebrow"></div>
+                    <div class="step-t" id="bld-step"></div>
+                    <div class="step-p" id="bld-hintp"></div>
+                    <div class="filters"><div class="fin">Поиск по названию…</div><div class="only-ok"><i></i> Только совместимые</div></div>
+                    <div class="opts" id="bld-opts"></div>
+                    <div class="build-box">Состав сборки</div>
                 </div>
-            </div>
-
-            <h1 class="logo">HardwareVS</h1>
-            <button class="btn btn-build" id="mock-btn-build">🛠️ ПОСТРОИТЬ КОМПЬЮТЕР</button>
-            <button class="btn btn-cpu" id="mock-btn-cpu">💻 СРАВНИТЬ ПРОЦЕССОРЫ</button>
-            <button class="btn btn-gpu" id="mock-btn-gpu">🎮 СРАВНИТЬ ВИДЕОКАРТЫ</button>
-            <button class="btn btn-guide" id="mock-btn-guide">📖 ПОШАГОВЫЙ ГАЙД</button>
-
-            <div class="soc">
-                <div id="mock-tg">✈</div>
-                <div id="mock-tt">♪</div>
-            </div>
-
-            <div class="mm-ov" id="mm-ov">
-                <div class="mm">
-                    <div class="mm-head"><h3 id="mm-title"></h3><span id="mm-close">×</span></div>
-                    <div id="mm-body"></div>
+                <div class="save-row">
+                    <span class="sbtn" id="mock-save">💾 Сохранить</span><span class="sbtn" id="mock-mybuilds">📂 Мои сборки</span>
+                    <div class="who"><span id="bld-who">Не вошли</span><b id="bld-auth">Войти</b></div>
                 </div>
-            </div>
+                <div class="bfoot"><div><div class="tl">Итого</div><div class="total" id="bld-total">0 ₽</div></div><span class="sbtn">Сбросить</span></div>
+            </aside>
+            <section class="bld-view" id="bld-view">
+                <div class="bld-hint" id="bld-hint">Выберите корпус слева, чтобы начать сборку</div>
+                <canvas id="canvas3d"></canvas>
+                <div class="bld-toast" id="bld-toast"></div>
+                <div class="lpanel" id="lpanel">
+                    <div class="lp-t">Цвет подсветки</div>
+                    <div class="sws" id="sws"></div>
+                </div>
+                <div class="toolbar">
+                    <span class="tb on">↻ Покачивание</span><span class="tb" id="tb-glass">◻ Стекло</span><span class="tb on">✦ RGB</span><span class="tb" id="tb-light">🎨 Цвет</span><span class="tb">⌖ Камера</span><span class="tb">⬇ PNG</span>
+                </div>
+            </section>
         </div>
+    </div>
 
-        <!-- СЦЕНА 2: СРАВНЕНИЕ ПРОЦЕССОРОВ -->
-        <div id="page-cpu" class="page">
-            <a href="#" class="back-link" id="mock-back-cpu">← На главную</a>
-            <h2 class="page-title">Сравнение процессоров</h2>
-            <div class="select-container">
-                <div class="dropdown">Intel Core i3-540 (1 Gen)</div>
-                <span class="vs-label">VS</span>
-                <div class="dropdown">Intel Core i3-3220 (3 Gen)</div>
-            </div>
-            <button class="btn btn-compare" id="mock-compare-cpu">Сравнить процессоры!</button>
-
-            <div class="stat-block">
-                <div class="stat-title">📊 Ядра / Потоки:</div>
-                <div class="item-label">Intel Core i3-540 (1 Gen)</div>
-                <div class="bar-wrapper"><div class="bar bar-blue" data-width="40%">2/4</div></div>
-                <div class="item-label">Intel Core i3-3220 (3 Gen)</div>
-                <div class="bar-wrapper"><div class="bar bar-blue" data-width="40%">2/4</div></div>
-            </div>
-
-            <div class="stat-block">
-                <div class="stat-title">⚡ Тепловыделение (TDP Ватт):</div>
-                <div class="item-label">Intel Core i3-540 (1 Gen)</div>
-                <div class="bar-wrapper"><div class="bar bar-red" data-width="73%">73 W</div></div>
-                <div class="item-label">Intel Core i3-3220 (3 Gen)</div>
-                <div class="bar-wrapper"><div class="bar bar-red" data-width="55%">55 W</div></div>
-            </div>
-
-            <div class="stat-block">
-                <div class="stat-title">🚀 Чистая мощность (Баллы PassMark):</div>
-                <div class="item-label">Intel Core i3-540 (1 Gen)</div>
-                <div class="bar-wrapper"><div class="bar bar-green" data-width="45%">1500 pts</div></div>
-                <div class="item-label">Intel Core i3-3220 (3 Gen)</div>
-                <div class="bar-wrapper"><div class="bar bar-green" data-width="70%">2200 pts</div></div>
-            </div>
-
-            <div class="result-box">
-                Процессор <strong>Intel Core i3-3220 (3 Gen)</strong> мощнее в тестах ровно на <span style="color: #22c55e; font-weight: bold;">700 баллов!</span>
-            </div>
+    <!-- СЦЕНА: РЕГИСТРАЦИЯ -->
+    <div id="page-register" class="page">
+        <div class="auth-top"><div class="brand"><svg viewBox="0 0 24 24"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4L12 2.5z"/><path d="M12 12l8.5-4.6M12 12L3.5 7.4M12 12v9.5"/></svg><span>Hardware<b>VS</b></span></div></div>
+        <div class="eyebrow2 mono" style="margin-top:50px">Новый аккаунт</div>
+        <div class="reg-card">
+            <h3>Регистрация</h3>
+            <p class="reg-sub">Аккаунт нужен, чтобы сохранять свои сборки ПК. Это бесплатно.</p>
+            <div class="reg-lbl">Почта</div>
+            <div class="fld" id="fld-email"><span id="txt-email"></span><i class="caret"></i></div>
+            <div class="reg-lbl">Пароль (от 8 символов)</div>
+            <div class="fld" id="fld-pass"><span id="txt-pass"></span><i class="caret"></i></div>
+            <div class="reg-lbl">Повторите пароль</div>
+            <div class="fld" id="fld-pass2"><span id="txt-pass2"></span><i class="caret"></i></div>
+            <div class="reg-btn" id="mock-reg-btn">Создать аккаунт</div>
+            <div class="reg-msg" id="reg-msg">Готово! Мы отправили письмо со ссылкой подтверждения. Откройте его, а потом войдите.</div>
         </div>
+    </div>
 
-        <!-- СЦЕНА 3: СРАВНЕНИЕ ВИДЕОКАРТ -->
-        <div id="page-gpu" class="page">
-            <a href="#" class="back-link" id="mock-back-gpu">← На главную</a>
-            <h2 class="page-title">Сравнение видеокарт</h2>
-            <div class="select-container">
-                <div class="dropdown">NVIDIA GeForce RTX 4060 8GB</div>
-                <span class="vs-label">VS</span>
-                <div class="dropdown">NVIDIA GeForce RTX 4080 Super 16GB</div>
+    <!-- СЦЕНА: ОТЗЫВЫ -->
+    <div id="page-reviews" class="page">
+        <header class="topbar">
+            <div class="brand"><svg viewBox="0 0 24 24"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4L12 2.5z"/><path d="M12 12l8.5-4.6M12 12L3.5 7.4M12 12v9.5"/></svg><span>Hardware<b>VS</b></span></div>
+            <nav class="topnav"><span>Конструктор</span><span>Процессоры</span><span>Видеокарты</span><span>Гайд</span></nav>
+        </header>
+        <div class="rv-wrap">
+            <span class="back-pill mono" id="mock-back-reviews">← На главную</span>
+            <div class="eyebrow2 mono" style="margin:14px 0 6px">Мнение пользователей</div>
+            <div class="rv-h1">Отзывы<span>.</span></div>
+            <div class="rcard form">
+                <h4>Ваш отзыв</h4>
+                <div class="rstars" id="rstars"><span id="rv-star1">★</span><span id="rv-star2">★</span><span id="rv-star3">★</span><span id="rv-star4">★</span><span id="rv-star5">★</span></div>
+                <div class="rta" id="rv-ta"><span id="rv-text"></span></div>
+                <div class="rrow"><span class="rcount mono" id="rv-count">0 / 1000</span><span class="rsend" id="rv-send">Отправить</span></div>
+                <div class="rmsg" id="rv-msg"></div>
             </div>
-            <button class="btn btn-compare" id="mock-compare-gpu">Сравнить видеокарты!</button>
-
-            <div class="stat-block">
-                <div class="stat-title">💾 Объем видеопамяти:</div>
-                <div class="item-label">NVIDIA GeForce RTX 4060 8GB GDDR6</div>
-                <div class="bar-wrapper"><div class="bar bar-blue" data-width="40%">8 ГБ</div></div>
-                <div class="item-label">NVIDIA GeForce RTX 4080 Super 16GB</div>
-                <div class="bar-wrapper"><div class="bar bar-blue" data-width="85%">16 ГБ</div></div>
-            </div>
-
-            <div class="stat-block">
-                <div class="stat-title">⚡ Потребление энергии (Ватты):</div>
-                <div class="item-label">NVIDIA GeForce RTX 4060 8GB GDDR6</div>
-                <div class="bar-wrapper"><div class="bar bar-red" data-width="35%">115 W</div></div>
-                <div class="item-label">NVIDIA GeForce RTX 4080 Super 16GB</div>
-                <div class="bar-wrapper"><div class="bar bar-red" data-width="90%">320 W</div></div>
-            </div>
-
-            <div class="stat-block">
-                <div class="stat-title">🚀 Мощность (Чистые баллы PassMark):</div>
-                <div class="item-label">NVIDIA GeForce RTX 4060 8GB GDDR6</div>
-                <div class="bar-wrapper"><div class="bar bar-green" data-width="50%">15984 pts</div></div>
-                <div class="item-label">NVIDIA GeForce RTX 4080 Super 16GB</div>
-                <div class="bar-wrapper"><div class="bar bar-green" data-width="95%">30144 pts</div></div>
-            </div>
-
-            <div class="result-box">
-                Модель <strong>NVIDIA GeForce RTX 4080 Super 16GB</strong> мощнее в тестах ровно на <span style="color: #22c55e; font-weight: bold;">14160 баллов!</span>
-            </div>
+            <div class="rsum"><b id="rv-avg">4.0</b><span class="st" id="rv-avgst">★★★★☆</span><span class="ct mono" id="rv-ct">(1)</span></div>
+            <div class="rcard" id="rv-new" style="display:none"><div class="rtop"><span class="rname">alex</span><span class="rdate mono">21.10.2026</span></div><div class="rst">★★★★★</div><div class="rtx" id="rv-newtx"></div></div>
+            <div class="rcard"><div class="rtop"><span class="rname">Дмитрий</span><span class="rdate mono">19.10.2026</span></div><div class="rst">★★★★☆</div><div class="rtx">Удобно сравнивать видеокарты, не хватало только пары моделей.</div></div>
         </div>
+    </div>
+</div>
 
-        <!-- СЦЕНА 4: КОНФИГУРАТОР ПК -->
-        <div id="page-builder" class="page">
-            <a href="#" class="back-link" id="mock-back-builder">← На главную</a>
-            <div class="bld">
-                <aside class="bld-side">
-                    <div class="bld-h">3D-конфигуратор ПК</div>
-                    <div class="bld-stepper" id="bld-stepper"></div>
-                    <div class="bld-eyebrow" id="bld-eyebrow"></div>
-                    <div class="bld-step" id="bld-step"></div>
-                    <div class="bld-opts" id="bld-opts"></div>
-                    <div class="bld-foot">
-                        <div><div class="bld-tl">ИТОГО</div><div class="bld-total" id="bld-total">0 ₽</div></div>
-                        <button class="bld-save" id="mock-save">💾 Сохранить</button>
-                    </div>
-                </aside>
-                <section class="bld-view" id="bld-view">
-                    <div class="bld-hint" id="bld-hint">Выберите корпус слева, чтобы начать сборку</div>
-                    <canvas id="canvas3d"></canvas>
-                    <div class="bld-toast" id="bld-toast"></div>
-                </section>
-            </div>
-        </div>
+<script>
+const cursor = document.getElementById('virtual-cursor');
+const pulse = cursor.querySelector('.pulse');
+const viewport = document.getElementById('video-viewport');
+const PAGES = ['#page-index', '#page-cpu', '#page-gpu', '#page-builder', '#page-register', '#page-reviews'];
+const $ = id => document.getElementById(id);
+const RUB = n => n.toLocaleString('ru-RU') + ' ₽';
+function mkEl(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
 
-        <!-- СЦЕНА 5: РЕГИСТРАЦИЯ -->
-        <div id="page-register" class="page">
-            <h1 class="logo" style="font-size: 44px; margin-bottom: 22px;">HardwareVS</h1>
-            <div class="reg-card">
-                <h3>Регистрация</h3>
-                <p class="reg-sub">Аккаунт нужен, чтобы сохранять сборки ПК, оставлять отзывы и предлагать новинки. Это бесплатно.</p>
-                <div class="reg-lbl">Почта</div>
-                <div class="fld" id="fld-email"><span id="txt-email"></span><i class="caret"></i></div>
-                <div class="reg-lbl">Пароль (от 8 символов)</div>
-                <div class="fld" id="fld-pass"><span id="txt-pass"></span><i class="caret"></i></div>
-                <div class="reg-lbl">Повторите пароль</div>
-                <div class="fld" id="fld-pass2"><span id="txt-pass2"></span><i class="caret"></i></div>
-                <button class="reg-btn" id="mock-reg-btn">Создать аккаунт</button>
-                <div class="reg-msg" id="reg-msg">✅ Аккаунт создан! Если придёт письмо, подтвердите адрес по ссылке.</div>
-            </div>
-        </div>
-    </div> <!-- Закрываем контейнер видео-плеера -->
+gsap.set(cursor, { xPercent: -50, yPercent: -50 });
+gsap.set(pulse, { opacity: 0, scale: 1 });
 
-    <script>
-        const cursor = document.getElementById('virtual-cursor');
-        const pulse = cursor.querySelector('.pulse');
-        const viewport = document.getElementById('video-viewport');
-        const PAGES = ['#page-index', '#page-cpu', '#page-gpu', '#page-builder', '#page-register'];
-        const $ = id => document.getElementById(id);
+function fitViewport() {
+    const s = Math.min(1, window.innerWidth / 1290, window.innerHeight / 730);
+    viewport.style.transform = 'scale(' + s + ')';
+}
+fitViewport();
+window.addEventListener('resize', fitViewport);
 
-        // Центрирование курсора средствами GSAP (вместо CSS-transform)
-        gsap.set(cursor, { xPercent: -50, yPercent: -50 });
-        gsap.set(pulse, { opacity: 0, scale: 1 });
+function getCoords(id) {
+    const el = $(id), r = el.getBoundingClientRect(), v = viewport.getBoundingClientRect();
+    const scale = v.width / viewport.offsetWidth || 1, b = viewport.clientLeft;
+    return { x: (r.left - v.left) / scale - b + (r.width / scale) / 2, y: (r.top - v.top) / scale - b + (r.height / scale) / 2 };
+}
+function playClick() {
+    return gsap.timeline()
+        .to(cursor, { scale: 0.7, duration: 0.1 })
+        .to(pulse, { opacity: 1, scale: 1.8, duration: 0.2 }, '<')
+        .to(cursor, { scale: 1, duration: 0.1 })
+        .to(pulse, { opacity: 0, scale: 1, duration: 0.1 });
+}
+function changeScene(hideId, showId) {
+    return gsap.timeline()
+        .to(hideId, { opacity: 0, duration: 0.3, onComplete: () => {
+            document.querySelector(hideId).classList.remove('active-page');
+            document.querySelector(showId).classList.add('active-page');
+        } })
+        .to(showId, { opacity: 1, duration: 0.3 });
+}
+function moveTo(tl, id, dur) {
+    tl.call(() => {
+        const c = getCoords(id);
+        gsap.to(cursor, { left: c.x, top: c.y, duration: dur, ease: 'power2.inOut', overwrite: 'auto' });
+    });
+    tl.to({}, { duration: dur });
+}
+function typeInto(tl, id, text, dur, cb) {
+    tl.call(() => {
+        const el = $(id), o = { n: 0 };
+        gsap.to(o, { n: text.length, duration: dur, ease: 'none', onUpdate: () => { const k = Math.round(o.n); el.textContent = text.slice(0, k); if (cb) cb(k); } });
+    });
+    tl.to({}, { duration: dur });
+}
+function focusField(id) { document.querySelectorAll('.fld').forEach(f => f.classList.toggle('focus', f.id === id)); }
+function pause(tl, s) { tl.to({}, { duration: s }); }
+function cap(text) {
+    const c = $('caption');
+    c.textContent = text;
+    gsap.fromTo(c, { opacity: 0, y: -6 }, { opacity: 1, y: 0, duration: 0.3 });
+}
+function countTo(el, to) {
+    const from = +el.textContent || 0, t0 = performance.now();
+    (function s(n) { const p = Math.min(1, (n - t0) / 500); el.textContent = Math.round(from + (to - from) * p); if (p < 1) requestAnimationFrame(s); })(t0);
+}
 
-        // Масштабирование ролика под размер окна
-        function fitViewport() {
-            const s = Math.min(1, window.innerWidth / 1288, window.innerHeight / 728);
-            viewport.style.transform = `scale(${s})`;
-        }
-        fitViewport();
-        window.addEventListener('resize', fitViewport);
+/* ---------- тема, окна, аккаунт ---------- */
+function setTheme(light) {
+    viewport.classList.toggle('light', light);
+    $('mock-theme-dark').classList.toggle('on', !light);
+    $('mock-theme-light').classList.toggle('on', light);
+}
+function openPanel() { gsap.to('#theme-pop', { autoAlpha: 1, duration: 0.25 }); }
+function closePanel() { gsap.to('#theme-pop', { autoAlpha: 0, duration: 0.2 }); }
+function openModal(title, html) { $('mm-title').textContent = title; $('mm-body').innerHTML = html; gsap.to('#mm-ov', { autoAlpha: 1, duration: 0.25 }); }
+function closeModal() { gsap.to('#mm-ov', { autoAlpha: 0, duration: 0.2 }); }
+function setLoggedIn(on) {
+    $('acc-guest').style.display = on ? 'none' : 'flex';
+    $('acc-user').style.display = on ? 'flex' : 'none';
+    $('shop-st').textContent = on ? 'не активен' : 'войдите';
+    $('bld-who').textContent = on ? 'alex@mail.ru' : 'Не вошли';
+    $('bld-auth').textContent = on ? 'Выйти' : 'Войти';
+}
+function hl(id, on) { $(id).classList.toggle('hl', on); }
 
-        // Точный центр элемента внутри viewport (с учётом масштаба).
-        // Вызывается в момент выполнения, когда нужная страница уже показана.
-        function getCoords(elementId) {
-            const el = document.getElementById(elementId);
-            const elRect = el.getBoundingClientRect();
-            const viewRect = viewport.getBoundingClientRect();
-            const scale = viewRect.width / viewport.offsetWidth || 1;
-            const border = viewport.clientLeft; // рамка viewport
-            return {
-                x: (elRect.left - viewRect.left) / scale - border + (elRect.width / scale) / 2,
-                y: (elRect.top - viewRect.top) / scale - border + (elRect.height / scale) / 2
-            };
-        }
+const VIP_HTML =
+    '<p>Что даёт VIP на 30 дней:</p><ul><li>доступ к 3D-конфигуратору ПК</li><li>3 печеньки в день вместо 1</li></ul>' +
+    '<p class="hint">Стоимость: 75 🍪. Повторная покупка продлевает VIP ещё на 30 дней.</p>' +
+    '<p class="hint">Печеньку можно забрать раз в сутки: новый день начинается в 12:00 по Москве.</p>';
+const SUG_HTML =
+    '<p class="lbl">Что вы хотите добавить?</p>' +
+    '<div class="kinds"><div id="mm-kind-cpu">💻 Процессор</div><div>🎮 Видеокарта</div></div>' +
+    '<p class="lbl">Точное название</p>' +
+    '<div class="inp ph" id="mm-inp"><span id="mm-inp-t">Сначала выберите, что добавить</span></div>' +
+    '<p class="hint">Пишите полное название вместе с серией, как на коробке или в магазине.</p>' +
+    '<div class="send" id="mm-send">Отправить предложение</div><div class="mmsg" id="mm-msg"></div>';
+const SAVE_HTML =
+    '<div class="inp" id="mm-name"><span>Моя сборка</span></div>' +
+    '<div class="send" id="mm-save-do" style="margin-top:12px">Сохранить</div>';
+function myBuildsHtml() {
+    return '<div class="b-item"><div class="b-name">Моя сборка</div><div class="b-meta">' + RUB(totalVal) + ' · 21.10.2026</div>' +
+        '<div class="acts"><div class="p">Открыть</div><div>Удалить</div></div></div>';
+}
 
-        // Анимация щелчка мыши (сжатие + радиальный импульс)
-        function playClick() {
-            return gsap.timeline()
-                .to(cursor, { scale: 0.7, duration: 0.1 })
-                .to(pulse, { opacity: 1, scale: 1.8, duration: 0.2 }, "<")
-                .to(cursor, { scale: 1, duration: 0.1 })
-                .to(pulse, { opacity: 0, scale: 1, duration: 0.1 });
-        }
-
-        // Плавная смена экранов (один затухает, второй проявляется)
-        function changeScene(hideId, showId) {
-            return gsap.timeline()
-                .to(hideId, { opacity: 0, duration: 0.3, onComplete: () => {
-                    document.querySelector(hideId).classList.remove('active-page');
-                    document.querySelector(showId).classList.add('active-page');
-                }})
-                .to(showId, { opacity: 1, duration: 0.3 });
-        }
-
-        // Анимация плавного заполнения инфо-шкал
-        function runBars(pageId) {
-            const bars = document.querySelectorAll(`${pageId} .bar`);
-            const t = gsap.timeline();
-            bars.forEach(bar => {
-                t.to(bar, { width: bar.getAttribute('data-width'), duration: 0.8, ease: "power2.out" }, "-=0.6");
-            });
-            t.to(`${pageId} .result-box`, { opacity: 1, y: 0, duration: 0.3 }, "-=0.2");
-            return t;
-        }
-
-        // Движение курсора к элементу: координаты считаются в момент запуска,
-        // а не при построении таймлайна
-        function moveTo(tl, elementId, duration) {
-            tl.call(() => {
-                const c = getCoords(elementId);
-                gsap.to(cursor, { left: c.x, top: c.y, duration: duration, ease: "power2.inOut", overwrite: "auto" });
-            });
-            tl.to({}, { duration: duration });
-        }
-
-        // Печать текста в поле (посимвольно)
-        function typeInto(tl, id, text, dur) {
-            tl.call(() => {
-                const el = $(id), o = { n: 0 };
-                gsap.to(o, { n: text.length, duration: dur, ease: 'none', onUpdate: () => { el.textContent = text.slice(0, Math.round(o.n)); } });
-            });
-            tl.to({}, { duration: dur });
-        }
-        function focusField(id) {
-            document.querySelectorAll('.fld').forEach(f => f.classList.toggle('focus', f.id === id));
-        }
-        function pause(tl, s) { tl.to({}, { duration: s }); }
-
-        // Подпись к шагу (сверху по центру)
-        function cap(text) {
-            const c = $('caption');
-            c.textContent = text;
-            gsap.fromTo(c, { opacity: 0, y: -6 }, { opacity: 1, y: 0, duration: 0.3 });
-        }
-
-        // ------------------------------------------
-        //   ГЛАВНЫЙ ЭКРАН: тема, окна, статус VIP
-        // ------------------------------------------
-        function setTheme(light) {
-            viewport.classList.toggle('light', light);
-            $('mock-theme-dark').classList.toggle('on', !light);
-            $('mock-theme-light').classList.toggle('on', light);
-        }
-        function openPanel() { gsap.to('#theme-pop', { autoAlpha: 1, duration: 0.25 }); }
-        function closePanel() { gsap.to('#theme-pop', { autoAlpha: 0, duration: 0.2 }); }
-        function openModal(title, html) {
-            $('mm-title').textContent = title;
-            $('mm-body').innerHTML = html;
-            gsap.to('#mm-ov', { autoAlpha: 1, duration: 0.25 });
-        }
-        function closeModal() { gsap.to('#mm-ov', { autoAlpha: 0, duration: 0.2 }); }
-
-        const VIP_HTML =
-            '<p>Что даёт VIP на 30 дней:</p>' +
-            '<ul><li>доступ к 3D-конфигуратору ПК</li><li>3 печеньки в день вместо 1</li></ul>' +
-            '<p class="hint">Стоимость: 75 🍪. Повторная покупка продлевает VIP ещё на 30 дней.</p>' +
-            '<p class="hint">Печеньку можно забрать раз в сутки: новый день начинается в 12:00 по Москве.</p>';
-        const SUG_HTML =
-            '<p class="hint" style="margin-bottom:8px">Что вы хотите добавить?</p>' +
-            '<div class="kinds"><div>💻 Процессор</div><div>🎮 Видеокарта</div></div>' +
-            '<p class="hint" style="margin-bottom:8px">Точное название</p>' +
-            '<div class="inp">Например: Ryzen 7 7800X3D</div>' +
-            '<div class="send">Отправить предложение</div>';
-
-        // ------------------------------------------
-        //   3D-ДВИЖОК (тот же, что в конфигураторе builder.html)
-        // ------------------------------------------
-        const PICKED = {"case":{"id":"aurora","name":"Aurora ATX Midi-Tower","price":8990,"dims":{"x":46,"y":45,"z":21},"forms":["ATX","mATX","ITX"],"gpuMax":38,"thickMax":8,"coolerMax":17,"radMax":280,"color":"#1a1626","frame":"#3b2a63","fronts":[13,26,39]},"mb":{"id":"b650","name":"AMD B650 ATX","chip":"B650","vendor":"amd","socket":"AM5","form":"ATX","mem":"DDR5","price":16990},"cpu":{"id":"r7-7800x3d","name":"AMD Ryzen 7 7800X3D","short":"R7 7800X3D","brand":"amd","socket":"AM5","cores":8,"threads":16,"tdp":120,"price":36990},"cooler":{"id":"aio240","name":"СЖО 240 мм","type":"aio","kind":"СЖО 240 мм","rad":240,"tdpMax":250,"price":8990},"ram":{"id":"d5-32","name":"32 ГБ DDR5-6000","type":"DDR5","kit":"2×16 ГБ","n":2,"color":"#e8e9ef","price":9490},"gpu":{"id":"rtx4070s","name":"NVIDIA GeForce RTX 4070 Super","short":"RTX 4070 SUPER","brand":"nvidia","vram":12,"tdp":220,"len":27,"thick":5,"fans":3,"price":59990},"ssd":{"id":"m1000","name":"NVMe 1 ТБ Gen4","cap":"1 ТБ","gen":4,"spec":"M.2 · PCIe 4.0 · до 7 000 МБ/с","price":5990},"psu":{"id":"p750","name":"Блок питания 750 Вт","watt":750,"cert":"Gold","price":8490}};
-
-        function createHW3D(canvas, viewport, onHint) {
-            const T = THREE;
-            const root = { getAttribute: () => 'dark' };
-            const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-            const FORMS = { ATX: { w: 30.5, h: 24.4 }, mATX: { w: 24.4, h: 24.4 }, ITX: { w: 17, h: 17 } };
-            const STEPS = ['case', 'mb', 'cpu', 'cooler', 'ram', 'gpu', 'ssd', 'psu'].map(k => ({ key: k }));
-            const state = {};
-            let started = false;
-
-    /* =====================================================================
-       3D: СЦЕНА, СВЕТ, КАМЕРА
-       ===================================================================== */
-    let renderer;
-    try {
-        renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true });
-    } catch (e) {
-        if (onHint) onHint('Ваш браузер или устройство не поддерживает WebGL, 3D-модель недоступна.');
-        return null;
+/* ---------- сравнение процессоров и видеокарт ---------- */
+const CMP = {
+    cpu: {
+        title: 'Сравнение процессоров', lead: 'Выберите два процессора и посмотрите, кто быстрее, холоднее и эффективнее.',
+        data: [
+            { n: 'Intel Core i5-14600K (14 Gen)', l1: 'Core i5', l2: 'i5-14600K', p: 39000, w: 125, m: 14, t: '14/20' },
+            { n: 'AMD Ryzen 5 5600 (Zen 3)', l1: 'Ryzen 5', l2: '5600', p: 21500, w: 65, m: 6, t: '6/12' },
+            { n: 'AMD Ryzen 7 7800X3D (Zen 4)', l1: 'Ryzen 7', l2: '7800X3D', p: 34500, w: 120, m: 8, t: '8/16' },
+            { n: 'Intel Core i7-12700K (12 Gen)', l1: 'Core i7', l2: 'i7-12700K', p: 34500, w: 125, m: 12, t: '12/20' },
+            { n: 'AMD Ryzen 9 7950X (Zen 4)', l1: 'Ryzen 9', l2: '7950X', p: 63000, w: 170, m: 16, t: '16/32' }
+        ],
+        rows: [['Ядра / потоки', d => d.m, d => d.t, 0], ['Тепловыделение, Вт', d => d.w, d => d.w + ' W', 1], ['Мощность, PassMark', d => d.p, d => d.p, 0], ['Эффективность, баллов на Вт', d => d.p / d.w, d => (d.p / d.w).toFixed(0), 0]],
+        cap: d => d.t + ' · ' + d.w + ' W', init: { A: 0, B: 1 }, sel: { A: 0, B: 1 }
+    },
+    gpu: {
+        title: 'Сравнение видеокарт', lead: 'Выберите две видеокарты и посмотрите, какая быстрее, холоднее и эффективнее.',
+        data: [
+            { n: 'NVIDIA GeForce RTX 4060 8GB', s: 'RTX 4060', p: 15984, w: 115, m: 8 },
+            { n: 'AMD Radeon RX 6600 8GB', s: 'RX 6600', p: 10942, w: 132, m: 8 },
+            { n: 'NVIDIA GeForce RTX 4070 Super 12GB', s: 'RTX 4070 SUPER', p: 25488, w: 220, m: 12 },
+            { n: 'AMD Radeon RX 7800 XT 16GB', s: 'RX 7800 XT', p: 24285, w: 263, m: 16 },
+            { n: 'NVIDIA GeForce RTX 4080 Super 16GB', s: 'RTX 4080 SUPER', p: 30144, w: 320, m: 16 }
+        ],
+        rows: [['Видеопамять, ГБ', d => d.m, d => d.m + ' ГБ', 0], ['Тепловыделение, Вт', d => d.w, d => d.w + ' W', 1], ['Мощность, PassMark', d => d.p, d => d.p, 0], ['Эффективность, баллов на Вт', d => d.p / d.w, d => (d.p / d.w).toFixed(0), 0]],
+        cap: d => d.m + ' ГБ · ' + d.w + ' W', init: { A: 0, B: 1 }, sel: { A: 0, B: 1 }
     }
+};
+const NAVSVG = '<svg viewBox="0 0 24 24"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4L12 2.5z"/><path d="M12 12l8.5-4.6M12 12L3.5 7.4M12 12v9.5"/></svg>';
+
+function cmpHTML(k) {
+    const C = CMP[k];
+    const topbar = '<header class="topbar"><span class="back-pill mono" id="mock-back-' + k + '">← На главную</span><div class="brand">' + NAVSVG + '<span>Hardware<b>VS</b></span></div>' +
+        '<nav class="topnav"><span>Конструктор</span><span' + (k === 'cpu' ? ' class="on"' : '') + '>Процессоры</span><span' + (k === 'gpu' ? ' class="on"' : '') + '>Видеокарты</span><span>Гайд</span></nav></header>';
+    const side = s => {
+        const items = C.data.map((d, i) => '<li id="' + k + '-it' + s + '-' + i + '">' + d.n + '</li>').join('');
+        const stage = k === 'cpu'
+            ? '<div class="chip"><span class="l1 mono" id="' + k + '-l1' + s + '"></span><span class="l2" id="' + k + '-l2' + s + '"></span></div>'
+            : '<div class="gcard"><div class="gfans"><i></i><i></i><i></i></div><div class="gname mono" id="' + k + '-l2' + s + '"></div></div>';
+        return '<div class="side ' + s.toLowerCase() + '" id="' + k + '-side' + s + '">' +
+            '<div class="sbox"><div class="trig" id="' + k + '-trig' + s + '"></div><div class="dd" id="' + k + '-dd' + s + '"><div class="ddin">Поиск…</div><ul>' + items + '</ul></div></div>' +
+            '<div class="stage"><div class="shadow"></div><div class="crown mono">👑 ЛИДЕР</div>' + stage + '</div>' +
+            '<div class="cap mono" id="' + k + '-cap' + s + '"></div></div>';
+    };
+    const rows = C.rows.map((r, i) =>
+        '<div class="crow"><div class="cv a mono" id="' + k + '-r' + i + '-va"></div><div class="bar a" id="' + k + '-r' + i + '-ba"><i></i></div><div class="ck">' + r[0] +
+        '</div><div class="bar b" id="' + k + '-r' + i + '-bb"><i></i></div><div class="cv b mono" id="' + k + '-r' + i + '-vb"></div></div>').join('');
+    return topbar + '<main class="cmp"><h1>' + C.title + '</h1><p class="lead">' + C.lead + '</p>' +
+        '<section class="arena">' + side('A') + '<div class="mid"><div class="vs mono">VS</div><div class="swapbtn">⇄ поменять</div></div>' + side('B') + '</section>' +
+        '<section class="score"><div class="n a mono" id="' + k + '-sA">0</div><div class="t mono">побед по параметрам</div><div class="n b mono" id="' + k + '-sB">0</div></section>' +
+        '<p class="verdict" id="' + k + '-verdict"></p><section class="rows">' + rows + '</section></main>';
+}
+['cpu', 'gpu'].forEach(k => { $('page-' + k).innerHTML = cmpHTML(k); });
+
+function cmpRender(k, fromZero) {
+    const C = CMP[k], A = C.data[C.sel.A], B = C.data[C.sel.B];
+    let wa = 0, wb = 0;
+    $(k + '-trigA').textContent = A.n; $(k + '-trigB').textContent = B.n;
+    if (k === 'cpu') { $(k + '-l1A').textContent = A.l1; $(k + '-l2A').textContent = A.l2; $(k + '-l1B').textContent = B.l1; $(k + '-l2B').textContent = B.l2; }
+    else { $(k + '-l2A').textContent = A.s; $(k + '-l2B').textContent = B.s; }
+    $(k + '-capA').textContent = C.cap(A); $(k + '-capB').textContent = C.cap(B);
+    ['A', 'B'].forEach(s => document.querySelectorAll('#' + k + '-dd' + s + ' li').forEach((li, i) => li.classList.toggle('sel', i === C.sel[s])));
+    C.rows.forEach((r, i) => {
+        const a = r[1](A), b = r[1](B), low = r[3], best = low ? Math.min(a, b) : Math.max(a, b) || 1;
+        const wA = a !== b && (low ? a < b : a > b), wB = a !== b && (low ? b < a : b > a);
+        if (wA) wa++; if (wB) wb++;
+        const va = $(k + '-r' + i + '-va'), vb = $(k + '-r' + i + '-vb'), ba = $(k + '-r' + i + '-ba'), bb = $(k + '-r' + i + '-bb');
+        va.textContent = r[2](A); vb.textContent = r[2](B);
+        va.classList.toggle('w', wA); vb.classList.toggle('w', wB);
+        ba.classList.toggle('win', wA); bb.classList.toggle('win', wB);
+        const pa = (low ? best / a : a / best) * 100, pb = (low ? best / b : b / best) * 100;
+        if (fromZero) { gsap.set([ba.firstChild, bb.firstChild], { width: '0%' }); }
+        gsap.to(ba.firstChild, { width: pa + '%', duration: 0.9, delay: 0.1 + i * 0.07, ease: 'power2.out' });
+        gsap.to(bb.firstChild, { width: pb + '%', duration: 0.9, delay: 0.1 + i * 0.07, ease: 'power2.out' });
+    });
+    countTo($(k + '-sA'), wa); countTo($(k + '-sB'), wb);
+    $(k + '-sideA').classList.toggle('lead', A.p > B.p); $(k + '-sideB').classList.toggle('lead', B.p > A.p);
+    const diff = Math.round(Math.abs(A.p - B.p) / Math.min(A.p, B.p) * 100);
+    $(k + '-verdict').innerHTML = A.p === B.p ? '<b>Одинаковая</b> производительность в тестах.'
+        : '<b>' + (A.p > B.p ? A.n : B.n) + '</b> мощнее в PassMark на <b>' + diff + '%</b> (' + Math.abs(A.p - B.p) + ' баллов).';
+}
+function ddOpen(k, s, on) {
+    gsap.to('#' + k + '-dd' + s, { autoAlpha: on ? 1 : 0, duration: 0.2 });
+    $(k + '-trig' + s).classList.toggle('open', on);
+}
+function pickItem(k, s, i) { CMP[k].sel[s] = i; ddOpen(k, s, false); cmpRender(k, false); }
+function ddHover(k, s, i, on) { $(k + '-it' + s + '-' + i).classList.toggle('hv', on); }
+
+/* ---------- 3D-движок (как в конфигураторе) ---------- */
+const PICKED = {"case":{"id":"aurora","name":"Aurora ATX Midi-Tower","price":8990,"dims":{"x":46,"y":45,"z":21},"forms":["ATX","mATX","ITX"],"gpuMax":38,"thickMax":8,"coolerMax":17,"radMax":280,"color":"#1a1626","frame":"#3b2a63","fronts":[13,26,39]},"mb":{"id":"b650","name":"AMD B650 ATX","chip":"B650","vendor":"amd","socket":"AM5","form":"ATX","mem":"DDR5","price":16990},"cpu":{"id":"r7-7800x3d","name":"AMD Ryzen 7 7800X3D","short":"R7 7800X3D","brand":"amd","socket":"AM5","cores":8,"threads":16,"tdp":120,"price":36990},"cooler":{"id":"aio240","name":"СЖО 240 мм","type":"aio","kind":"СЖО 240 мм","rad":240,"tdpMax":250,"price":8990},"ram":{"id":"d5-32","name":"32 ГБ DDR5-6000","type":"DDR5","kit":"2×16 ГБ","n":2,"color":"#e8e9ef","price":9490},"gpu":{"id":"rtx4070s","name":"NVIDIA GeForce RTX 4070 Super","short":"RTX 4070 SUPER","brand":"nvidia","vram":12,"tdp":220,"len":27,"thick":5,"fans":3,"price":59990},"ssd":{"id":"m1000","name":"NVMe 1 ТБ Gen4","cap":"1 ТБ","gen":4,"spec":"M.2 · PCIe 4.0 · до 7 000 МБ/с","price":5990},"psu":{"id":"p750","name":"Блок питания 750 Вт","watt":750,"cert":"Gold","price":8490}};
+
+function createHW3D(canvas, viewportEl, onHint) {
+    const T = THREE;
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const FORMS = { ATX: { w: 30.5, h: 24.4 }, mATX: { w: 24.4, h: 24.4 }, ITX: { w: 17, h: 17 } };
+    const STEPS = ['case', 'mb', 'cpu', 'cooler', 'ram', 'gpu', 'ssd', 'psu'].map(k => ({ key: k }));
+    const state = {};
+    let started = false;
+
+    let renderer;
+    try { renderer = new T.WebGLRenderer({ canvas: canvas, antialias: true }); }
+    catch (e) { if (onHint) onHint('Ваш браузер или устройство не поддерживает WebGL, 3D-модель недоступна.'); return null; }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = T.PCFSoftShadowMap;
 
     const scene = new T.Scene();
     const camera = new T.PerspectiveCamera(38, 1, 0.5, 600);
-    const rig = new T.Group();           // сюда добавляются все детали (координаты — «в корпусе»)
+    const rig = new T.Group();
     scene.add(rig);
 
     const ambient = new T.AmbientLight(0xffffff, 0.6);
-    const hemi = new T.HemisphereLight(0xcdbfff, 0x20103a, 0.35);
+    const hemi = new T.HemisphereLight(0xcdd3ff, 0x10131f, 0.35);
     const sun = new T.DirectionalLight(0xffffff, 0.85);
     sun.position.set(40, 90, 70);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
     Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 10, far: 260 });
     sun.shadow.bias = -0.0006;
-    const pl1 = new T.PointLight(0xa855f7, 0.7, 260); pl1.position.set(-60, 30, 50);
-    const pl2 = new T.PointLight(0x06b6d4, 0.6, 260); pl2.position.set(60, 10, 60);
+    const pl1 = new T.PointLight(0x6f7dff, 0.7, 260); pl1.position.set(-60, 30, 50);
+    const pl2 = new T.PointLight(0x2fd3b0, 0.6, 260); pl2.position.set(60, 10, 60);
     scene.add(ambient, hemi, sun, pl1, pl2);
 
-    const floor = new T.Mesh(new T.CircleGeometry(95, 64), new T.MeshStandardMaterial({ color: 0x120a24, roughness: 0.95, metalness: 0 }));
+    const floor = new T.Mesh(new T.CircleGeometry(95, 64), new T.MeshStandardMaterial({ color: 0x10131a, roughness: 0.95, metalness: 0 }));
     floor.rotation.x = -Math.PI / 2;
     floor.receiveShadow = true;
     scene.add(floor);
 
-    function applySceneTheme() {
-        const light = root.getAttribute('data-theme') === 'light';
-        const bg = new T.Color(light ? '#f3f0fa' : '#06020b');
-        renderer.setClearColor(bg, 1);
-        scene.fog = new T.Fog(bg, 110, 230);
-        floor.material.color.set(light ? '#e1daf3' : '#120a24');
-        ambient.intensity = light ? 0.85 : 0.6;
-        sun.intensity = light ? 0.8 : 0.85;
-        pl1.intensity = light ? 0.35 : 0.7;
-        pl2.intensity = light ? 0.3 : 0.6;
-    }
+    const bg = new T.Color('#08090b');
+    renderer.setClearColor(bg, 1);
+    scene.fog = new T.Fog(bg, 110, 230);
 
-    // --- Камера (орбита без внешних библиотек) ---
     const cam = { base: 0.55, phi: 1.28, tPhi: 1.28, theta: 0.55, zoom: 1, tZoom: 1, auto: 0 };
-    let autoRotate = true, glassOn = false, rgbOn = true, dragging = false;
+    let autoRotate = true, glassOn = false, rgbOn = true, dragging = false, rgbHex = null;
+    const rgbCol = new T.Color();
     const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-
     function caseDims() { return state.case ? state.case.dims : { x: 46, y: 45, z: 21 }; }
-
-    function fitRadius() {
-        const D = caseDims();
-        const span = Math.max(D.x, D.y) * 1.18;
-        return 1.45 * span * Math.max(1, 1 / camera.aspect);
-    }
-
+    function fitRadius() { const D = caseDims(); return 1.45 * Math.max(D.x, D.y) * 1.18 * Math.max(1, 1 / camera.aspect); }
     function updateCamera(dt) {
         if (autoRotate && !dragging) cam.auto += dt;
         const sway = autoRotate ? Math.sin(cam.auto * 0.5) * 0.6 : 0;
@@ -571,100 +701,45 @@
         camera.position.set(r * Math.sin(cam.phi) * Math.sin(cam.theta), r * Math.cos(cam.phi), r * Math.sin(cam.phi) * Math.cos(cam.theta));
         camera.lookAt(0, -1, 0);
     }
-
-    const pointers = new Map();
-    function pinchDist() {
-        const p = Array.from(pointers.values());
-        return Math.hypot(p[0].x - p[1].x, p[0].y - p[1].y);
-    }
-    canvas.addEventListener('pointerdown', e => {
-        try { canvas.setPointerCapture(e.pointerId); } catch (err) {}
-        pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
-        dragging = true;
-    });
-    canvas.addEventListener('pointermove', e => {
-        const p = pointers.get(e.pointerId);
-        if (!p) return;
-        const dx = e.clientX - p.x, dy = e.clientY - p.y;
-        const oldDist = pointers.size === 2 ? pinchDist() : 0;
-        p.x = e.clientX; p.y = e.clientY;
-        if (pointers.size === 1) {
-            cam.base -= dx * 0.008;
-            cam.tPhi = clamp(cam.tPhi - dy * 0.006, 0.3, 1.75);
-        } else if (pointers.size === 2 && oldDist > 0) {
-            cam.tZoom = clamp(cam.tZoom * oldDist / pinchDist(), 0.35, 1.6);
-        }
-    });
-    function endPointer(e) { pointers.delete(e.pointerId); dragging = pointers.size > 0; }
-    canvas.addEventListener('pointerup', endPointer);
-    canvas.addEventListener('pointercancel', endPointer);
-    canvas.addEventListener('wheel', e => {
-        e.preventDefault();
-        cam.tZoom = clamp(cam.tZoom * Math.exp(e.deltaY * 0.001), 0.35, 1.6);
-    }, { passive: false });
-
     function resize() {
-        const w = viewport.clientWidth, h = viewport.clientHeight;
+        const w = viewportEl.clientWidth, h = viewportEl.clientHeight;
         if (!w || !h) return;
         renderer.setSize(w, h, false);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
     }
-    if (window.ResizeObserver) new ResizeObserver(resize).observe(viewport);
+    if (window.ResizeObserver) new ResizeObserver(resize).observe(viewportEl);
     window.addEventListener('resize', resize);
 
-    /* =====================================================================
-       3D: ПОМОЩНИКИ ДЛЯ ПОСТРОЕНИЯ ДЕТАЛЕЙ
-       ===================================================================== */
-    let CTX = null; // собирает RGB-материалы и вращающиеся вентиляторы текущей детали
-
-    function mat(color, o) {
-        return new T.MeshStandardMaterial(Object.assign({ color: color, metalness: 0.3, roughness: 0.55 }, o || {}));
-    }
-    function box(w, h, d, color, o) {
-        const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat(color, o));
-        m.castShadow = true; m.receiveShadow = true;
-        return m;
-    }
-    function cyl(r, h, color, o, seg) {          // цилиндр, ось вдоль Z
-        const m = new T.Mesh(new T.CylinderGeometry(r, r, h, seg || 32), mat(color, o));
-        m.rotation.x = Math.PI / 2;
-        m.castShadow = true; m.receiveShadow = true;
-        return m;
-    }
+    let CTX = null;
+    function mat(color, o) { return new T.MeshStandardMaterial(Object.assign({ color: color, metalness: 0.3, roughness: 0.55 }, o || {})); }
+    function box(w, h, d, color, o) { const m = new T.Mesh(new T.BoxGeometry(w, h, d), mat(color, o)); m.castShadow = true; m.receiveShadow = true; return m; }
+    function cyl(r, h, color, o, seg) { const m = new T.Mesh(new T.CylinderGeometry(r, r, h, seg || 32), mat(color, o)); m.rotation.x = Math.PI / 2; m.castShadow = true; m.receiveShadow = true; return m; }
     function at(obj, x, y, z) { obj.position.set(x, y, z); return obj; }
-
     function rgbMat() {
         const m = new T.MeshStandardMaterial({ color: '#1a1a1f', emissive: new T.Color(0x000000), emissiveIntensity: 1.4, roughness: 0.4 });
         m.userData.off = (CTX.rgb.length * 0.11) % 1;
         CTX.rgb.push(m);
         return m;
     }
-
-    function labelPlane(text, w, h, fg, bg) {
+    function labelPlane(text, w, h, fg, bgc) {
         const c = document.createElement('canvas');
         c.width = 512; c.height = Math.max(32, Math.round(512 * h / w));
         const x = c.getContext('2d');
-        if (bg) { x.fillStyle = bg; x.fillRect(0, 0, c.width, c.height); }
+        if (bgc) { x.fillStyle = bgc; x.fillRect(0, 0, c.width, c.height); }
         let fs = c.height * 0.62;
         x.font = 'bold ' + fs + 'px "Segoe UI", Arial, sans-serif';
         while (x.measureText(text).width > c.width * 0.9 && fs > 10) { fs -= 4; x.font = 'bold ' + fs + 'px "Segoe UI", Arial, sans-serif'; }
         x.fillStyle = fg; x.textAlign = 'center'; x.textBaseline = 'middle';
         x.fillText(text, c.width / 2, c.height / 2 + 2);
-        const tex = new T.CanvasTexture(c);
-        const m = new T.Mesh(new T.PlaneGeometry(w, h),
-            new T.MeshBasicMaterial({ map: tex, transparent: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
-        return m;
+        return new T.Mesh(new T.PlaneGeometry(w, h), new T.MeshBasicMaterial({ map: new T.CanvasTexture(c), transparent: true, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 }));
     }
-
     function tube(pts, r, color) {
         const curve = new T.CatmullRomCurve3(pts.map(p => new T.Vector3(p[0], p[1], p[2])));
         const m = new T.Mesh(new T.TubeGeometry(curve, 48, r, 8, false), mat(color, { roughness: 0.8, metalness: 0.1 }));
         m.castShadow = true;
         return m;
     }
-
-    // Вентилятор: смотрит вдоль +Z, толщина th, центр в начале координат
     function fan(size, th) {
         th = th || 2.5;
         const g = new T.Group(), fc = '#16141f', b = 0.5;
@@ -678,10 +753,8 @@
             const arm = new T.Group();
             arm.rotation.z = i / 7 * Math.PI * 2;
             const bl = box(size * 0.33, size * 0.15, 0.12, '#25222f');
-            bl.position.x = size * 0.27;
-            bl.rotation.x = 0.55;
-            arm.add(bl);
-            blades.add(arm);
+            bl.position.x = size * 0.27; bl.rotation.x = 0.55;
+            arm.add(bl); blades.add(arm);
         }
         g.add(blades);
         CTX.spin.push({ o: blades, sp: 7 });
@@ -691,12 +764,6 @@
         return g;
     }
 
-    /* =====================================================================
-       3D: РАСКЛАДКА ВНУТРИ КОРПУСА
-       Система координат: начало — задний нижний угол у задней стенки (материнская
-       «тарелка» в плоскости z=0), X — от задней стенки к передней, Y — вверх,
-       Z — в сторону открытой боковины (на зрителя).
-       ===================================================================== */
     function layoutNow() {
         const c = state.case, mb = state.mb;
         if (!c || !mb) return null;
@@ -716,73 +783,56 @@
     }
     const PSU_BOX = { x0: 0.5, x1: 14.5, y0: 0.5, y1: 9.1, z0: 1.5, z1: 16.5 };
 
-    /* =====================================================================
-       3D: СБОРЩИКИ ДЕТАЛЕЙ
-       ===================================================================== */
     const BUILDERS = {
         case() {
             const c = state.case, D = c.dims, g = new T.Group();
             const body = c.color, fr = c.frame, mo = { metalness: 0.5, roughness: 0.55 };
-            g.add(at(box(D.x, D.y, 0.4, body, mo), D.x / 2, D.y / 2, -0.2));        // тыльная панель (tray)
-            g.add(at(box(D.x, 0.4, D.z, body, mo), D.x / 2, -0.2, D.z / 2));        // дно
-            g.add(at(box(0.4, D.y, D.z, body, mo), -0.2, D.y / 2, D.z / 2));        // задняя стенка
-            g.add(at(box(0.4, D.y, D.z, body, mo), D.x + 0.2, D.y / 2, D.z / 2));   // передняя панель
+            g.add(at(box(D.x, D.y, 0.4, body, mo), D.x / 2, D.y / 2, -0.2));
+            g.add(at(box(D.x, 0.4, D.z, body, mo), D.x / 2, -0.2, D.z / 2));
+            g.add(at(box(0.4, D.y, D.z, body, mo), -0.2, D.y / 2, D.z / 2));
+            g.add(at(box(0.4, D.y, D.z, body, mo), D.x + 0.2, D.y / 2, D.z / 2));
             const bar = (w, h, d, x, y, z) => g.add(at(box(w, h, d, fr, { metalness: 0.6, roughness: 0.4 }), x, y, z));
             bar(D.x, 0.6, 0.6, D.x / 2, D.y, 0.3);        bar(D.x, 0.6, 0.6, D.x / 2, D.y, D.z - 0.3);
             bar(0.6, 0.6, D.z, 0.3, D.y, D.z / 2);        bar(0.6, 0.6, D.z, D.x - 0.3, D.y, D.z / 2);
             bar(D.x, 0.6, 0.6, D.x / 2, 0.3, D.z - 0.3);
             bar(0.6, D.y, 0.6, 0.3, D.y / 2, D.z - 0.3);  bar(0.6, D.y, 0.6, D.x - 0.3, D.y / 2, D.z - 0.3);
-            c.fronts.forEach(y => {                         // фронтальные вентиляторы
-                const f = fan(12); f.rotation.y = Math.PI / 2; at(f, D.x - 1.8, y, D.z / 2); g.add(f);
-            });
-            const rf = fan(12); rf.rotation.y = Math.PI / 2; at(rf, 1.8, D.y - 9.5, 8); g.add(rf);   // задний вентилятор
-            const glass = new T.Mesh(new T.BoxGeometry(D.x, D.y, 0.2),
-                mat('#9bb8ff', { transparent: true, opacity: 0.14, roughness: 0.05, metalness: 0.2, depthWrite: false }));
+            c.fronts.forEach(y => { const f = fan(12); f.rotation.y = Math.PI / 2; at(f, D.x - 1.8, y, D.z / 2); g.add(f); });
+            const rf = fan(12); rf.rotation.y = Math.PI / 2; at(rf, 1.8, D.y - 9.5, 8); g.add(rf);
+            const glass = new T.Mesh(new T.BoxGeometry(D.x, D.y, 0.2), mat('#9bb8ff', { transparent: true, opacity: 0.14, roughness: 0.05, metalness: 0.2, depthWrite: false }));
             at(glass, D.x / 2, D.y / 2, D.z + 0.1);
             glass.visible = glassOn;
             g.userData.glass = glass;
             g.add(glass);
             return g;
         },
-
         mb() {
             const L = layoutNow(), mb = state.mb, g = new T.Group();
             const amd = mb.vendor === 'amd';
             const pcb = amd ? '#1c1117' : '#0e1a2c', acc = amd ? '#ef4444' : '#38bdf8', hs = '#2b303c';
             const metal = { metalness: 0.7, roughness: 0.4 };
             g.add(at(box(L.bw, L.bh, 0.18, pcb, { metalness: 0.2, roughness: 0.7 }), L.bx + L.bw / 2, L.top - L.bh / 2, L.zb));
-            // кожух портов ввода-вывода
             g.add(at(box(4.2, L.bh * 0.5, 2.6, '#1c1d26'), L.bx + 2.1, L.top - L.bh * 0.25, L.zs + 1.3));
             g.add(at(box(4.25, 0.25, 2.65, acc, { emissive: acc, emissiveIntensity: 0.5 }), L.bx + 2.1, L.top - L.bh * 0.5, L.zs + 1.3));
-            const ioLabel = labelPlane(mb.chip, 3.4, 1.2, '#e9d5ff');
-            g.add(at(ioLabel, L.bx + 2.1, L.top - L.bh * 0.2, L.zs + 2.62));
-            // радиаторы VRM
+            g.add(at(labelPlane(mb.chip, 3.4, 1.2, '#e9d5ff'), L.bx + 2.1, L.top - L.bh * 0.2, L.zs + 2.62));
             g.add(at(box(L.bw * 0.34, 2.2, 2.0, hs, metal), L.bx + L.bw * 0.38, L.top - 1.3, L.zs + 1.0));
             if (!L.itx) g.add(at(box(1.8, L.bh * 0.3, 2.0, hs, metal), L.cpu.x - 3.9, L.cpu.y, L.zs + 1.0));
-            // сокет
             g.add(at(box(5.2, 5.2, 0.3, '#8b909b', { metalness: 0.8, roughness: 0.35 }), L.cpu.x, L.cpu.y, L.zs + 0.15));
-            // слоты ОЗУ
             for (let i = 0; i < L.ram.n; i++) g.add(at(box(0.7, 13.5, 1.1, '#17151d'), L.ram.x + i * 0.85, L.ram.y, L.zs + 0.55));
-            // слоты PCIe
             g.add(at(box(8.9, 0.8, 1.1, '#17151d'), L.bx + 5.4, L.gpuY, L.zs + 0.55));
             if (!L.itx) g.add(at(box(4.5, 0.8, 1.1, '#17151d'), L.bx + 3.4, L.top - L.bh * 0.80, L.zs + 0.55));
-            // чипсет
             if (!L.itx) {
                 g.add(at(box(4.2, 4.2, 1.0, hs, metal), L.bx + L.bw * 0.70, L.top - L.bh * 0.84, L.zs + 0.5));
                 g.add(at(labelPlane(mb.chip, 3.4, 1.2, '#e9d5ff'), L.bx + L.bw * 0.70, L.top - L.bh * 0.84, L.zs + 1.02));
             }
-            // разъём 24-pin
             g.add(at(box(1.2, 5.0, 1.6, '#e8e8ee'), L.bx + L.bw - 0.9, L.top - L.bh * 0.55, L.zs + 0.8));
             return g;
         },
-
         cpu() {
             const L = layoutNow(), cpu = state.cpu, g = new T.Group();
             g.add(at(box(3.9, 3.9, 0.35, '#c8ccd4', { metalness: 0.85, roughness: 0.3 }), L.cpu.x, L.cpu.y, L.zs + 0.47));
             g.add(at(labelPlane(cpu.short, 3.4, 1.3, '#1a1a22'), L.cpu.x, L.cpu.y, L.zs + 0.66));
             return g;
         },
-
         cooler() {
             const L = layoutNow(), cl = state.cooler, g = new T.Group();
             const zc = L.zs + 0.7, p = L.cpu;
@@ -797,7 +847,7 @@
                 for (let i = 0; i < 9; i++) g.add(at(box(0.12, fs, h - 1, '#9aa1ad', { metalness: 0.75, roughness: 0.4 }), p.x - 3.4 + i * 0.5, p.y, zc + 1 + (h - 1) / 2));
                 g.add(at(box(5.2, fs + 0.2, 0.3, '#1b1b24'), p.x - 1.0, p.y, zc + h - 0.15));
                 const f = fan(fs); f.rotation.y = Math.PI / 2; at(f, p.x + 2.75, p.y, zc + 1 + fs / 2); g.add(f);
-            } else { // СЖО
+            } else {
                 const D = L.D, ry = D.y - 2.85;
                 const n = cl.rad === 360 ? 3 : 2, fs = cl.rad === 280 ? 14 : 12;
                 const len = n * fs + 3.5, x0 = 6.25, rz = 5.6 + fs / 2;
@@ -805,47 +855,35 @@
                 const ring = new T.Mesh(new T.TorusGeometry(2.7, 0.14, 8, 40), rgbMat());
                 at(ring, p.x, p.y, zc + 5.05); g.add(ring);
                 g.add(at(box(len, 2.7, fs, '#20202a', { metalness: 0.5, roughness: 0.5 }), x0 + len / 2, ry, rz));
-                for (let i = 0; i < n; i++) {
-                    const f = fan(fs); f.rotation.x = Math.PI / 2;
-                    at(f, x0 + 1.75 + fs * (i + 0.5), ry - 1.35 - 1.25, rz); g.add(f);
-                }
+                for (let i = 0; i < n; i++) { const f = fan(fs); f.rotation.x = Math.PI / 2; at(f, x0 + 1.75 + fs * (i + 0.5), ry - 1.35 - 1.25, rz); g.add(f); }
                 const midY = Math.min(p.y + 5, ry - 2);
                 g.add(tube([[p.x - 1.6, p.y + 3.6, zc + 2.5], [p.x - 3, midY, zc + 4], [x0 + 3, ry - 2.5, zc + 5], [x0 + 0.25, ry, rz - 3]], 0.45, '#0d0d12'));
                 g.add(tube([[p.x + 1.6, p.y + 3.6, zc + 2.5], [p.x, midY, zc + 6], [x0 + 3.5, ry - 3, zc + 8], [x0 + 0.25, ry, rz + 3]], 0.45, '#0d0d12'));
             }
             return g;
         },
-
         ram() {
             const L = layoutNow(), r = state.ram, g = new T.Group();
             const idx = L.ram.n === 4 ? (r.n >= 4 ? [0, 1, 2, 3] : r.n === 2 ? [1, 3] : [1]) : (r.n >= 2 ? [0, 1] : [0]);
-            const col = r.color;
             idx.forEach(i => {
                 const x = L.ram.x + i * 0.85;
-                g.add(at(box(0.8, 13.3, 3.9, col, { metalness: 0.5, roughness: 0.4 }), x, L.ram.y, L.zs + 0.5 + 1.95));
-                const strip = new T.Mesh(new T.BoxGeometry(0.55, 12.2, 0.14), rgbMat());
-                g.add(at(strip, x, L.ram.y, L.zs + 0.5 + 3.9 + 0.05));
+                g.add(at(box(0.8, 13.3, 3.9, r.color, { metalness: 0.5, roughness: 0.4 }), x, L.ram.y, L.zs + 0.5 + 1.95));
+                g.add(at(new T.Mesh(new T.BoxGeometry(0.55, 12.2, 0.14), rgbMat()), x, L.ram.y, L.zs + 0.5 + 3.9 + 0.05));
             });
             return g;
         },
-
         gpu() {
             const L = layoutNow(), gpu = state.gpu, g = new T.Group();
             const G = gpuGeom(L, gpu), len = gpu.len, th = gpu.thick, H = G.z1 - G.z0;
             const brandCol = gpu.brand === 'nvidia' ? '#76b900' : gpu.brand === 'amd' ? '#ef4444' : '#38bdf8';
             g.add(at(box(len, th, H, '#1b1b24', { metalness: 0.5, roughness: 0.45 }), G.x0 + len / 2, (G.y0 + G.y1) / 2, G.z0 + H / 2));
             g.add(at(box(0.3, th + 0.5, H + 0.5, '#b8bcc6', { metalness: 0.8, roughness: 0.3 }), G.x0 - 0.15, (G.y0 + G.y1) / 2, G.z0 + H / 2));
-            const strip = new T.Mesh(new T.BoxGeometry(len * 0.92, 0.3, 0.1), rgbMat());
-            g.add(at(strip, G.x0 + len / 2, G.y1 - th * 0.18, G.z1 + 0.05));
+            g.add(at(new T.Mesh(new T.BoxGeometry(len * 0.92, 0.3, 0.1), rgbMat()), G.x0 + len / 2, G.y1 - th * 0.18, G.z1 + 0.05));
             g.add(at(labelPlane(gpu.short, len * 0.5, th * 0.5, brandCol), G.x0 + len * 0.45, (G.y0 + G.y1) / 2 - th * 0.08, G.z1 + 0.03));
             const fs = Math.min(9.6, (len - 2) / gpu.fans);
-            for (let i = 0; i < gpu.fans; i++) {
-                const f = fan(fs - 0.3, 1.2); f.rotation.x = Math.PI / 2;
-                at(f, G.x0 + 1 + fs * (i + 0.5), G.y0 + 0.05, G.z0 + H / 2); g.add(f);
-            }
+            for (let i = 0; i < gpu.fans; i++) { const f = fan(fs - 0.3, 1.2); f.rotation.x = Math.PI / 2; at(f, G.x0 + 1 + fs * (i + 0.5), G.y0 + 0.05, G.z0 + H / 2); g.add(f); }
             return g;
         },
-
         ssd() {
             const L = layoutNow(), s = state.ssd, g = new T.Group();
             const x = L.m2.x, y = L.m2.y, z = L.zs + 0.4;
@@ -854,21 +892,18 @@
                 const hsAcc = s.gen >= 5 ? '#f59e0b' : '#06b6d4', hsT = s.gen >= 5 ? 0.9 : 0.45;
                 g.add(at(box(7.2, 2.3, hsT, '#4b5563', { metalness: 0.85, roughness: 0.3 }), x, y, z + hsT / 2 + 0.12));
                 g.add(at(box(7.2, 0.18, 0.1, hsAcc, { emissive: hsAcc, emissiveIntensity: 0.6 }), x, y + 0.5, z + hsT + 0.17));
-            } else {
-                g.add(at(box(6.6, 2.0, 0.12, '#cbd0d8', { metalness: 0.4 }), x, y, z + 0.2));
-            }
+            } else g.add(at(box(6.6, 2.0, 0.12, '#cbd0d8', { metalness: 0.4 }), x, y, z + 0.2));
             g.add(at(labelPlane(s.cap, 3.4, 0.9, s.gen >= 4 ? '#e5e7eb' : '#1a1a22'), x, y - 0.1, z + (s.gen >= 5 ? 1.08 : s.gen >= 4 ? 0.6 : 0.28)));
             return g;
         },
-
         psu() {
             const L = layoutNow(), p = state.psu, g = new T.Group(), B = PSU_BOX;
             const cx = (B.x0 + B.x1) / 2, cy = (B.y0 + B.y1) / 2, cz = (B.z0 + B.z1) / 2;
             g.add(at(box(B.x1 - B.x0, B.y1 - B.y0, B.z1 - B.z0, '#1c1c24', { metalness: 0.4, roughness: 0.6 }), cx, cy, cz));
             g.add(at(box(B.x1 - B.x0, 0.35, B.z1 - B.z0 + 0.05, '#facc15', { emissive: '#facc15', emissiveIntensity: 0.25 }), cx, B.y1 - 0.6, cz));
             g.add(at(labelPlane(p.watt + ' W', 8, 3.0, '#e9d5ff'), cx, cy - 0.4, B.z1 + 0.03));
-            if (L) { // кабели питания
-                const cable = (pts) => g.add(tube(pts, 0.42, '#0b0b10'));
+            if (L) {
+                const cable = pts => g.add(tube(pts, 0.42, '#0b0b10'));
                 const yc = L.top - L.bh * 0.55, xr = L.bx + L.bw;
                 cable([[B.x1 + 0.1, 4.5, 8], [xr + 0.6, 5, 7.5], [xr + 0.9, yc - 5, 5.5], [xr - 0.9, yc - 2.6, L.zs + 1.4]]);
                 cable([[B.x1 + 0.1, 7.2, 12], [2.2, 12, 14.5], [2.2, L.top - 3, 14.5], [L.bx + 5.0, L.top - 1.0, L.zs + 2.4]]);
@@ -880,43 +915,23 @@
             return g;
         }
     };
-
-    // От чего зависит деталь: req — обязательные, opt — влияют на геометрию (кабели)
     const PARTSPEC = {
-        case:   { req: ['case'] },
-        mb:     { req: ['case', 'mb'] },
-        cpu:    { req: ['case', 'mb', 'cpu'] },
-        cooler: { req: ['case', 'mb', 'cpu', 'cooler'] },
-        ram:    { req: ['case', 'mb', 'ram'] },
-        gpu:    { req: ['case', 'mb', 'gpu'] },
-        ssd:    { req: ['case', 'mb', 'ssd'] },
-        psu:    { req: ['case', 'psu'], opt: ['mb', 'gpu'] }
+        case: { req: ['case'] }, mb: { req: ['case', 'mb'] }, cpu: { req: ['case', 'mb', 'cpu'] }, cooler: { req: ['case', 'mb', 'cpu', 'cooler'] },
+        ram: { req: ['case', 'mb', 'ram'] }, gpu: { req: ['case', 'mb', 'gpu'] }, ssd: { req: ['case', 'mb', 'ssd'] }, psu: { req: ['case', 'psu'], opt: ['mb', 'gpu'] }
     };
     const OFFS = {
-        case:   new T.Vector3(0, 16, 0),  mb:  new T.Vector3(0, 0, 18),  cpu:  new T.Vector3(0, 0, 16),
-        cooler: new T.Vector3(0, 0, 20),  ram: new T.Vector3(0, 12, 10), gpu:  new T.Vector3(14, 0, 8),
-        ssd:    new T.Vector3(0, 0, 12),  psu: new T.Vector3(-16, 0, 0)
+        case: new T.Vector3(0, 16, 0), mb: new T.Vector3(0, 0, 18), cpu: new T.Vector3(0, 0, 16), cooler: new T.Vector3(0, 0, 20),
+        ram: new T.Vector3(0, 12, 10), gpu: new T.Vector3(14, 0, 8), ssd: new T.Vector3(0, 0, 12), psu: new T.Vector3(-16, 0, 0)
     };
-
-    /* =====================================================================
-       3D: УПРАВЛЕНИЕ ДЕТАЛЯМИ В СЦЕНЕ (появление, удаление, синхронизация)
-       ===================================================================== */
-    const parts = {};   // key -> { key, group }
-
+    const parts = {};
     function buildPart(key) {
         CTX = { rgb: [], spin: [] };
         const g = BUILDERS[key]();
-        g.userData.rgb = CTX.rgb;
-        g.userData.spin = CTX.spin;
+        g.userData.rgb = CTX.rgb; g.userData.spin = CTX.spin;
         CTX = null;
         return g;
     }
-    function eachMat(obj, fn) {
-        obj.traverse(o => {
-            if (!o.material) return;
-            (Array.isArray(o.material) ? o.material : [o.material]).forEach(fn);
-        });
-    }
+    function eachMat(obj, fn) { obj.traverse(o => { if (!o.material) return; (Array.isArray(o.material) ? o.material : [o.material]).forEach(fn); }); }
     function disposePart(g) {
         rig.remove(g);
         g.traverse(o => { if (o.geometry) o.geometry.dispose(); });
@@ -925,10 +940,7 @@
     function startAnim(g, off, delay) {
         g.userData.anim = { t0: performance.now() + delay, off: off, dur: reduceMotion ? 1 : 750 };
         g.position.copy(off);
-        eachMat(g, m => {
-            if (m.userData.o === undefined) { m.userData.o = m.opacity; m.userData.tr = m.transparent; }
-            m.transparent = true; m.opacity = 0;
-        });
+        eachMat(g, m => { if (m.userData.o === undefined) { m.userData.o = m.opacity; m.userData.tr = m.transparent; } m.transparent = true; m.opacity = 0; });
     }
     function stepAnims(now) {
         for (const key in parts) {
@@ -949,6 +961,7 @@
         if (!sp.req.every(k => state[k])) return null;
         return sp.req.concat(sp.opt || []).map(k => state[k] ? state[k].id : '-').join('|');
     }
+    function applyGlass() { if (parts.case && parts.case.group.userData.glass) parts.case.group.userData.glass.visible = glassOn; }
     function sync() {
         let delay = 0;
         STEPS.forEach(step => {
@@ -968,13 +981,7 @@
         floor.position.y = -D.y / 2 - 0.5;
         applyGlass();
     }
-    function applyGlass() {
-        if (parts.case && parts.case.group.userData.glass) parts.case.group.userData.glass.visible = glassOn;
-    }
 
-    /* =====================================================================
-       ЦИКЛ ОТРИСОВКИ
-       ===================================================================== */
     let lastT = performance.now();
     function frame(now) {
         const dt = Math.min(0.05, (now - lastT) / 1000);
@@ -984,313 +991,311 @@
             const ud = parts[key].group.userData;
             ud.spin.forEach(s => { s.o.rotation.z += dt * s.sp; });
             ud.rgb.forEach(m => {
-                if (rgbOn) m.emissive.setHSL((now * 0.0001 + m.userData.off) % 1, 1, 0.5);
-                else m.emissive.setRGB(0, 0, 0);
+                if (!rgbOn) m.emissive.setRGB(0, 0, 0);
+                else if (rgbHex) m.emissive.copy(rgbCol);
+                else m.emissive.setHSL((now * 0.0001 + m.userData.off) % 1, 1, 0.5);
             });
         }
-        if (viewport.clientWidth) { updateCamera(dt); renderer.render(scene, camera); }
+        if (viewportEl.clientWidth) { updateCamera(dt); renderer.render(scene, camera); }
         requestAnimationFrame(frame);
     }
 
+    resize();
+    return {
+        setPart(key, obj) { state[key] = obj; sync(); },
+        reset() { Object.keys(state).forEach(k => { delete state[k]; }); glassOn = false; rgbHex = null; sync(); },
+        setGlass(v) { glassOn = v; applyGlass(); },
+        setColor(hex) { rgbHex = hex; if (hex) rgbCol.set(hex); },
+        start() { if (started) return; started = true; resize(); lastT = performance.now(); requestAnimationFrame(frame); }
+    };
+}
 
+const HW3D = (typeof THREE !== 'undefined') ? createHW3D($('canvas3d'), $('bld-view'), msg => { $('bld-hint').textContent = msg; }) : null;
+if (HW3D) HW3D.start();
+const KEYS = ['case', 'mb', 'cpu', 'cooler', 'ram', 'gpu', 'ssd', 'psu'];
 
-            applySceneTheme();
-            resize();
-            return {
-                setPart(key, obj) { state[key] = obj; sync(); },
-                reset() { Object.keys(state).forEach(k => { delete state[k]; }); sync(); },
-                start() { if (started) return; started = true; resize(); lastT = performance.now(); requestAnimationFrame(frame); }
-            };
-        }
+/* ---------- данные и логика сцены «Конструктор» ---------- */
+const BSTEPS = [
+    { t: 'Корпус', i: '🗄️', h: 'Корпус определяет, какие платы, кулеры и видеокарты поместятся.', pick: 0, o: [['Aurora ATX Midi-Tower', 'Стекло · 46×45×21 см · ATX / mATX / ITX · видеокарта до 38 см', 8990], ['Nova mATX Compact', 'Стекло · 40×38×19 см · mATX / ITX · видеокарта до 32.5 см', 6490], ['Forge Full-Tower', 'Стекло · 52×52×23 см · ATX / mATX / ITX · СЖО до 360 мм', 17990]] },
+    { t: 'Материнская плата', i: '🧩', h: 'Корпус поддерживает форматы: ATX, mATX, ITX.', pick: 1, o: [['AMD A620M mATX', 'AM5 · mATX · DDR5', 7990], ['AMD B650 ATX', 'AM5 · ATX · DDR5', 16990], ['AMD X670E ATX', 'AM5 · ATX · DDR5', 31990]] },
+    { t: 'Процессор', i: '🧠', h: 'Сокет платы: AM5.', pick: 1, o: [['AMD Ryzen 5 7600', 'AM5 · 6 ядер / 12 потоков · 65 Вт', 17990], ['AMD Ryzen 7 7800X3D', 'AM5 · 8 ядер / 16 потоков · 120 Вт', 36990], ['AMD Ryzen 9 7950X', 'AM5 · 16 ядер / 32 потока · 170 Вт', 52990]] },
+    { t: 'Охлаждение', i: '❄️', h: 'Тепловыделение процессора: 120 Вт. Водянки с экраном — только для VIP 👑.', pick: 2, o: [['Башенный 120 мм', 'Башня 15.5 см · до 180 Вт', 3490], ['Башенный 140 мм', 'Башня 16.5 см · до 250 Вт', 5490], ['СЖО 240 мм', 'СЖО 240 мм · до 250 Вт', 8990]] },
+    { t: 'Оперативная память', i: '🧬', h: 'Плата поддерживает память DDR5.', pick: 1, o: [['16 ГБ DDR5-5200', 'DDR5 · 2×8 ГБ', 4990], ['32 ГБ DDR5-6000', 'DDR5 · 2×16 ГБ', 9490], ['64 ГБ DDR5-6000', 'DDR5 · 2×32 ГБ', 17990]] },
+    { t: 'Видеокарта', i: '🎮', h: 'Максимальная длина видеокарты в корпусе: 38 см.', pick: 1, o: [['NVIDIA GeForce RTX 4060', '8 ГБ · 115 Вт · длина 24 см · толщина 4 см', 29990], ['NVIDIA GeForce RTX 4070 Super', '12 ГБ · 220 Вт · длина 27 см · толщина 5 см', 59990], ['NVIDIA GeForce RTX 4080 Super', '16 ГБ · 320 Вт · длина 31 см · толщина 6 см', 109990]] },
+    { t: 'Накопитель', i: '💾', h: 'Накопитель M.2 NVMe устанавливается в слот на плате.', pick: 1, o: [['NVMe 500 ГБ Gen4', 'M.2 · PCIe 4.0 · до 5 000 МБ/с', 4290], ['NVMe 1 ТБ Gen4', 'M.2 · PCIe 4.0 · до 7 000 МБ/с', 5990], ['NVMe 2 ТБ Gen4', 'M.2 · PCIe 4.0 · до 7 300 МБ/с', 10990]] },
+    { t: 'Блок питания', i: '🔌', h: 'Рекомендуемая мощность — от 400 Вт.', pick: 1, o: [['Блок питания 650 Вт', '650 Вт · 80+ Gold', 6990], ['Блок питания 750 Вт', '750 Вт · 80+ Gold', 8490], ['Блок питания 850 Вт', '850 Вт · 80+ Gold', 10990]] }
+];
+let totalVal = 0;
+BSTEPS.forEach(s => $('bld-stepper').appendChild(mkEl('div', 'bchip', s.i)));
+$('bld-stepper').appendChild(mkEl('div', 'bchip', '🎎'));
 
-        const HW3D = (typeof THREE !== 'undefined')
-            ? createHW3D($('canvas3d'), $('bld-view'), msg => { $('bld-hint').textContent = msg; })
-            : null;
-        if (HW3D) HW3D.start();
-        const KEYS = ['case', 'mb', 'cpu', 'cooler', 'ram', 'gpu', 'ssd', 'psu'];
+function setStep(i) {
+    const s = BSTEPS[i];
+    document.querySelectorAll('.bchip').forEach((c, k) => c.classList.toggle('active', k === i));
+    $('bld-eyebrow').textContent = 'Шаг ' + (i + 1) + ' из 9';
+    $('bld-step').textContent = s.t;
+    $('bld-hintp').textContent = s.h;
+    const box = $('bld-opts'); box.textContent = '';
+    s.o.forEach((o, k) => {
+        const d = mkEl('div', 'bopt'); d.id = 'bopt-' + k;
+        const top = mkEl('div', 'bopt-top');
+        top.appendChild(mkEl('span', 'bopt-n', o[0]));
+        top.appendChild(mkEl('span', 'bopt-p mono', RUB(o[2])));
+        d.appendChild(top); d.appendChild(mkEl('div', 'bopt-s', o[1]));
+        box.appendChild(d);
+    });
+}
+function choose(i) {
+    const s = BSTEPS[i], price = s.o[s.pick][2];
+    const d = $('bopt-' + s.pick);
+    d.classList.add('sel'); d.appendChild(mkEl('div', 'bopt-ok', '✓ Установлено'));
+    document.querySelectorAll('.bchip')[i].classList.add('done');
+    if (i === 0) gsap.to('#bld-hint', { opacity: 0, duration: 0.3 });
+    if (HW3D) HW3D.setPart(KEYS[i], PICKED[KEYS[i]]);
+    const from = totalVal; totalVal += price;
+    const o = { v: from };
+    gsap.to(o, { v: totalVal, duration: 0.4, onUpdate: () => { $('bld-total').textContent = RUB(Math.round(o.v)); } });
+}
+function showDone() {
+    document.querySelectorAll('.bchip').forEach(c => c.classList.remove('active'));
+    $('bld-eyebrow').textContent = 'Шаг 9 из 9';
+    $('bld-step').textContent = 'Фигурка на видеокарту';
+    $('bld-hintp').textContent = 'Необязательный шаг. Доступно только с VIP 👑.';
+    const box = $('bld-opts'); box.textContent = '';
+    const b = mkEl('div', 'banner');
+    b.appendChild(mkEl('b', null, '✅ Сборка готова! '));
+    b.appendChild(document.createTextNode('Крутите модель мышью, включайте стекло и RGB. Любой шаг можно изменить — несовместимые детали уберутся сами.'));
+    b.appendChild(document.createElement('br'));
+    b.appendChild(mkEl('span', 'pb', 'Сохранить картинку'));
+    box.appendChild(b);
+}
+function bToast(text, ok) { const t = $('bld-toast'); t.textContent = text; t.classList.toggle('ok', !!ok); gsap.fromTo(t, { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.3 }); }
+function bToastHide() { gsap.to('#bld-toast', { opacity: 0, duration: 0.3 }); }
 
-        // ------------------------------------------
-        //     ДАННЫЕ И ЛОГИКА СЦЕНЫ «КОНФИГУРАТОР»
-        // ------------------------------------------
-        const RUB = n => n.toLocaleString('ru-RU') + ' ₽';
-        const BSTEPS = [
-            { t: 'Корпус', i: '🗄️', pick: 0, o: [['Aurora ATX Midi-Tower', 'ATX / mATX / ITX · видеокарта до 38 см', 8990], ['Nova mATX Compact', 'mATX / ITX · видеокарта до 32.5 см', 6490], ['Forge Full-Tower', 'ATX / mATX / ITX · СЖО до 360 мм', 17990]] },
-            { t: 'Материнская плата', i: '🧩', pick: 1, o: [['AMD A620M mATX', 'AM5 · mATX · DDR5', 7990], ['AMD B650 ATX', 'AM5 · ATX · DDR5', 16990], ['AMD X670E ATX', 'AM5 · ATX · DDR5', 31990]] },
-            { t: 'Процессор', i: '🧠', pick: 1, o: [['AMD Ryzen 5 7600', 'AM5 · 6 ядер / 12 потоков · 65 Вт', 17990], ['AMD Ryzen 7 7800X3D', 'AM5 · 8 ядер / 16 потоков · 120 Вт', 36990], ['AMD Ryzen 9 7950X', 'AM5 · 16 ядер / 32 потока · 170 Вт', 52990]] },
-            { t: 'Охлаждение', i: '❄️', pick: 2, o: [['Башенный 120 мм', 'Башня 15.5 см · до 180 Вт', 3490], ['Башенный 140 мм', 'Башня 16.5 см · до 250 Вт', 5490], ['СЖО 240 мм', 'СЖО 240 мм · до 250 Вт', 8990]] },
-            { t: 'Оперативная память', i: '🧬', pick: 1, o: [['16 ГБ DDR5-5200', 'DDR5 · 2×8 ГБ', 4990], ['32 ГБ DDR5-6000', 'DDR5 · 2×16 ГБ', 9490], ['64 ГБ DDR5-6000', 'DDR5 · 2×32 ГБ', 17990]] },
-            { t: 'Видеокарта', i: '🎮', pick: 1, o: [['NVIDIA GeForce RTX 4060', '8 ГБ · 115 Вт · длина 24 см', 29990], ['NVIDIA GeForce RTX 4070 Super', '12 ГБ · 220 Вт · длина 27 см', 59990], ['NVIDIA GeForce RTX 4080 Super', '16 ГБ · 320 Вт · длина 31 см', 109990]] },
-            { t: 'Накопитель', i: '💾', pick: 1, o: [['NVMe 500 ГБ Gen4', 'M.2 · PCIe 4.0 · до 5 000 МБ/с', 4290], ['NVMe 1 ТБ Gen4', 'M.2 · PCIe 4.0 · до 7 000 МБ/с', 5990], ['NVMe 2 ТБ Gen4', 'M.2 · PCIe 4.0 · до 7 300 МБ/с', 10990]] },
-            { t: 'Блок питания', i: '🔌', pick: 1, o: [['Блок питания 650 Вт', '650 Вт · 80+ Gold', 6990], ['Блок питания 750 Вт', '750 Вт · 80+ Gold', 8490], ['Блок питания 850 Вт', '850 Вт · 80+ Gold', 10990]] }
-        ];
-        let totalVal = 0;
+const SW = ['#ff1744', '#ff7a00', '#ffd600', '#00e676', '#00e5ff', '#2979ff', '#a855f7', '#ff4fa3', '#ffffff', '#b6ff00', '#00f0ff', '#6f7dff'];
+SW.forEach((c, i) => { const s = mkEl('div', 'sw'); s.id = 'sw-' + i; s.style.background = c; $('sws').appendChild(s); });
 
-        function mkEl(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
+/* ---------- отзывы ---------- */
+function paintStars(n) { for (let i = 1; i <= 5; i++) $('rv-star' + i).classList.toggle('on', i <= n); }
 
-        // Рисуем значки шагов один раз
-        BSTEPS.forEach((s, i) => $('bld-stepper').appendChild(mkEl('div', 'bchip', s.i)));
+/* ---------- сброс всего перед показом ---------- */
+function resetAll() {
+    PAGES.forEach((id, i) => {
+        const page = document.querySelector(id);
+        page.classList.toggle('active-page', i === 0);
+        gsap.set(page, { opacity: 0 });
+    });
+    gsap.set(cursor, { left: '50%', top: '88%', scale: 1 });
+    gsap.set(pulse, { opacity: 0, scale: 1 });
+    ['cpu', 'gpu'].forEach(k => {
+        CMP[k].sel = { A: CMP[k].init.A, B: CMP[k].init.B };
+        cmpRender(k, true);
+        ['A', 'B'].forEach(s => { gsap.set('#' + k + '-dd' + s, { autoAlpha: 0 }); $(k + '-trig' + s).classList.remove('open'); });
+        document.querySelectorAll('#page-' + k + ' li').forEach(li => li.classList.remove('hv'));
+    });
+    gsap.killTweensOf('.bar i');
+    gsap.set('.bar i', { width: '0%' });
+    totalVal = 0;
+    $('bld-total').textContent = RUB(0);
+    if (HW3D) HW3D.reset();
+    gsap.set('#bld-hint', { opacity: 1 });
+    gsap.set('#bld-toast', { opacity: 0 });
+    gsap.set('#lpanel', { autoAlpha: 0 });
+    $('tb-glass').classList.remove('on'); $('tb-light').classList.remove('on');
+    document.querySelectorAll('.sw').forEach(s => s.classList.remove('on'));
+    document.querySelectorAll('.bchip').forEach(c => c.classList.remove('done'));
+    setStep(0);
+    ['txt-email', 'txt-pass', 'txt-pass2'].forEach(id => { $(id).textContent = ''; });
+    focusField('');
+    gsap.set('#reg-msg', { opacity: 0, y: 8 });
+    setLoggedIn(false);
+    paintStars(0);
+    $('rv-text').textContent = ''; $('rv-count').textContent = '0 / 1000'; $('rv-msg').textContent = '';
+    $('rv-new').style.display = 'none'; gsap.set('#rv-new', { opacity: 0 });
+    $('rv-avg').textContent = '4.0'; $('rv-avgst').textContent = '★★★★☆'; $('rv-ct').textContent = '(1)';
+    ['mock-btn-build', 'mock-btn-cpu', 'mock-btn-gpu', 'mock-btn-guide'].forEach(id => hl(id, false));
+    setTheme(false);
+    gsap.set('#theme-pop', { autoAlpha: 0 });
+    gsap.set('#mm-ov', { autoAlpha: 0 });
+    gsap.set('#caption', { opacity: 0 });
+}
 
-        function setStep(i) {
-            const s = BSTEPS[i];
-            document.querySelectorAll('.bchip').forEach((c, k) => c.classList.toggle('active', k === i));
-            $('bld-eyebrow').textContent = 'Шаг ' + (i + 1) + ' из ' + BSTEPS.length;
-            $('bld-step').textContent = s.t;
-            const box = $('bld-opts');
-            box.textContent = '';
-            s.o.forEach((o, k) => {
-                const d = mkEl('div', 'bopt'); d.id = 'bopt-' + k;
-                const top = mkEl('div', 'bopt-top');
-                top.appendChild(mkEl('span', 'bopt-n', o[0]));
-                top.appendChild(mkEl('span', 'bopt-p', RUB(o[2])));
-                d.appendChild(top);
-                d.appendChild(mkEl('div', 'bopt-s', o[1]));
-                box.appendChild(d);
-            });
-        }
-        function choose(i) {
-            const s = BSTEPS[i], price = s.o[s.pick][2];
-            $('bopt-' + s.pick).classList.add('sel');
-            document.querySelectorAll('.bchip')[i].classList.add('done');
-            if (i === 0) gsap.to('#bld-hint', { opacity: 0, duration: 0.3 });
-            if (HW3D) HW3D.setPart(KEYS[i], PICKED[KEYS[i]]);
-            const from = totalVal; totalVal += price;
-            const o = { v: from };
-            gsap.to(o, { v: totalVal, duration: 0.4, onUpdate: () => { $('bld-total').textContent = RUB(Math.round(o.v)); } });
-        }
-        function showDone() {
-            document.querySelectorAll('.bchip').forEach(c => c.classList.remove('active'));
-            $('bld-eyebrow').textContent = 'Готово';
-            $('bld-step').textContent = 'Сборка завершена';
-            const box = $('bld-opts'); box.textContent = '';
-            const d = mkEl('div', 'bld-done');
-            const b = mkEl('b', null, 'Все детали совместимы. ');
-            d.appendChild(b);
-            d.appendChild(document.createTextNode('Можно сохранить сборку и вернуться к ней позже.'));
-            box.appendChild(d);
-        }
-        function bToast(text, ok) {
-            const t = $('bld-toast');
-            t.textContent = text; t.classList.toggle('ok', !!ok);
-            gsap.fromTo(t, { opacity: 0, y: -10 }, { opacity: 1, y: 0, duration: 0.3 });
-        }
-        function bToastHide() { gsap.to('#bld-toast', { opacity: 0, duration: 0.3 }); }
-        function setLoggedIn(on) {
-            $('acc-guest').style.display = on ? 'none' : 'flex';
-            $('acc-user').style.display = on ? 'flex' : 'none';
-            $('shop-st').textContent = on ? 'не активен' : 'войдите';
-        }
+/* ---------- режиссура ---------- */
+const MAIN_SITE_URL = 'https://vysotskiyxsamitov-gif.github.io/hardwarevs/index.html';
+$('exit-btn').setAttribute('href', MAIN_SITE_URL);
+const endOverlay = $('end-overlay');
+function showEndQuestion() { gsap.to('#caption', { opacity: 0, duration: 0.2 }); endOverlay.style.display = 'flex'; gsap.to(endOverlay, { opacity: 1, duration: 0.4 }); }
+function hideEndQuestion() { gsap.to(endOverlay, { opacity: 0, duration: 0.2, onComplete: () => { endOverlay.style.display = 'none'; } }); }
 
-        // Полный сброс состояния в начале каждого цикла
-        function resetAll() {
-            PAGES.forEach((id, i) => {
-                const page = document.querySelector(id);
-                page.classList.toggle('active-page', i === 0);
-                gsap.set(page, { opacity: 0 });
-            });
-            gsap.set('.bar', { width: '0%' });
-            gsap.set('.result-box', { opacity: 0, y: 15 });
-            gsap.set(cursor, { left: '50%', top: '85%', scale: 1 });
-            gsap.set(pulse, { opacity: 0, scale: 1 });
-            // конфигуратор
-            totalVal = 0;
-            $('bld-total').textContent = RUB(0);
-            if (HW3D) HW3D.reset();
-            gsap.set('#bld-hint', { opacity: 1 });
-            gsap.set('#bld-toast', { opacity: 0 });
-            document.querySelectorAll('.bchip').forEach(c => c.classList.remove('done'));
-            setStep(0);
-            // регистрация и аккаунт
-            ['txt-email', 'txt-pass', 'txt-pass2'].forEach(id => { $(id).textContent = ''; });
-            focusField('');
-            gsap.set('#reg-msg', { opacity: 0, y: 8 });
-            setLoggedIn(false);
-            // тема, окна, подпись
-            setTheme(false);
-            gsap.set('#theme-pop', { autoAlpha: 0 });
-            gsap.set('#mm-ov', { autoAlpha: 0 });
-            gsap.set('#caption', { opacity: 0 });
-        }
+const tl = gsap.timeline({ onComplete: showEndQuestion });
+$('end-exit').addEventListener('click', () => { window.location.href = MAIN_SITE_URL; });
+$('end-replay').addEventListener('click', () => { hideEndQuestion(); tl.restart(); });
 
-        // ------------------------------------------
-        //         РЕЖИССУРА КЛИКОВ И ТАЙМИНГОВ
-        // ------------------------------------------
-        // Адрес главного экрана сайта — при необходимости замените на свой
-        const MAIN_SITE_URL = 'https://vysotskiyxsamitov-gif.github.io/hardwarevs/index.html';
-        $('exit-btn').setAttribute('href', MAIN_SITE_URL);
+tl.call(resetAll);
+tl.to('#page-index', { opacity: 1, duration: 0.4 });
+tl.call(() => cap('Главный экран: конструктор, сравнение и гайд в одном месте'));
+pause(tl, 1.4);
 
-        const endOverlay = $('end-overlay');
+/* тема */
+tl.call(() => cap('⚙️ Настройки: тёмная и светлая тема'));
+moveTo(tl, 'mock-gear', 0.8); tl.add(playClick()); tl.call(openPanel);
+moveTo(tl, 'mock-theme-light', 0.5); tl.add(playClick()); tl.call(() => setTheme(true));
+pause(tl, 1.0);
+moveTo(tl, 'mock-theme-dark', 0.5); tl.add(playClick()); tl.call(() => setTheme(false));
+pause(tl, 0.4); tl.call(closePanel);
 
-        function showEndQuestion() {
-            gsap.to('#caption', { opacity: 0, duration: 0.2 });
-            endOverlay.style.display = 'flex';
-            gsap.to(endOverlay, { opacity: 1, duration: 0.4 });
-        }
-        function hideEndQuestion() {
-            gsap.to(endOverlay, { opacity: 0, duration: 0.2, onComplete: () => {
-                endOverlay.style.display = 'none';
-            }});
-        }
+/* VIP */
+tl.call(() => cap('👑 VIP: доступ к конструктору и 3 печеньки в день'));
+moveTo(tl, 'mock-vip-info', 0.8); tl.add(playClick());
+tl.call(() => openModal('VIP-статус', VIP_HTML));
+pause(tl, 2.2);
+moveTo(tl, 'mm-close', 0.5); tl.add(playClick()); tl.call(closeModal);
+pause(tl, 0.3);
 
-        // Анимация проигрывается один раз, затем появляется вопрос
-        const tl = gsap.timeline({ onComplete: showEndQuestion });
+/* процессоры */
+tl.call(() => cap('💻 Сравнение процессоров'));
+moveTo(tl, 'mock-btn-cpu', 1.0); tl.call(() => hl('mock-btn-cpu', true)); tl.add(playClick());
+tl.add(changeScene('#page-index', '#page-cpu'));
+tl.call(() => cmpRender('cpu', true));
+pause(tl, 1.6);
+tl.call(() => cap('Выберите другой процессор в списке — сравнение обновится сразу'));
+moveTo(tl, 'cpu-trigB', 0.8); tl.add(playClick()); tl.call(() => ddOpen('cpu', 'B', true));
+pause(tl, 0.4);
+moveTo(tl, 'cpu-itB-2', 0.6); tl.call(() => ddHover('cpu', 'B', 2, true)); pause(tl, 0.2);
+tl.add(playClick()); tl.call(() => pickItem('cpu', 'B', 2));
+pause(tl, 2.6);
+moveTo(tl, 'mock-back-cpu', 0.8); tl.add(playClick());
+tl.add(changeScene('#page-cpu', '#page-index'));
+tl.call(() => hl('mock-btn-cpu', false));
 
-        $('end-exit').addEventListener('click', () => { window.location.href = MAIN_SITE_URL; });
-        $('end-replay').addEventListener('click', () => {
-            hideEndQuestion();
-            tl.restart();
-        });
+/* видеокарты */
+tl.call(() => cap('🎮 Сравнение видеокарт'));
+moveTo(tl, 'mock-btn-gpu', 1.0); tl.call(() => hl('mock-btn-gpu', true)); tl.add(playClick());
+tl.add(changeScene('#page-index', '#page-gpu'));
+tl.call(() => cmpRender('gpu', true));
+pause(tl, 1.6);
+moveTo(tl, 'gpu-trigB', 0.8); tl.add(playClick()); tl.call(() => ddOpen('gpu', 'B', true));
+pause(tl, 0.4);
+moveTo(tl, 'gpu-itB-4', 0.6); tl.call(() => ddHover('gpu', 'B', 4, true)); pause(tl, 0.2);
+tl.add(playClick()); tl.call(() => pickItem('gpu', 'B', 4));
+pause(tl, 2.6);
+moveTo(tl, 'mock-back-gpu', 0.8); tl.add(playClick());
+tl.add(changeScene('#page-gpu', '#page-index'));
+tl.call(() => hl('mock-btn-gpu', false));
 
-        tl.call(resetAll);
+/* конструктор */
+tl.call(() => cap('🛠️ 3D-конфигуратор доступен с VIP (в гайде открыт для примера)'));
+moveTo(tl, 'mock-btn-build', 1.0); tl.call(() => hl('mock-btn-build', true)); tl.add(playClick());
+tl.add(changeScene('#page-index', '#page-builder'));
+tl.call(() => hl('mock-btn-build', false));
+pause(tl, 0.6);
+BSTEPS.forEach((s, i) => {
+    tl.call(() => setStep(i));
+    pause(tl, 0.2);
+    moveTo(tl, 'bopt-' + s.pick, 0.5);
+    tl.add(playClick());
+    tl.call(() => choose(i));
+    pause(tl, 0.35);
+});
+tl.call(showDone);
+pause(tl, 1.2);
 
-        // Старт: проявляем главное меню
-        tl.to('#page-index', { opacity: 1, duration: 0.4 });
-        tl.call(() => cap('Главный экран: все функции сайта под рукой'));
-        pause(tl, 1.0);
+/* стекло и подсветка */
+tl.call(() => cap('Стекло, RGB и цвет подсветки настраиваются кнопками внизу'));
+moveTo(tl, 'tb-glass', 0.8); tl.add(playClick());
+tl.call(() => { $('tb-glass').classList.add('on'); if (HW3D) HW3D.setGlass(true); });
+pause(tl, 1.0);
+moveTo(tl, 'tb-light', 0.6); tl.add(playClick());
+tl.call(() => { $('tb-light').classList.add('on'); gsap.to('#lpanel', { autoAlpha: 1, duration: 0.25 }); });
+pause(tl, 0.4);
+moveTo(tl, 'sw-7', 0.6); tl.add(playClick());
+tl.call(() => { $('sw-7').classList.add('on'); if (HW3D) HW3D.setColor('#ff4fa3'); });
+pause(tl, 1.6);
+tl.call(() => { $('tb-light').classList.remove('on'); gsap.to('#lpanel', { autoAlpha: 0, duration: 0.2 }); });
 
-        // ШАГ 0а: тема оформления (шестерёнка → светлая → тёмная)
-        tl.call(() => cap('⚙️ Настройки: тёмная и светлая тема'));
-        moveTo(tl, 'mock-gear', 0.8);
-        tl.add(playClick());
-        tl.call(openPanel);
-        moveTo(tl, 'mock-theme-light', 0.5);
-        tl.add(playClick());
-        tl.call(() => setTheme(true));
-        pause(tl, 0.9);
-        moveTo(tl, 'mock-theme-dark', 0.5);
-        tl.add(playClick());
-        tl.call(() => setTheme(false));
-        pause(tl, 0.4);
-        tl.call(closePanel);
+/* сохранение без аккаунта */
+tl.call(() => cap('💾 Сохранить сборку можно только с аккаунтом'));
+moveTo(tl, 'mock-save', 0.8); tl.add(playClick());
+tl.call(() => bToast('🔒 Чтобы сохранить сборку, войдите или зарегистрируйтесь'));
+pause(tl, 1.8);
+tl.call(bToastHide);
+tl.add(changeScene('#page-builder', '#page-register'));
 
-        // ШАГ 0б: VIP и печеньки
-        tl.call(() => cap('👑 VIP: конфигуратор и 3 печеньки в день'));
-        moveTo(tl, 'mock-vip-info', 0.8);
-        tl.add(playClick());
-        tl.call(() => openModal('VIP-статус', VIP_HTML));
-        pause(tl, 2.0);
-        moveTo(tl, 'mm-close', 0.5);
-        tl.add(playClick());
-        tl.call(closeModal);
-        pause(tl, 0.3);
+/* регистрация */
+tl.call(() => cap('📝 Регистрация: почта и пароль'));
+moveTo(tl, 'fld-email', 0.8); tl.add(playClick()); tl.call(() => focusField('fld-email'));
+typeInto(tl, 'txt-email', 'alex@mail.ru', 0.9);
+moveTo(tl, 'fld-pass', 0.5); tl.add(playClick()); tl.call(() => focusField('fld-pass'));
+typeInto(tl, 'txt-pass', '••••••••••', 0.8);
+moveTo(tl, 'fld-pass2', 0.5); tl.add(playClick()); tl.call(() => focusField('fld-pass2'));
+typeInto(tl, 'txt-pass2', '••••••••••', 0.8);
+moveTo(tl, 'mock-reg-btn', 0.6); tl.add(playClick());
+tl.call(() => { focusField(''); gsap.to('#reg-msg', { opacity: 1, y: 0, duration: 0.35 }); setLoggedIn(true); });
+pause(tl, 2.4);
 
-        // ШАГ 0в: предложить добавить процессор или видеокарту
-        tl.call(() => cap('💡 Нет нужной модели? Предложите добавить'));
-        moveTo(tl, 'mock-suggest', 0.8);
-        tl.add(playClick());
-        tl.call(() => openModal('Предложить добавить', SUG_HTML));
-        pause(tl, 1.8);
-        moveTo(tl, 'mm-close', 0.5);
-        tl.add(playClick());
-        tl.call(closeModal);
-        pause(tl, 0.3);
+/* возврат к сборке и сохранение */
+tl.add(changeScene('#page-register', '#page-builder'));
+pause(tl, 0.5);
+tl.call(() => cap('✅ После входа сборка возвращается, и её можно сохранить'));
+moveTo(tl, 'mock-save', 0.7); tl.add(playClick());
+tl.call(() => openModal('Сохранить сборку', SAVE_HTML));
+pause(tl, 1.2);
+moveTo(tl, 'mm-save-do', 0.6); tl.add(playClick());
+tl.call(() => { closeModal(); bToast('Сборка сохранена', true); });
+pause(tl, 1.4);
+tl.call(bToastHide);
+tl.call(() => cap('📂 Все сохранённые сборки — в «Мои сборки»'));
+moveTo(tl, 'mock-mybuilds', 0.7); tl.add(playClick());
+tl.call(() => openModal('Мои сборки', myBuildsHtml()));
+pause(tl, 2.0);
+moveTo(tl, 'mm-close', 0.5); tl.add(playClick()); tl.call(closeModal);
+pause(tl, 0.3);
 
-        // ШАГ 0г: отзывы и соцсети
-        tl.call(() => cap('⭐ Отзывы о сайте: читайте и пишите свои'));
-        moveTo(tl, 'mock-reviews', 0.7);
-        tl.add(playClick());
-        pause(tl, 1.0);
-        tl.call(() => cap('📣 Telegram и TikTok: новости и обновления'));
-        moveTo(tl, 'mock-tg', 0.9);
-        pause(tl, 0.7);
-        moveTo(tl, 'mock-tt', 0.4);
-        pause(tl, 0.8);
+/* на главную, теперь с аккаунтом */
+moveTo(tl, 'mock-back-builder', 0.8); tl.add(playClick());
+tl.add(changeScene('#page-builder', '#page-index'));
+tl.call(() => cap('Вверху теперь виден ваш аккаунт и статус VIP'));
+pause(tl, 1.6);
 
-        // ШАГ 1: мышь на «Процессоры» и клик
-        tl.call(() => cap('💻 Сравнение процессоров'));
-        moveTo(tl, 'mock-btn-cpu', 1.0);
-        tl.add(playClick());
-        tl.add(changeScene('#page-index', '#page-cpu'));
+/* предложить добавить */
+tl.call(() => cap('💡 Нет нужной модели? Предложите добавить'));
+moveTo(tl, 'mock-suggest', 0.8); tl.add(playClick());
+tl.call(() => openModal('Предложить добавить', SUG_HTML));
+pause(tl, 0.9);
+moveTo(tl, 'mm-kind-cpu', 0.6); tl.add(playClick());
+tl.call(() => { $('mm-kind-cpu').classList.add('on'); const t = $('mm-inp'); t.classList.remove('ph'); $('mm-inp-t').textContent = ''; });
+typeInto(tl, 'mm-inp-t', 'Ryzen 7 9800X3D', 0.9);
+moveTo(tl, 'mm-send', 0.6); tl.add(playClick());
+tl.call(() => { $('mm-inp-t').textContent = ''; $('mm-msg').textContent = 'Спасибо! Предложение отправлено.'; });
+pause(tl, 1.4);
+moveTo(tl, 'mm-close', 0.5); tl.add(playClick()); tl.call(closeModal);
+pause(tl, 0.3);
 
-        // ШАГ 2: кнопка запуска сравнения CPU
-        moveTo(tl, 'mock-compare-cpu', 0.7);
-        tl.add(playClick());
-        tl.add(runBars('#page-cpu'));
-        pause(tl, 2.2); // пауза для просмотра результатов
+/* отзывы */
+tl.call(() => cap('⭐ Отзывы: оцените сайт и напишите пару слов'));
+moveTo(tl, 'mock-reviews', 0.8); tl.add(playClick());
+tl.add(changeScene('#page-index', '#page-reviews'));
+pause(tl, 0.6);
+moveTo(tl, 'rv-star5', 0.8); tl.add(playClick()); tl.call(() => paintStars(5));
+moveTo(tl, 'rv-ta', 0.5); tl.add(playClick());
+typeInto(tl, 'rv-text', 'Классный сайт! Собрал ПК по гайду и сразу проверил совместимость.', 1.6, k => { $('rv-count').textContent = k + ' / 1000'; });
+moveTo(tl, 'rv-send', 0.6); tl.add(playClick());
+tl.call(() => {
+    $('rv-msg').textContent = 'Спасибо! Отзыв опубликован.';
+    $('rv-newtx').textContent = 'Классный сайт! Собрал ПК по гайду и сразу проверил совместимость.';
+    $('rv-new').style.display = 'block'; gsap.to('#rv-new', { opacity: 1, duration: 0.4 });
+    $('rv-avg').textContent = '4.5'; $('rv-avgst').textContent = '★★★★★'; $('rv-ct').textContent = '(2)';
+});
+pause(tl, 2.2);
+moveTo(tl, 'mock-back-reviews', 0.8); tl.add(playClick());
+tl.add(changeScene('#page-reviews', '#page-index'));
 
-        // ШАГ 3: возврат на главную
-        // Шкалы не сбрасываем: их обнуляет resetAll в начале следующего показа
-        moveTo(tl, 'mock-back-cpu', 0.8);
-        tl.add(playClick());
-        tl.add(changeScene('#page-cpu', '#page-index'));
-
-        // ШАГ 4: курсор к «Видеокартам»
-        tl.call(() => cap('🎮 Сравнение видеокарт'));
-        moveTo(tl, 'mock-btn-gpu', 1.0);
-        tl.add(playClick());
-        tl.add(changeScene('#page-index', '#page-gpu'));
-
-        // ШАГ 5: кнопка сравнения видеокарт
-        moveTo(tl, 'mock-compare-gpu', 0.7);
-        tl.add(playClick());
-        tl.add(runBars('#page-gpu'));
-        pause(tl, 2.2); // пауза для просмотра результатов
-
-        // ШАГ 6: возврат на главную
-        moveTo(tl, 'mock-back-gpu', 0.8);
-        tl.add(playClick());
-        tl.add(changeScene('#page-gpu', '#page-index'));
-
-        // ШАГ 7: «Построить компьютер» — выбираем детали шаг за шагом
-        tl.call(() => cap('🛠️ 3D-конфигуратор доступен с VIP (в гайде открыт для примера)'));
-        moveTo(tl, 'mock-btn-build', 1.0);
-        tl.add(playClick());
-        tl.add(changeScene('#page-index', '#page-builder'));
-        pause(tl, 0.6);
-        BSTEPS.forEach((s, i) => {
-            tl.call(() => setStep(i));
-            pause(tl, 0.2);
-            moveTo(tl, 'bopt-' + s.pick, 0.5);
-            tl.add(playClick());
-            tl.call(() => choose(i));
-            pause(tl, 0.35);
-        });
-        tl.call(showDone);
-        pause(tl, 1.4);
-
-        // ШАГ 8: пробуем сохранить без аккаунта — сайт предлагает зарегистрироваться
-        tl.call(() => cap('💾 Сохранить сборку можно только с аккаунтом'));
-        moveTo(tl, 'mock-save', 0.8);
-        tl.add(playClick());
-        tl.call(() => bToast('🔒 Чтобы сохранить сборку, войдите или зарегистрируйтесь'));
-        pause(tl, 1.8);
-        tl.call(bToastHide);
-        tl.add(changeScene('#page-builder', '#page-register'));
-
-        // ШАГ 9: регистрация — почта, пароль, повтор пароля
-        tl.call(() => cap('📝 Регистрация: почта и пароль'));
-        moveTo(tl, 'fld-email', 0.8);
-        tl.add(playClick());
-        tl.call(() => focusField('fld-email'));
-        typeInto(tl, 'txt-email', 'alex@mail.ru', 0.9);
-        moveTo(tl, 'fld-pass', 0.5);
-        tl.add(playClick());
-        tl.call(() => focusField('fld-pass'));
-        typeInto(tl, 'txt-pass', '••••••••••', 0.8);
-        moveTo(tl, 'fld-pass2', 0.5);
-        tl.add(playClick());
-        tl.call(() => focusField('fld-pass2'));
-        typeInto(tl, 'txt-pass2', '••••••••••', 0.8);
-        moveTo(tl, 'mock-reg-btn', 0.6);
-        tl.add(playClick());
-        tl.call(() => { focusField(''); gsap.to('#reg-msg', { opacity: 1, y: 0, duration: 0.35 }); setLoggedIn(true); });
-        pause(tl, 2.2);
-
-        // ШАГ 10: возвращаемся к сборке и сохраняем её
-        tl.add(changeScene('#page-register', '#page-builder'));
-        pause(tl, 0.5);
-        tl.call(() => cap('✅ Теперь сборка сохраняется'));
-        moveTo(tl, 'mock-save', 0.7);
-        tl.add(playClick());
-        tl.call(() => bToast('✅ Сборка сохранена. Её можно открыть в «Мои сборки»', true));
-        pause(tl, 2.0);
-        tl.call(bToastHide);
-
-        // ШАГ 11: «На главную» — теперь вверху виден аккаунт и статус VIP
-        moveTo(tl, 'mock-back-builder', 0.8);
-        tl.add(playClick());
-        tl.add(changeScene('#page-builder', '#page-index'));
-        tl.call(() => cap('Готово! Теперь вы знаете всё о HardwareVS'));
-        pause(tl, 1.8);
-    </script>
+/* соцсети и финал */
+tl.call(() => cap('📣 Telegram и TikTok: новости и обновления'));
+moveTo(tl, 'mock-tg', 0.9); pause(tl, 0.7);
+moveTo(tl, 'mock-tt', 0.4); pause(tl, 0.8);
+tl.call(() => cap('Готово! Теперь вы знаете всё о HardwareVS'));
+pause(tl, 1.8);
+</script>
 </body>
 </html>
