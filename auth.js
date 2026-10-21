@@ -1,6 +1,7 @@
 /* HardwareVS — общий модуль входа (Supabase). Подключается после supabase-js. */
 (function () {
     'use strict';
+
     var SUPABASE_URL = 'https://qvytoxgqpygzonrwqyak.supabase.co';
     var SUPABASE_KEY = 'sb_publishable_xdJOoVGNUkeA8M3VN_JNTQ_R3kLTxXj'; // публичный ключ, его можно держать в коде
 
@@ -12,7 +13,15 @@
 
     // Папка сайта: .../hardwarevs/
     var BASE = location.href.split('#')[0].split('?')[0].replace(/[^\/]*$/, '');
+
+    // Страницы сайта, на которые можно вернуться после входа
     var NEXT_OK = ['index.html', 'builder.html', 'cpu.html', 'gpu.html', 'guide.html', 'reviews.html'];
+
+    // Текущая страница (index.html, reviews.html и т.д.)
+    function currentPage() {
+        var p = location.pathname.split('/').pop() || 'index.html';
+        return NEXT_OK.indexOf(p) !== -1 ? p : 'index.html';
+    }
 
     // Куда вернуться после входа (только свои страницы, чтобы нельзя было увести пользователя на чужой сайт)
     function safeNext() {
@@ -39,23 +48,29 @@
         }).catch(function () { return null; });
     }
 
-    // Рисует в элементе блок «Войти / Регистрация» или «почта · Выйти»
+    // Рисует в элементе блок «Войти / Регистрация» или «почта · Выйти».
+    // Ссылки входа и регистрации запоминают текущую страницу, чтобы вернуть на неё после входа.
     function mountAccount(el) {
+        if (!el) return;
+        var page = currentPage();
+        var q = page === 'index.html' ? '' : '?next=' + encodeURIComponent(page);
+
         function draw(user) {
             el.textContent = '';
             if (user) {
                 var mail = document.createElement('span');
                 mail.className = 'acc-mail';
                 mail.textContent = user.email || 'Аккаунт';
+                mail.title = user.email || '';
                 var out = document.createElement('button');
                 out.type = 'button'; out.className = 'acc-link'; out.textContent = 'Выйти';
                 out.addEventListener('click', function () { client.auth.signOut(); });
                 el.appendChild(mail); el.appendChild(out);
             } else {
                 var a = document.createElement('a');
-                a.className = 'acc-link'; a.href = 'login.html'; a.textContent = 'Войти';
+                a.className = 'acc-link'; a.href = 'login.html' + q; a.textContent = 'Войти';
                 var b = document.createElement('a');
-                b.className = 'acc-link'; b.href = 'register.html'; b.textContent = 'Регистрация';
+                b.className = 'acc-link'; b.href = 'register.html' + q; b.textContent = 'Регистрация';
                 el.appendChild(a); el.appendChild(b);
             }
         }
@@ -63,5 +78,12 @@
         client.auth.onAuthStateChange(function (ev, session) { draw(session ? session.user : null); });
     }
 
-    window.HW_AUTH = { client: client, base: BASE, safeNext: safeNext, ruError: ruError, getUser: getUser, mountAccount: mountAccount };
+    window.HW_AUTH = {
+        client: client,
+        base: BASE,
+        safeNext: safeNext,
+        ruError: ruError,
+        getUser: getUser,
+        mountAccount: mountAccount
+    };
 })();
