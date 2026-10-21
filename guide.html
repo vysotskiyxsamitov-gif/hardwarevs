@@ -299,6 +299,36 @@ h1.hero-title span { color: var(--muted); font-weight: 600; opacity: .85; }
 .rdate { font-size: 11px; letter-spacing: .08em; color: var(--muted); }
 .rst { color: var(--star); letter-spacing: 2px; margin: 3px 0 6px; }
 .rtx { font-size: 14px; line-height: 1.55; }
+
+/* меню гайда */
+.guide-menu { position: absolute; inset: 0; z-index: 9100; display: flex; flex-direction: column; align-items: center; padding: 26px 70px 0;
+    background: radial-gradient(ellipse 60% 40% at 50% 0%, rgba(var(--acc-rgb), .18), transparent 70%), var(--bg); }
+.gm-top { width: 100%; display: flex; align-items: center; justify-content: space-between; }
+.gm-site { padding: 8px 14px; border: 1px solid var(--line-strong); border-radius: 9px; background: var(--surface); color: var(--text); font-size: 11.5px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; text-decoration: none; }
+.gm-site:hover { border-color: var(--accent); }
+.guide-menu h2 { margin: 18px 0 6px; font-size: 44px; font-weight: 700; letter-spacing: -.04em; text-align: center; }
+.guide-menu h2 span { color: var(--muted); }
+.gm-sub { color: var(--muted); font-size: 14.5px; margin-bottom: 20px; text-align: center; }
+.gm-all { position: relative; width: 100%; display: flex; align-items: center; gap: 18px; padding: 18px 24px; margin-bottom: 14px; cursor: pointer;
+    border: 1px solid var(--accent); border-radius: 14px; background: rgba(var(--acc-rgb), .12); box-shadow: 0 0 30px -12px rgba(var(--acc-rgb), .8); }
+.gm-all:hover { background: rgba(var(--acc-rgb), .2); }
+.gm-all .gm-ico { font-size: 34px; }
+.gm-all .gm-txt { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.gm-all .gm-t { font-size: 22px; font-weight: 700; letter-spacing: -.02em; }
+.gm-all .gm-d { font-size: 13.5px; color: var(--muted); }
+.gm-go { padding: 10px 18px; border-radius: 9px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; white-space: nowrap; }
+.gm-grid { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.gm-card { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 16px 16px 18px; min-height: 136px; cursor: pointer;
+    border: 1px solid var(--line-strong); border-radius: 12px; background: var(--surface); transition: border-color .2s, transform .2s, background .2s; }
+.gm-card:hover { border-color: var(--accent); background: var(--surface-hover); transform: translateY(-2px); }
+.gm-num { position: absolute; top: 14px; right: 14px; font-size: 11px; letter-spacing: .1em; color: var(--muted); }
+.gm-card .gm-ico { font-size: 26px; margin-bottom: 4px; }
+.gm-card .gm-t { font-size: 15.5px; font-weight: 600; letter-spacing: -.01em; }
+.gm-card .gm-d { font-size: 12.5px; color: var(--muted); line-height: 1.45; }
+#menu-btn { position: absolute; right: 20px; bottom: 66px; z-index: 9000; width: 38px; height: 38px; display: none; align-items: center; justify-content: center;
+    background: var(--panel-bg); color: var(--text); border: 1px solid var(--line-strong); border-radius: 9px; font-size: 17px; cursor: pointer; backdrop-filter: blur(10px); }
+#menu-btn:hover { border-color: var(--accent); }
+.end-btn { width: 250px; }
 </style>
 </head>
 <body>
@@ -314,7 +344,21 @@ h1.hero-title span { color: var(--muted); font-weight: 600; opacity: .85; }
         <div class="end-buttons">
             <button class="end-btn btn-exit" id="end-exit" type="button">Выйти на главный экран</button>
             <button class="end-btn btn-replay" id="end-replay" type="button">Посмотреть ещё раз</button>
+            <button class="end-btn btn-replay" id="end-menu" type="button">К разделам гайда</button>
         </div>
+    </div>
+
+    <button id="menu-btn" type="button" title="Разделы гайда" aria-label="Разделы гайда">☰</button>
+
+    <div id="guide-menu" class="guide-menu">
+        <div class="gm-top">
+            <div class="brand"><svg viewBox="0 0 24 24"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4L12 2.5z"/><path d="M12 12l8.5-4.6M12 12L3.5 7.4M12 12v9.5"/></svg><span>Hardware<b>VS</b></span></div>
+            <a class="gm-site mono" id="gm-site" href="#">На главную сайта</a>
+        </div>
+        <h2>Гайд по сайту<span>.</span></h2>
+        <p class="gm-sub">Посмотрите весь сайт целиком или выберите отдельную тему.</p>
+        <div class="gm-all" id="gm-all"></div>
+        <div class="gm-grid" id="gm-grid"></div>
     </div>
 
     <div class="mm-ov" id="mm-ov">
@@ -1123,179 +1167,254 @@ function resetAll() {
 /* ---------- режиссура ---------- */
 const MAIN_SITE_URL = 'https://vysotskiyxsamitov-gif.github.io/hardwarevs/index.html';
 $('exit-btn').setAttribute('href', MAIN_SITE_URL);
+$('gm-site').setAttribute('href', MAIN_SITE_URL);
 const endOverlay = $('end-overlay');
+const menuEl = $('guide-menu');
+const menuBtn = $('menu-btn');
+let tl = null, current = null;
+
 function showEndQuestion() { gsap.to('#caption', { opacity: 0, duration: 0.2 }); endOverlay.style.display = 'flex'; gsap.to(endOverlay, { opacity: 1, duration: 0.4 }); }
-function hideEndQuestion() { gsap.to(endOverlay, { opacity: 0, duration: 0.2, onComplete: () => { endOverlay.style.display = 'none'; } }); }
+function hideEndQuestion() { gsap.killTweensOf(endOverlay); gsap.set(endOverlay, { opacity: 0 }); endOverlay.style.display = 'none'; }
 
-const tl = gsap.timeline({ onComplete: showEndQuestion });
+/* остановка текущего сценария и всех «висящих» анимаций */
+function stopGuide() {
+    if (tl) { tl.kill(); tl = null; }
+    gsap.globalTimeline.getChildren(true, true, false).forEach(tw => {
+        const t = tw.targets()[0];
+        if (t && typeof t === 'object' && !t.nodeType && ('n' in t || 'v' in t)) tw.kill();
+    });
+    gsap.killTweensOf([cursor, pulse, '.page', '#mm-ov', '#theme-pop', '#lpanel', '#caption', '#bld-toast', '#reg-msg', '#rv-new', '#bld-hint']);
+    hideEndQuestion();
+}
+
+/* ---------- сегменты сценария (каждый начинается и, если не сказано иное, заканчивается на главной) ---------- */
+function segTheme(tl) {
+    tl.call(() => cap('⚙️ Настройки: тёмная и светлая тема'));
+    moveTo(tl, 'mock-gear', 0.8); tl.add(playClick()); tl.call(openPanel);
+    moveTo(tl, 'mock-theme-light', 0.5); tl.add(playClick()); tl.call(() => setTheme(true));
+    pause(tl, 1.0);
+    moveTo(tl, 'mock-theme-dark', 0.5); tl.add(playClick()); tl.call(() => setTheme(false));
+    pause(tl, 0.4); tl.call(closePanel);
+}
+function segVip(tl) {
+    tl.call(() => cap('👑 VIP: доступ к конструктору и 3 печеньки в день'));
+    moveTo(tl, 'mock-vip-info', 0.8); tl.add(playClick());
+    tl.call(() => openModal('VIP-статус', VIP_HTML));
+    pause(tl, 2.6);
+    moveTo(tl, 'mm-close', 0.5); tl.add(playClick()); tl.call(closeModal);
+    pause(tl, 0.3);
+}
+function segCmp(tl, k, title, pickIdx, hint) {
+    tl.call(() => cap(title));
+    moveTo(tl, 'mock-btn-' + k, 1.0); tl.call(() => hl('mock-btn-' + k, true)); tl.add(playClick());
+    tl.add(changeScene('#page-index', '#page-' + k));
+    tl.call(() => cmpRender(k, true));
+    pause(tl, 1.6);
+    if (hint) tl.call(() => cap(hint));
+    moveTo(tl, k + '-trigB', 0.8); tl.add(playClick()); tl.call(() => ddOpen(k, 'B', true));
+    pause(tl, 0.4);
+    moveTo(tl, k + '-itB-' + pickIdx, 0.6); tl.call(() => ddHover(k, 'B', pickIdx, true)); pause(tl, 0.2);
+    tl.add(playClick()); tl.call(() => pickItem(k, 'B', pickIdx));
+    pause(tl, 2.6);
+    moveTo(tl, 'mock-back-' + k, 0.8); tl.add(playClick());
+    tl.add(changeScene('#page-' + k, '#page-index'));
+    tl.call(() => hl('mock-btn-' + k, false));
+}
+function segCpu(tl) { segCmp(tl, 'cpu', '💻 Сравнение процессоров', 2, 'Выберите другой процессор в списке — сравнение обновится сразу'); }
+function segGpu(tl) { segCmp(tl, 'gpu', '🎮 Сравнение видеокарт', 4, 'Победы по параметрам и «лидер» пересчитываются автоматически'); }
+
+/* o.extras — стекло и подсветка; o.home — вернуться на главную в конце */
+function segBuild(tl, o) {
+    tl.call(() => cap('🛠️ 3D-конфигуратор доступен с VIP (в гайде открыт для примера)'));
+    moveTo(tl, 'mock-btn-build', 1.0); tl.call(() => hl('mock-btn-build', true)); tl.add(playClick());
+    tl.add(changeScene('#page-index', '#page-builder'));
+    tl.call(() => hl('mock-btn-build', false));
+    pause(tl, 0.6);
+    BSTEPS.forEach((s, i) => {
+        tl.call(() => { setStep(i); if (i === 0) cap('Выбирайте деталь на каждом шаге — модель собирается в 3D'); if (i === 1) cap('Подсказка сверху показывает, что подойдёт к выбранным деталям'); });
+        pause(tl, 0.2);
+        moveTo(tl, 'bopt-' + s.pick, 0.5);
+        tl.add(playClick());
+        tl.call(() => choose(i));
+        pause(tl, 0.35);
+    });
+    tl.call(showDone);
+    pause(tl, 1.2);
+    if (o.extras) {
+        tl.call(() => cap('Стекло, RGB и цвет подсветки настраиваются кнопками внизу'));
+        moveTo(tl, 'tb-glass', 0.8); tl.add(playClick());
+        tl.call(() => { $('tb-glass').classList.add('on'); if (HW3D) HW3D.setGlass(true); });
+        pause(tl, 1.0);
+        moveTo(tl, 'tb-light', 0.6); tl.add(playClick());
+        tl.call(() => { $('tb-light').classList.add('on'); gsap.to('#lpanel', { autoAlpha: 1, duration: 0.25 }); });
+        pause(tl, 0.4);
+        moveTo(tl, 'sw-7', 0.6); tl.add(playClick());
+        tl.call(() => { $('sw-7').classList.add('on'); if (HW3D) HW3D.setColor('#ff4fa3'); });
+        pause(tl, 1.6);
+        tl.call(() => { $('tb-light').classList.remove('on'); gsap.to('#lpanel', { autoAlpha: 0, duration: 0.2 }); });
+    }
+    if (o.home) {
+        moveTo(tl, 'mock-back-builder', 0.8); tl.add(playClick());
+        tl.add(changeScene('#page-builder', '#page-index'));
+    }
+}
+/* начинается в конструкторе, заканчивается на главной */
+function segAccount(tl) {
+    tl.call(() => cap('💾 Сохранить сборку можно только с аккаунтом'));
+    moveTo(tl, 'mock-save', 0.8); tl.add(playClick());
+    tl.call(() => bToast('🔒 Чтобы сохранить сборку, войдите или зарегистрируйтесь'));
+    pause(tl, 1.8);
+    tl.call(bToastHide);
+    tl.add(changeScene('#page-builder', '#page-register'));
+
+    tl.call(() => cap('📝 Регистрация: почта и пароль'));
+    moveTo(tl, 'fld-email', 0.8); tl.add(playClick()); tl.call(() => focusField('fld-email'));
+    typeInto(tl, 'txt-email', 'alex@mail.ru', 0.9);
+    moveTo(tl, 'fld-pass', 0.5); tl.add(playClick()); tl.call(() => focusField('fld-pass'));
+    typeInto(tl, 'txt-pass', '••••••••••', 0.8);
+    moveTo(tl, 'fld-pass2', 0.5); tl.add(playClick()); tl.call(() => focusField('fld-pass2'));
+    typeInto(tl, 'txt-pass2', '••••••••••', 0.8);
+    moveTo(tl, 'mock-reg-btn', 0.6); tl.add(playClick());
+    tl.call(() => { focusField(''); gsap.to('#reg-msg', { opacity: 1, y: 0, duration: 0.35 }); setLoggedIn(true); });
+    pause(tl, 2.4);
+
+    tl.add(changeScene('#page-register', '#page-builder'));
+    pause(tl, 0.5);
+    tl.call(() => cap('✅ После входа сборка возвращается, и её можно сохранить'));
+    moveTo(tl, 'mock-save', 0.7); tl.add(playClick());
+    tl.call(() => openModal('Сохранить сборку', SAVE_HTML));
+    pause(tl, 1.2);
+    moveTo(tl, 'mm-save-do', 0.6); tl.add(playClick());
+    tl.call(() => { closeModal(); bToast('Сборка сохранена', true); });
+    pause(tl, 1.4);
+    tl.call(bToastHide);
+    tl.call(() => cap('📂 Все сохранённые сборки — в «Мои сборки»'));
+    moveTo(tl, 'mock-mybuilds', 0.7); tl.add(playClick());
+    tl.call(() => openModal('Мои сборки', myBuildsHtml()));
+    pause(tl, 2.0);
+    moveTo(tl, 'mm-close', 0.5); tl.add(playClick()); tl.call(closeModal);
+    pause(tl, 0.3);
+
+    moveTo(tl, 'mock-back-builder', 0.8); tl.add(playClick());
+    tl.add(changeScene('#page-builder', '#page-index'));
+    tl.call(() => cap('Вверху теперь виден ваш аккаунт и статус VIP'));
+    pause(tl, 1.6);
+}
+function segSuggest(tl) {
+    tl.call(() => cap('💡 Нет нужной модели? Предложите добавить'));
+    moveTo(tl, 'mock-suggest', 0.8); tl.add(playClick());
+    tl.call(() => openModal('Предложить добавить', SUG_HTML));
+    pause(tl, 0.9);
+    moveTo(tl, 'mm-kind-cpu', 0.6); tl.add(playClick());
+    tl.call(() => { $('mm-kind-cpu').classList.add('on'); const t = $('mm-inp'); t.classList.remove('ph'); $('mm-inp-t').textContent = ''; });
+    typeInto(tl, 'mm-inp-t', 'Ryzen 7 9800X3D', 0.9);
+    moveTo(tl, 'mm-send', 0.6); tl.add(playClick());
+    tl.call(() => { $('mm-inp-t').textContent = ''; $('mm-msg').textContent = 'Спасибо! Предложение отправлено.'; });
+    pause(tl, 1.4);
+    moveTo(tl, 'mm-close', 0.5); tl.add(playClick()); tl.call(closeModal);
+    pause(tl, 0.3);
+}
+function segReviews(tl) {
+    tl.call(() => cap('⭐ Отзывы: оцените сайт и напишите пару слов'));
+    moveTo(tl, 'mock-reviews', 0.8); tl.add(playClick());
+    tl.add(changeScene('#page-index', '#page-reviews'));
+    pause(tl, 0.6);
+    moveTo(tl, 'rv-star5', 0.8); tl.add(playClick()); tl.call(() => paintStars(5));
+    moveTo(tl, 'rv-ta', 0.5); tl.add(playClick());
+    typeInto(tl, 'rv-text', 'Классный сайт! Собрал ПК по гайду и сразу проверил совместимость.', 1.6, k => { $('rv-count').textContent = k + ' / 1000'; });
+    moveTo(tl, 'rv-send', 0.6); tl.add(playClick());
+    tl.call(() => {
+        $('rv-msg').textContent = 'Спасибо! Отзыв опубликован.';
+        $('rv-newtx').textContent = 'Классный сайт! Собрал ПК по гайду и сразу проверил совместимость.';
+        $('rv-new').style.display = 'block'; gsap.to('#rv-new', { opacity: 1, duration: 0.4 });
+        $('rv-avg').textContent = '4.5'; $('rv-avgst').textContent = '★★★★★'; $('rv-ct').textContent = '(2)';
+    });
+    pause(tl, 2.2);
+    moveTo(tl, 'mock-back-reviews', 0.8); tl.add(playClick());
+    tl.add(changeScene('#page-reviews', '#page-index'));
+}
+function segSocial(tl) {
+    tl.call(() => cap('📣 Telegram и TikTok: новости и обновления'));
+    moveTo(tl, 'mock-tg', 0.9); pause(tl, 0.7);
+    moveTo(tl, 'mock-tt', 0.4); pause(tl, 0.8);
+}
+
+/* ---------- разделы гайда ---------- */
+const TOPICS = [
+    { k: 'all', i: '📖', t: 'Общий гайд', d: 'Полный обзор сайта от начала до конца: тема, VIP, сравнение, конструктор, аккаунт, отзывы.',
+      run: tl => {
+          tl.call(() => cap('Главный экран: конструктор, сравнение и гайд в одном месте')); pause(tl, 1.4);
+          segTheme(tl); segVip(tl); segCpu(tl); segGpu(tl);
+          segBuild(tl, { extras: true, home: false });
+          segAccount(tl); segSuggest(tl); segReviews(tl); segSocial(tl);
+          tl.call(() => cap('Готово! Теперь вы знаете всё о HardwareVS')); pause(tl, 1.8);
+      } },
+    { k: 'theme', i: '⚙️', t: 'Тема оформления', d: 'Как переключить тёмную и светлую тему.', run: tl => { segTheme(tl); } },
+    { k: 'vip', i: '👑', t: 'VIP-статус', d: 'Что даёт VIP и как работает ежедневная печенька.', run: tl => { segVip(tl); } },
+    { k: 'cpu', i: '💻', t: 'Сравнение процессоров', d: 'Выбор двух CPU, победы по параметрам и лидер.', run: tl => { segCpu(tl); } },
+    { k: 'gpu', i: '🎮', t: 'Сравнение видеокарт', d: 'Сравнение GPU по памяти, нагреву и мощности.', run: tl => { segGpu(tl); } },
+    { k: 'build', i: '🛠️', t: '3D-конфигуратор', d: 'Сборка ПК по шагам, стекло, RGB и цвет подсветки.', run: tl => { segBuild(tl, { extras: true, home: true }); } },
+    { k: 'acc', i: '📝', t: 'Аккаунт и сборки', d: 'Регистрация, сохранение сборки и «Мои сборки».', run: tl => { segBuild(tl, { extras: false, home: false }); segAccount(tl); } },
+    { k: 'suggest', i: '💡', t: 'Предложить модель', d: 'Что делать, если нужного процессора или видеокарты нет.', run: tl => { segSuggest(tl); } },
+    { k: 'reviews', i: '⭐', t: 'Отзывы и соцсети', d: 'Оценка сайта, отзыв и ссылки на Telegram и TikTok.', run: tl => { segReviews(tl); segSocial(tl); } }
+];
+
+function buildMenu() {
+    const all = TOPICS[0], grid = $('gm-grid');
+    const a = $('gm-all');
+    a.appendChild(mkEl('span', 'gm-ico', all.i));
+    const txt = mkEl('span', 'gm-txt');
+    txt.appendChild(mkEl('span', 'gm-t', all.t));
+    txt.appendChild(mkEl('span', 'gm-d', all.d));
+    a.appendChild(txt);
+    a.appendChild(mkEl('span', 'gm-go mono', '▶ Смотреть'));
+    a.addEventListener('click', () => play('all'));
+    TOPICS.slice(1).forEach((t, n) => {
+        const c = mkEl('div', 'gm-card');
+        c.appendChild(mkEl('span', 'gm-num mono', String(n + 1).padStart(2, '0')));
+        c.appendChild(mkEl('span', 'gm-ico', t.i));
+        c.appendChild(mkEl('span', 'gm-t', t.t));
+        c.appendChild(mkEl('span', 'gm-d', t.d));
+        c.addEventListener('click', () => play(t.k));
+        grid.appendChild(c);
+    });
+}
+buildMenu();
+
+function showMenu() {
+    stopGuide();
+    resetAll();
+    gsap.set(cursor, { autoAlpha: 0 });
+    menuBtn.style.display = 'none';
+    gsap.set(menuEl, { autoAlpha: 0 });
+    gsap.to(menuEl, { autoAlpha: 1, duration: 0.3 });
+}
+function play(key) {
+    const topic = TOPICS.find(t => t.k === key);
+    if (!topic) return;
+    stopGuide();
+    current = key;
+    gsap.to(menuEl, { autoAlpha: 0, duration: 0.25 });
+    menuBtn.style.display = 'flex';
+    gsap.set(cursor, { autoAlpha: 1 });
+    tl = gsap.timeline({ onComplete: showEndQuestion });
+    tl.call(resetAll);
+    tl.to('#page-index', { opacity: 1, duration: 0.4 });
+    topic.run(tl);
+    if (key !== 'all') {
+        tl.call(() => cap('Раздел «' + topic.t + '» пройден'));
+        pause(tl, 1.4);
+    }
+}
+
 $('end-exit').addEventListener('click', () => { window.location.href = MAIN_SITE_URL; });
-$('end-replay').addEventListener('click', () => { hideEndQuestion(); tl.restart(); });
+$('end-replay').addEventListener('click', () => { hideEndQuestion(); play(current); });
+$('end-menu').addEventListener('click', showMenu);
+menuBtn.addEventListener('click', showMenu);
 
-tl.call(resetAll);
-tl.to('#page-index', { opacity: 1, duration: 0.4 });
-tl.call(() => cap('Главный экран: конструктор, сравнение и гайд в одном месте'));
-pause(tl, 1.4);
-
-/* тема */
-tl.call(() => cap('⚙️ Настройки: тёмная и светлая тема'));
-moveTo(tl, 'mock-gear', 0.8); tl.add(playClick()); tl.call(openPanel);
-moveTo(tl, 'mock-theme-light', 0.5); tl.add(playClick()); tl.call(() => setTheme(true));
-pause(tl, 1.0);
-moveTo(tl, 'mock-theme-dark', 0.5); tl.add(playClick()); tl.call(() => setTheme(false));
-pause(tl, 0.4); tl.call(closePanel);
-
-/* VIP */
-tl.call(() => cap('👑 VIP: доступ к конструктору и 3 печеньки в день'));
-moveTo(tl, 'mock-vip-info', 0.8); tl.add(playClick());
-tl.call(() => openModal('VIP-статус', VIP_HTML));
-pause(tl, 2.2);
-moveTo(tl, 'mm-close', 0.5); tl.add(playClick()); tl.call(closeModal);
-pause(tl, 0.3);
-
-/* процессоры */
-tl.call(() => cap('💻 Сравнение процессоров'));
-moveTo(tl, 'mock-btn-cpu', 1.0); tl.call(() => hl('mock-btn-cpu', true)); tl.add(playClick());
-tl.add(changeScene('#page-index', '#page-cpu'));
-tl.call(() => cmpRender('cpu', true));
-pause(tl, 1.6);
-tl.call(() => cap('Выберите другой процессор в списке — сравнение обновится сразу'));
-moveTo(tl, 'cpu-trigB', 0.8); tl.add(playClick()); tl.call(() => ddOpen('cpu', 'B', true));
-pause(tl, 0.4);
-moveTo(tl, 'cpu-itB-2', 0.6); tl.call(() => ddHover('cpu', 'B', 2, true)); pause(tl, 0.2);
-tl.add(playClick()); tl.call(() => pickItem('cpu', 'B', 2));
-pause(tl, 2.6);
-moveTo(tl, 'mock-back-cpu', 0.8); tl.add(playClick());
-tl.add(changeScene('#page-cpu', '#page-index'));
-tl.call(() => hl('mock-btn-cpu', false));
-
-/* видеокарты */
-tl.call(() => cap('🎮 Сравнение видеокарт'));
-moveTo(tl, 'mock-btn-gpu', 1.0); tl.call(() => hl('mock-btn-gpu', true)); tl.add(playClick());
-tl.add(changeScene('#page-index', '#page-gpu'));
-tl.call(() => cmpRender('gpu', true));
-pause(tl, 1.6);
-moveTo(tl, 'gpu-trigB', 0.8); tl.add(playClick()); tl.call(() => ddOpen('gpu', 'B', true));
-pause(tl, 0.4);
-moveTo(tl, 'gpu-itB-4', 0.6); tl.call(() => ddHover('gpu', 'B', 4, true)); pause(tl, 0.2);
-tl.add(playClick()); tl.call(() => pickItem('gpu', 'B', 4));
-pause(tl, 2.6);
-moveTo(tl, 'mock-back-gpu', 0.8); tl.add(playClick());
-tl.add(changeScene('#page-gpu', '#page-index'));
-tl.call(() => hl('mock-btn-gpu', false));
-
-/* конструктор */
-tl.call(() => cap('🛠️ 3D-конфигуратор доступен с VIP (в гайде открыт для примера)'));
-moveTo(tl, 'mock-btn-build', 1.0); tl.call(() => hl('mock-btn-build', true)); tl.add(playClick());
-tl.add(changeScene('#page-index', '#page-builder'));
-tl.call(() => hl('mock-btn-build', false));
-pause(tl, 0.6);
-BSTEPS.forEach((s, i) => {
-    tl.call(() => setStep(i));
-    pause(tl, 0.2);
-    moveTo(tl, 'bopt-' + s.pick, 0.5);
-    tl.add(playClick());
-    tl.call(() => choose(i));
-    pause(tl, 0.35);
-});
-tl.call(showDone);
-pause(tl, 1.2);
-
-/* стекло и подсветка */
-tl.call(() => cap('Стекло, RGB и цвет подсветки настраиваются кнопками внизу'));
-moveTo(tl, 'tb-glass', 0.8); tl.add(playClick());
-tl.call(() => { $('tb-glass').classList.add('on'); if (HW3D) HW3D.setGlass(true); });
-pause(tl, 1.0);
-moveTo(tl, 'tb-light', 0.6); tl.add(playClick());
-tl.call(() => { $('tb-light').classList.add('on'); gsap.to('#lpanel', { autoAlpha: 1, duration: 0.25 }); });
-pause(tl, 0.4);
-moveTo(tl, 'sw-7', 0.6); tl.add(playClick());
-tl.call(() => { $('sw-7').classList.add('on'); if (HW3D) HW3D.setColor('#ff4fa3'); });
-pause(tl, 1.6);
-tl.call(() => { $('tb-light').classList.remove('on'); gsap.to('#lpanel', { autoAlpha: 0, duration: 0.2 }); });
-
-/* сохранение без аккаунта */
-tl.call(() => cap('💾 Сохранить сборку можно только с аккаунтом'));
-moveTo(tl, 'mock-save', 0.8); tl.add(playClick());
-tl.call(() => bToast('🔒 Чтобы сохранить сборку, войдите или зарегистрируйтесь'));
-pause(tl, 1.8);
-tl.call(bToastHide);
-tl.add(changeScene('#page-builder', '#page-register'));
-
-/* регистрация */
-tl.call(() => cap('📝 Регистрация: почта и пароль'));
-moveTo(tl, 'fld-email', 0.8); tl.add(playClick()); tl.call(() => focusField('fld-email'));
-typeInto(tl, 'txt-email', 'alex@mail.ru', 0.9);
-moveTo(tl, 'fld-pass', 0.5); tl.add(playClick()); tl.call(() => focusField('fld-pass'));
-typeInto(tl, 'txt-pass', '••••••••••', 0.8);
-moveTo(tl, 'fld-pass2', 0.5); tl.add(playClick()); tl.call(() => focusField('fld-pass2'));
-typeInto(tl, 'txt-pass2', '••••••••••', 0.8);
-moveTo(tl, 'mock-reg-btn', 0.6); tl.add(playClick());
-tl.call(() => { focusField(''); gsap.to('#reg-msg', { opacity: 1, y: 0, duration: 0.35 }); setLoggedIn(true); });
-pause(tl, 2.4);
-
-/* возврат к сборке и сохранение */
-tl.add(changeScene('#page-register', '#page-builder'));
-pause(tl, 0.5);
-tl.call(() => cap('✅ После входа сборка возвращается, и её можно сохранить'));
-moveTo(tl, 'mock-save', 0.7); tl.add(playClick());
-tl.call(() => openModal('Сохранить сборку', SAVE_HTML));
-pause(tl, 1.2);
-moveTo(tl, 'mm-save-do', 0.6); tl.add(playClick());
-tl.call(() => { closeModal(); bToast('Сборка сохранена', true); });
-pause(tl, 1.4);
-tl.call(bToastHide);
-tl.call(() => cap('📂 Все сохранённые сборки — в «Мои сборки»'));
-moveTo(tl, 'mock-mybuilds', 0.7); tl.add(playClick());
-tl.call(() => openModal('Мои сборки', myBuildsHtml()));
-pause(tl, 2.0);
-moveTo(tl, 'mm-close', 0.5); tl.add(playClick()); tl.call(closeModal);
-pause(tl, 0.3);
-
-/* на главную, теперь с аккаунтом */
-moveTo(tl, 'mock-back-builder', 0.8); tl.add(playClick());
-tl.add(changeScene('#page-builder', '#page-index'));
-tl.call(() => cap('Вверху теперь виден ваш аккаунт и статус VIP'));
-pause(tl, 1.6);
-
-/* предложить добавить */
-tl.call(() => cap('💡 Нет нужной модели? Предложите добавить'));
-moveTo(tl, 'mock-suggest', 0.8); tl.add(playClick());
-tl.call(() => openModal('Предложить добавить', SUG_HTML));
-pause(tl, 0.9);
-moveTo(tl, 'mm-kind-cpu', 0.6); tl.add(playClick());
-tl.call(() => { $('mm-kind-cpu').classList.add('on'); const t = $('mm-inp'); t.classList.remove('ph'); $('mm-inp-t').textContent = ''; });
-typeInto(tl, 'mm-inp-t', 'Ryzen 7 9800X3D', 0.9);
-moveTo(tl, 'mm-send', 0.6); tl.add(playClick());
-tl.call(() => { $('mm-inp-t').textContent = ''; $('mm-msg').textContent = 'Спасибо! Предложение отправлено.'; });
-pause(tl, 1.4);
-moveTo(tl, 'mm-close', 0.5); tl.add(playClick()); tl.call(closeModal);
-pause(tl, 0.3);
-
-/* отзывы */
-tl.call(() => cap('⭐ Отзывы: оцените сайт и напишите пару слов'));
-moveTo(tl, 'mock-reviews', 0.8); tl.add(playClick());
-tl.add(changeScene('#page-index', '#page-reviews'));
-pause(tl, 0.6);
-moveTo(tl, 'rv-star5', 0.8); tl.add(playClick()); tl.call(() => paintStars(5));
-moveTo(tl, 'rv-ta', 0.5); tl.add(playClick());
-typeInto(tl, 'rv-text', 'Классный сайт! Собрал ПК по гайду и сразу проверил совместимость.', 1.6, k => { $('rv-count').textContent = k + ' / 1000'; });
-moveTo(tl, 'rv-send', 0.6); tl.add(playClick());
-tl.call(() => {
-    $('rv-msg').textContent = 'Спасибо! Отзыв опубликован.';
-    $('rv-newtx').textContent = 'Классный сайт! Собрал ПК по гайду и сразу проверил совместимость.';
-    $('rv-new').style.display = 'block'; gsap.to('#rv-new', { opacity: 1, duration: 0.4 });
-    $('rv-avg').textContent = '4.5'; $('rv-avgst').textContent = '★★★★★'; $('rv-ct').textContent = '(2)';
-});
-pause(tl, 2.2);
-moveTo(tl, 'mock-back-reviews', 0.8); tl.add(playClick());
-tl.add(changeScene('#page-reviews', '#page-index'));
-
-/* соцсети и финал */
-tl.call(() => cap('📣 Telegram и TikTok: новости и обновления'));
-moveTo(tl, 'mock-tg', 0.9); pause(tl, 0.7);
-moveTo(tl, 'mock-tt', 0.4); pause(tl, 0.8);
-tl.call(() => cap('Готово! Теперь вы знаете всё о HardwareVS'));
-pause(tl, 1.8);
+/* старт: показываем меню разделов */
+resetAll();
+gsap.set(cursor, { autoAlpha: 0 });
 </script>
 </body>
 </html>
