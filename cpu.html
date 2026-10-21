@@ -1,430 +1,285 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="ru" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HardwareVS — Битва Процессоров с Поиском</title>
-    <style>
-        :root {
-            --bg-color: #0b0813;
-            --card-bg: #140e28;
-            --accent-purple: #8a2be2;
-            --neon-glow: #bf55ec;
-            --text-color: #e2daf8;
-            --bar-color-1: #2f81f7;
-            --bar-color-2: #e55350;
-            --bar-color-3: #3fb950;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color); color: var(--text-color); margin: 0; padding: 20px;
-            display: flex; flex-direction: column; align-items: center; min-height: 100vh; box-sizing: border-box;
-        }
-        .back-link { align-self: flex-start; color: #bfaee3; text-decoration: none; font-weight: bold; font-size: 1.1rem; transition: color 0.2s; margin-bottom: 20px; }
-        .back-link:hover { color: var(--neon-glow); }
-        .header { text-align: center; margin-bottom: 35px; }
-        .header h1 { 
-            font-size: 2.6rem; margin: 0; font-weight: 900; 
-            background: linear-gradient(45deg, var(--accent-purple), var(--neon-glow));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: 1px;
-        }
-        .compare-container {
-            background-color: var(--card-bg); border: 1px solid #302654; border-radius: 16px;
-            padding: 30px; max-width: 650px; width: 100%; box-shadow: 0 12px 32px rgba(0,0,0,0.6); box-sizing: border-box;
-        }
-        .select-group { display: grid; grid-template-columns: 1fr auto 1fr; gap: 15px; align-items: start; margin-bottom: 24px; }
-        .vs-label { font-weight: bold; color: #8b949e; font-size: 1.2rem; margin-top: 14px; text-align: center; }
-        
-        .search-select-box { position: relative; width: 100%; }
-        .select-trigger {
-            background-color: #211a3d; color: var(--text-color); border: 1px solid #302654;
-            border-radius: 8px; padding: 14px; font-size: 1rem; cursor: pointer; text-align: left;
-            user-select: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: border-color 0.2s;
-        }
-        .search-select-box.active .select-trigger { border-color: var(--neon-glow); }
-        .select-dropdown {
-            position: absolute; top: 105%; left: 0; width: 100%; background-color: #1a1331;
-            border: 1px solid #4a3b7d; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.7);
-            display: none; flex-direction: column; z-index: 100; max-height: 300px; box-sizing: border-box;
-        }
-        .search-select-box.active .select-dropdown { display: flex; }
-        .search-input {
-            background-color: #0b0813; color: #fff; border: none; border-bottom: 1px solid #302654;
-            padding: 12px; font-size: 0.95rem; outline: none; border-radius: 8px 8px 0 0; box-sizing: border-box; width: 100%;
-        }
-        .search-input:focus { border-bottom-color: var(--neon-glow); }
-        .options-list { overflow-y: auto; max-height: 240px; margin: 0; padding: 0; list-style: none; }
-        .option-item { padding: 12px; font-size: 0.95rem; cursor: pointer; transition: background 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #e2daf8; }
-        .option-item:hover { background-color: var(--accent-purple); color: #fff; }
-        .option-item.no-results { color: #8b949e; cursor: default; background: none !important; }
-
-        .compare-btn {
-            width: 100%; background: linear-gradient(90deg, var(--accent-purple), var(--neon-glow)); color: #fff;
-            border: none; border-radius: 8px; padding: 16px; font-size: 1.15rem; font-weight: bold; cursor: pointer;
-            box-shadow: 0 4px 14px rgba(138, 43, 226, 0.4); transition: transform 0.1s ease, filter 0.2s; margin-top: 10px;
-        }
-        .compare-btn:hover { filter: brightness(1.1); }
-        .compare-btn:active { transform: scale(0.98); }
-        .results { margin-top: 35px; display: none; }
-        .section-title { font-size: 1.2rem; font-weight: bold; margin-bottom: 15px; color: #fff; border-bottom: 1px solid #302654; padding-bottom: 8px; }
-        .result-item { margin-bottom: 24px; }
-        .cpu-name-label { font-size: 0.95rem; color: #bfaee3; margin-bottom: 6px; }
-        .bar-container { background-color: #1a1331; border-radius: 8px; height: 28px; overflow: hidden; border: 1px solid #302654; position: relative; }
-        .bar {
-            height: 100%; width: 0%; transition: width 1.2s cubic-bezier(0.1, 1, 0.1, 1); 
-            display: flex; align-items: center; padding-left: 12px; font-size: 0.95rem; font-weight: bold; color: #fff; box-sizing: border-box;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-        }
-        .bar-cores { background: linear-gradient(90deg, #1f6feb, var(--bar-color-1)); }
-        .bar-watt { background: linear-gradient(90deg, #e55350, var(--bar-color-2)); }
-        .bar-power { background: linear-gradient(90deg, #2ea043, var(--bar-color-3)); }
-        .summary { margin-top: 30px; padding: 18px; background-color: rgba(138, 43, 226, 0.1); border-left: 4px solid var(--accent-purple); border-radius: 0 8px 8px 0; font-size: 1.1rem; line-height: 1.5; }
-        @media (max-width: 500px) { .select-group { grid-template-columns: 1fr; justify-items: center; gap: 5px; } .vs-label { margin: 5px 0; } }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HardwareVS — Процессоры</title>
+<script>try{var t=localStorage.getItem('hardwarevs-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root,:root[data-theme="dark"]{--bg:#08090b;--text:#ededef;--muted:#8a8f98;--line:rgba(255,255,255,.08);--line2:rgba(255,255,255,.16);--surface:rgba(255,255,255,.03);--hover:rgba(255,255,255,.07);--vig:8,9,11;--grid:rgba(255,255,255,.045);--a:#6f7dff;--b:#2fd3b0;--metal1:#3a3f4d;--metal2:#1a1d26;--dd:#14161c;color-scheme:dark}
+:root[data-theme="light"]{--bg:#f4f4f6;--text:#0f1014;--muted:#666b76;--line:rgba(15,16,20,.1);--line2:rgba(15,16,20,.2);--surface:rgba(255,255,255,.6);--hover:rgba(15,16,20,.06);--vig:244,244,246;--grid:rgba(15,16,20,.06);--a:#4f5ce0;--b:#0fa88a;--metal1:#d7dbe4;--metal2:#a9afbf;--dd:#fff;color-scheme:light}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:'Inter',system-ui,sans-serif;-webkit-font-smoothing:antialiased;transition:background-color .4s,color .4s}
+.mono{font-family:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace}
+.bg{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(600px circle at 22% 30%,color-mix(in srgb,var(--a) 18%,transparent),transparent 70%),radial-gradient(600px circle at 78% 30%,color-mix(in srgb,var(--b) 16%,transparent),transparent 70%)}
+.bg::after{content:'';position:absolute;inset:0;background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:64px 64px;-webkit-mask-image:radial-gradient(ellipse at 50% 35%,#000,transparent 72%);mask-image:radial-gradient(ellipse at 50% 35%,#000,transparent 72%)}
+.top{position:fixed;top:0;left:0;right:0;height:60px;z-index:40;display:flex;align-items:center;gap:28px;padding:0 24px;background:rgba(var(--vig),.6);border-bottom:1px solid var(--line);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px)}
+.brand{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none;font-weight:700;font-size:15px}
+.brand b{color:var(--muted)}
+.brand svg{width:22px;height:22px;fill:none;stroke:var(--text);stroke-width:1.7;stroke-linejoin:round}
+nav{display:flex;gap:4px}
+nav a{padding:7px 12px;border-radius:7px;font-size:13.5px;font-weight:500;color:var(--muted);text-decoration:none;transition:.2s}
+nav a:hover,nav a.on{color:var(--text);background:var(--hover)}
+.sp{flex:1}
+.theme{width:38px;height:38px;border-radius:9px;border:1px solid var(--line);background:var(--surface);color:var(--muted);cursor:pointer;font-size:16px;transition:.2s}
+.theme:hover{color:var(--text);border-color:var(--line2)}
+main{position:relative;z-index:5;max-width:1100px;margin:0 auto;padding:92px 20px 50px}
+h1{margin:0 0 6px;font-size:clamp(28px,5vw,44px);letter-spacing:-.04em;text-align:center}
+.lead{margin:0 auto 26px;text-align:center;color:var(--muted);font-size:14.5px}
+.arena{position:relative;display:grid;grid-template-columns:1fr auto 1fr;align-items:start;gap:10px}
+.side{display:flex;flex-direction:column;align-items:center;gap:14px;min-width:0}
+.side.a{--c:var(--a)}.side.b{--c:var(--b)}
+/* поиск */
+.sbox{position:relative;width:100%;max-width:340px;z-index:30}
+.trig{width:100%;text-align:left;padding:12px 38px 12px 14px;border-radius:10px;border:1px solid var(--line2);background:var(--surface);color:var(--text);font:600 14px Inter,sans-serif;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:.25s;position:relative}
+.trig::after{content:'';position:absolute;right:15px;top:50%;width:7px;height:7px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:translateY(-70%) rotate(45deg);transition:transform .25s}
+.sbox.open .trig::after{transform:translateY(-30%) rotate(225deg)}
+.trig:hover,.sbox.open .trig{border-color:var(--c);box-shadow:0 0 22px -8px var(--c)}
+.dd{position:absolute;top:calc(100% + 6px);left:0;right:0;background:var(--dd);border:1px solid var(--line2);border-radius:10px;box-shadow:0 18px 40px rgba(0,0,0,.45);display:none;flex-direction:column;overflow:hidden}
+.sbox.open .dd{display:flex;animation:ddIn .18s ease}
+@keyframes ddIn{from{opacity:0;transform:translateY(-6px)}}
+.dd input{border:0;border-bottom:1px solid var(--line);background:transparent;color:var(--text);padding:12px 14px;font:14px Inter,sans-serif;outline:none}
+.dd input:focus{border-bottom-color:var(--c)}
+.dd ul{list-style:none;margin:0;padding:4px;max-height:260px;overflow-y:auto}
+.dd li{padding:9px 10px;border-radius:7px;font-size:13.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd li:hover,.dd li.sel{background:color-mix(in srgb,var(--c) 22%,transparent)}
+.dd li.none{color:var(--muted);cursor:default}
+/* 3D чип */
+.stage{width:100%;height:240px;perspective:800px;display:grid;place-items:center;position:relative}
+.chip{position:relative;width:150px;height:150px;transform-style:preserve-3d;will-change:transform}
+.chip.swap{animation:sw .5s ease}
+@keyframes sw{from{opacity:0}}
+.f{position:absolute;backface-visibility:hidden}
+.top-f{inset:0;transform:translateZ(8px);border-radius:14px;border:1px solid var(--line2);overflow:hidden;background:linear-gradient(135deg,var(--metal1),var(--metal2) 60%,var(--metal1))}
+.top-f::before{content:'';position:absolute;inset:14px;border-radius:8px;border:1px solid var(--c);background:radial-gradient(circle,color-mix(in srgb,var(--c) 40%,transparent),transparent 75%);box-shadow:inset 0 0 22px -4px var(--c),0 0 26px -6px var(--c)}
+.top-f::after{content:'';position:absolute;left:5px;top:5px;border:7px solid transparent;border-top-color:var(--c);border-left-color:var(--c);opacity:.8}
+.lbl{position:absolute;inset:0;display:grid;place-items:center;text-align:center;font-size:10px;letter-spacing:.12em;text-transform:uppercase;padding:0 24px;line-height:1.5;z-index:2}
+.lbl b{display:block;font-size:13px;letter-spacing:.03em;word-break:break-word}
+.bot-f{inset:0;transform:translateZ(-8px) rotateY(180deg);border-radius:14px;background:radial-gradient(circle,#c9a24f 2px,transparent 2.5px) 0 0/10px 10px,#2a2418}
+.e{background:linear-gradient(var(--metal1),var(--metal2))}
+.e.r{width:16px;height:150px;left:67px;top:0;transform:rotateY(90deg) translateZ(75px)}
+.e.l{width:16px;height:150px;left:67px;top:0;transform:rotateY(-90deg) translateZ(75px)}
+.e.u{width:150px;height:16px;left:0;top:67px;transform:rotateX(90deg) translateZ(75px)}
+.e.d{width:150px;height:16px;left:0;top:67px;transform:rotateX(-90deg) translateZ(75px)}
+.shadow{position:absolute;bottom:22px;left:50%;width:150px;height:20px;margin-left:-75px;border-radius:50%;background:radial-gradient(ellipse,color-mix(in srgb,var(--c) 50%,transparent),transparent 70%);filter:blur(6px);opacity:.8}
+.cores{display:grid;grid-template-columns:repeat(8,10px);gap:5px;min-height:25px;justify-content:center}
+.cores i{width:10px;height:10px;border-radius:3px;background:var(--c);box-shadow:0 0 8px -1px var(--c);animation:pop .4s cubic-bezier(.2,.8,.2,1) backwards}
+@keyframes pop{from{transform:scale(0);opacity:0}}
+.cap{font-size:11px;letter-spacing:.12em;color:var(--muted);text-transform:uppercase;text-align:center}
+.mid{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:60px}
+.vs{width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-weight:700;font-size:15px;border:1px solid var(--line2);background:var(--surface);position:relative}
+.vs::before{content:'';position:absolute;inset:-8px;border-radius:50%;border:1px dashed var(--line2);animation:spin 20s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.swapbtn{border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:8px;padding:7px 10px;cursor:pointer;font:500 12px Inter;transition:.2s}
+.swapbtn:hover{color:var(--text);border-color:var(--line2)}
+.score{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:16px;margin:10px 0 18px;padding:16px 20px;border:1px solid var(--line2);border-radius:14px;background:rgba(var(--vig),.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.score .n{font-size:clamp(34px,6vw,56px);font-weight:700;letter-spacing:-.04em}
+.score .n.a{color:var(--a);text-align:right}.score .n.b{color:var(--b)}
+.score .t{font-size:11px;letter-spacing:.14em;color:var(--muted);text-transform:uppercase;text-align:center}
+.verdict{text-align:center;margin:0 0 20px;font-size:14px;color:var(--muted)}
+.verdict b{color:var(--text)}
+.rows{border:1px solid var(--line2);border-radius:14px;overflow:hidden;background:rgba(var(--vig),.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.row{display:grid;grid-template-columns:84px 1fr 120px 1fr 84px;align-items:center;gap:10px;padding:14px 18px;border-top:1px solid var(--line);transition:background .25s}
+.row:first-child{border-top:0}
+.row:hover{background:var(--hover)}
+.v{font-size:13.5px;font-weight:600}
+.v.a{text-align:right;--c:var(--a)}.v.b{--c:var(--b)}
+.v.w{color:var(--c)}
+.k{text-align:center;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);line-height:1.4}
+.bar{height:8px;border-radius:5px;background:var(--line);position:relative;overflow:hidden}
+.bar i{position:absolute;top:0;bottom:0;width:0;border-radius:5px;transition:width .9s cubic-bezier(.2,.8,.2,1);opacity:.5}
+.bar.a i{right:0;background:var(--a)}.bar.b i{left:0;background:var(--b)}
+.bar.win i{opacity:1}
+.foot{margin-top:14px;text-align:center;font-size:11.5px;color:var(--muted)}
+.back{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;border-radius:9px;border:1px solid var(--line2);background:var(--surface);color:var(--text);text-decoration:none;font-size:13px;font-weight:600;transition:.25s;white-space:nowrap}
+.back span{display:inline-block;transition:transform .25s}
+.back:hover{border-color:var(--a);box-shadow:0 0 22px -8px var(--a);transform:translateX(-2px)}
+.back:hover span{transform:translateX(-4px)}
+main,.top{transition:opacity .35s,transform .35s,filter .35s}
+html.leaving main,html.leaving .top{opacity:0;transform:scale(.985);filter:blur(5px)}
+.rise{animation:rise .8s cubic-bezier(.2,.8,.2,1) backwards;animation-delay:var(--d,0s)}
+.row{position:relative;animation:rise .6s cubic-bezier(.2,.8,.2,1) backwards}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}}
+.px{position:fixed;bottom:-10px;width:3px;height:3px;border-radius:50%;background:var(--a);opacity:0;pointer-events:none;z-index:1;animation:fly linear infinite}
+.px:nth-child(even){background:var(--b)}
+@keyframes fly{10%{opacity:.7}90%{opacity:.5}100%{transform:translate3d(var(--dx,20px),-105vh,0);opacity:0}}
+.ring{position:absolute;left:50%;bottom:-83px;width:230px;height:230px;margin-left:-115px;border-radius:50%;border:1px dashed color-mix(in srgb,var(--c) 55%,transparent);animation:ringspin 14s linear infinite;pointer-events:none}
+.ring.r2{width:170px;height:170px;margin-left:-85px;bottom:-53px;border-style:solid;opacity:.5;animation-duration:9s;animation-direction:reverse}
+@keyframes ringspin{from{transform:rotateX(74deg) rotate(0)}to{transform:rotateX(74deg) rotate(360deg)}}
+.scan{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--c),transparent);box-shadow:0 0 12px var(--c);animation:scan 2.8s ease-in-out infinite;z-index:3}
+@keyframes scan{0%{top:6%;opacity:0}15%,85%{opacity:1}100%{top:94%;opacity:0}}
+.beam{position:absolute;left:16%;right:16%;top:190px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--a),var(--b));opacity:.35;pointer-events:none}
+.beam::after{content:'';position:absolute;top:-3px;width:8px;height:8px;border-radius:50%;background:var(--a);box-shadow:0 0 14px 3px var(--a);animation:travel 2.6s ease-in-out infinite alternate}
+@keyframes travel{to{left:calc(100% - 8px);background:var(--b);box-shadow:0 0 14px 3px var(--b)}}
+.crown{position:absolute;top:2px;left:50%;translate:-50% 0;z-index:5;padding:4px 11px;border-radius:99px;font-size:10.5px;letter-spacing:.14em;color:#1a1300;background:linear-gradient(90deg,#f3d27a,#d9b25a);box-shadow:0 0 22px -2px rgba(217,178,90,.7);opacity:0;scale:.6;transition:opacity .4s,scale .5s cubic-bezier(.3,1.6,.5,1);pointer-events:none}
+.side.lead .crown{opacity:1;scale:1}
+.side.lead .shadow{opacity:1;filter:blur(9px)}
+.side.lead .top-f::before{box-shadow:inset 0 0 30px -2px var(--c),0 0 40px -2px var(--c)}
+.vs.hit{animation:vsPop .5s}
+.vs.hit::after{content:'';position:absolute;inset:0;border-radius:50%;border:2px solid var(--text);animation:hit .8s ease-out forwards}
+@keyframes vsPop{40%{transform:scale(1.18)}}
+@keyframes hit{to{transform:scale(2.2);opacity:0}}
+.row::before{content:'';position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .3s;background:radial-gradient(260px circle at var(--mx,50%) var(--my,50%),color-mix(in srgb,var(--a) 14%,transparent),transparent 70%)}
+.row:hover::before{opacity:1}
+.bar i{overflow:hidden}
+.bar.win i::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.5),transparent);transform:translateX(-100%);animation:shim 2.4s ease-in-out infinite}
+@keyframes shim{to{transform:translateX(100%)}}
+.n.pop{animation:npop .5s}
+@keyframes npop{40%{transform:scale(1.25)}}
+@media(max-width:520px){.brand span{display:none}.top{gap:14px;padding:0 14px}}
+@media(max-width:820px){.beam{display:none}}
+@media(max-width:820px){
+nav{display:none}
+.arena{grid-template-columns:1fr 1fr}.mid{display:none}
+.stage{height:200px;zoom:.8}
+.row{grid-template-columns:56px 1fr 66px 1fr 56px;gap:6px;padding:11px 10px}
+.k{font-size:9px;letter-spacing:.03em}.v{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
 </head>
 <body>
-    <a href="index.html" class="back-link">⬅ На главную</a>
-    <div class="header">
-        <h1>Сравнение процессоров</h1>
-    </div>
-    <div class="compare-container">
-        <div class="select-group">
-            <div class="search-select-box" id="box1">
-                <div class="select-trigger" id="trigger1">Выберите процессор 1 ⬇</div>
-                <div class="select-dropdown">
-                    <input type="text" class="search-input" id="search1" placeholder="Введите название (напр. 5600)..." autocomplete="off">
-                    <ul class="options-list" id="list1"></ul>
-                </div>
-            </div>
-            <div class="vs-label">VS</div>
-            <div class="search-select-box" id="box2">
-                <div class="select-trigger" id="trigger2">Выберите процессор 2 ⬇</div>
-                <div class="select-dropdown">
-                    <input type="text" class="search-input" id="search2" placeholder="Введите название (напр. i5)..." autocomplete="off">
-                    <ul class="options-list" id="list2"></ul>
-                </div>
-            </div>
-        </div>
-        <button class="compare-btn" onclick="compareCPUs()">Сравнить процессоры!</button>
-        <div class="results" id="resultsBlock">
-            <div class="section-title">📊 Ядра / Потоки:</div>
-            <div class="result-item"><div class="cpu-name-label" id="coresName1"></div><div class="bar-container"><div class="bar bar-cores" id="barCores1">0</div></div></div>
-            <div class="result-item"><div class="cpu-name-label" id="coresName2"></div><div class="bar-container"><div class="bar bar-cores" id="barCores2">0</div></div></div>
-            <div class="section-title">⚡ Тепловыделение (TDP Ватт):</div>
-            <div class="result-item"><div class="cpu-name-label" id="wattName1"></div><div class="bar-container"><div class="bar bar-watt" id="barWatt1">0</div></div></div>
-            <div class="result-item"><div class="cpu-name-label" id="wattName2"></div><div class="bar-container"><div class="bar bar-watt" id="barWatt2">0</div></div></div>
-            <div class="section-title">🚀 Чистая мощность (Баллы PassMark):</div>
-            <div class="result-item"><div class="cpu-name-label" id="powerName1"></div><div class="bar-container"><div class="bar bar-power" id="barPower1">0</div></div></div>
-            <div class="result-item"><div class="cpu-name-label" id="powerName2"></div><div class="bar-container"><div class="bar bar-power" id="barPower2">0</div></div></div>
-            <div class="summary" id="summaryText"></div>
-        </div>
-    </div>
-    <script>
-        const cpuDatabase = [
-            { name: "Intel Core i3-530 (1 Gen)", score: 1400, watt: 73, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-540 (1 Gen)", score: 1500, watt: 73, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-2100 (2 Gen)", score: 1800, watt: 65, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-2120 (2 Gen)", score: 1900, watt: 65, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-3220 (3 Gen)", score: 2200, watt: 55, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-3240 (3 Gen)", score: 2300, watt: 55, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-4130 (4 Gen)", score: 3300, watt: 54, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-4330 (4 Gen)", score: 3600, watt: 54, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-5005U (5 Gen)", score: 2000, watt: 15, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-6100 (6 Gen)", score: 4100, watt: 51, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-6300 (6 Gen)", score: 4400, watt: 51, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-7100 (7 Gen)", score: 4300, watt: 51, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-7350K (7 Gen)", score: 4900, watt: 60, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-8100 (8 Gen)", score: 6100, watt: 65, cores: 4, text: "4/4" },
-            { name: "Intel Core i3-8350K (8 Gen)", score: 6900, watt: 91, cores: 4, text: "4/4" },
-            { name: "Intel Core i3-9100 (9 Gen)", score: 6600, watt: 65, cores: 4, text: "4/4" },
-            { name: "Intel Core i3-9100F (9 Gen)", score: 6700, watt: 65, cores: 4, text: "4/4" },
-            { name: "Intel Core i3-10100 (10 Gen)", score: 8600, watt: 65, cores: 4, text: "4/8" },
-            { name: "Intel Core i3-10100F (10 Gen)", score: 8700, watt: 65, cores: 4, text: "4/8" },
-            { name: "Intel Core i3-10105F (11 Gen)", score: 8900, watt: 65, cores: 4, text: "4/8" },
-            { name: "Intel Core i3-1115G4 (11 Gen)", score: 6100, watt: 28, cores: 2, text: "2/4" },
-            { name: "Intel Core i3-12100 (12 Gen)", score: 13500, watt: 60, cores: 4, text: "4/8" },
-            { name: "Intel Core i3-12100F (12 Gen)", score: 14000, watt: 58, cores: 4, text: "4/8" },
-            { name: "Intel Core i3-13100 (13 Gen)", score: 14800, watt: 60, cores: 4, text: "4/8" },
-            { name: "Intel Core i3-13100F (13 Gen)", score: 14900, watt: 58, cores: 4, text: "4/8" },
-            { name: "Intel Core i3-14100 (14 Gen)", score: 15100, watt: 60, cores: 4, text: "4/8" },
-            { name: "Intel Core i3-14100F (14 Gen)", score: 15300, watt: 60, cores: 4, text: "4/8" },
-            { name: "Intel Core i5-750 (1 Gen)", score: 2500, watt: 95, cores: 4, text: "4/4" },
-            { name: "Intel Core i5-650 (1 Gen)", score: 2100, watt: 73, cores: 2, text: "2/4" },
-            { name: "Intel Core i5-2500 (2 Gen)", score: 4000, watt: 95, cores: 4, text: "4/4" },
-            { name: "Intel Core i5-2500K (2 Gen)", score: 4100, watt: 95, cores: 4, text: "4/4" },
-            { name: "Intel Core i5-3470 (3 Gen)", score: 4600, watt: 77, cores: 4, text: "4/4" },
-            { name: "Intel Core i5-3570K (3 Gen)", score: 4900, watt: 77, cores: 4, text: "4/4" },
-            { name: "Intel Core i5-4460 (4 Gen)", score: 4800, watt: 84, cores: 4, text: "4/4" },
-            { name: "Intel Core i5-4690K (4 Gen)", score: 5600, watt: 88, cores: 4, text: "4/4" },
-            { name: "Intel Core i5-5675C (5 Gen)", score: 5900, watt: 65, cores: 4, text: "4/4" },
-            { name: "Intel Core i5-6400 (6 Gen)", score: 5100, watt: 65, cores: 4, text: "4/4" },
-            { name: "Intel Core i5-6600K (6 Gen)", score: 6300, watt: 91, cores: 4, text: "4/4" },
-            { name: "Intel Core i5-7400 (7 Gen)", score: 5400, watt: 65, cores: 4, text: "4/4" },
-            { name: "Intel Core i5-7600K (7 Gen)", score: 6800, watt: 91, cores: 4, text: "4/4" },
-            { name: "Intel Core i5-8400 (8 Gen)", score: 9200, watt: 65, cores: 6, text: "6/6" },
-            { name: "Intel Core i5-8600K (8 Gen)", score: 10200, watt: 95, cores: 6, text: "6/6" },
-            { name: "Intel Core i5-9400F (9 Gen)", score: 9500, watt: 65, cores: 6, text: "6/6" },
-            { name: "Intel Core i5-9600K (9 Gen)", score: 10800, watt: 95, cores: 6, text: "6/6" },
-            { name: "Intel Core i5-10400F (10 Gen)", score: 12100, watt: 65, cores: 6, text: "6/12" },
-            { name: "Intel Core i5-10600K (10 Gen)", score: 14300, watt: 125, cores: 6, text: "6/12" },
-            { name: "Intel Core i5-11400F (11 Gen)", score: 17000, watt: 65, cores: 6, text: "6/12" },
-            { name: "Intel Core i5-11600K (11 Gen)", score: 19800, watt: 125, cores: 6, text: "6/12" },
-            { name: "Intel Core i5-12400F (12 Gen)", score: 19500, watt: 65, cores: 6, text: "6/12" },
-            { name: "Intel Core i5-12600K (12 Gen)", score: 27500, watt: 125, cores: 10, text: "10/16" },
-            { name: "Intel Core i5-13400F (13 Gen)", score: 25000, watt: 65, cores: 10, text: "10/16" },
-            { name: "Intel Core i5-13600K (13 Gen)", score: 38000, watt: 125, cores: 14, text: "14/20" },
-            { name: "Intel Core i5-14400F (14 Gen)", score: 25800, watt: 65, cores: 10, text: "10/16" },
-            { name: "Intel Core i5-14600K (14 Gen)", score: 39000, watt: 125, cores: 14, text: "14/20" },
-            { name: "Intel Core i7-920 (1 Gen)", score: 2600, watt: 130, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-860 (1 Gen)", score: 2800, watt: 95, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-980X (1 Gen)", score: 4900, watt: 130, cores: 6, text: "6/12" },
-            { name: "Intel Core i7-2600 (2 Gen)", score: 5300, watt: 95, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-2600K (2 Gen)", score: 5500, watt: 95, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-3770 (3 Gen)", score: 6400, watt: 77, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-3770K (3 Gen)", score: 7100, watt: 77, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-4770K (4 Gen)", score: 7100, watt: 84, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-4790K (4 Gen)", score: 8000, watt: 88, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-5775C (5 Gen)", score: 7700, watt: 65, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-6700 (6 Gen)", score: 8100, watt: 65, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-6700K (6 Gen)", score: 8900, watt: 91, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-7700 (7 Gen)", score: 8600, watt: 65, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-7700K (7 Gen)", score: 9700, watt: 91, cores: 4, text: "4/8" },
-            { name: "Intel Core i7-8700 (8 Gen)", score: 13000, watt: 65, cores: 6, text: "6/12" },
-            { name: "Intel Core i7-8700K (8 Gen)", score: 13900, watt: 95, cores: 6, text: "6/12" },
-            { name: "Intel Core i7-9700K (9 Gen)", score: 14500, watt: 95, cores: 8, text: "8/8" },
-            { name: "Intel Core i7-9700KF (9 Gen)", score: 14600, watt: 95, cores: 8, text: "8/8" },
-            { name: "Intel Core i7-10700F (10 Gen)", score: 16900, watt: 65, cores: 8, text: "8/16" },
-            { name: "Intel Core i7-10700K (10 Gen)", score: 19200, watt: 125, cores: 8, text: "8/16" },
-            { name: "Intel Core i7-11700F (11 Gen)", score: 21000, watt: 65, cores: 8, text: "8/16" },
-            { name: "Intel Core i7-11700K (11 Gen)", score: 24700, watt: 125, cores: 8, text: "8/16" },
-            { name: "Intel Core i7-12700F (12 Gen)", score: 31000, watt: 65, cores: 12, text: "12/20" },
-            { name: "Intel Core i7-12700K (12 Gen)", score: 34500, watt: 125, cores: 12, text: "12/20" },
-            { name: "Intel Core i7-13700F (13 Gen)", score: 39500, watt: 65, cores: 16, text: "16/24" },
-            { name: "Intel Core i7-13700K (13 Gen)", score: 46500, watt: 125, cores: 16, text: "16/24" },
-            { name: "Intel Core i7-14700F (14 Gen)", score: 48000, watt: 65, cores: 20, text: "20/28" },
-            { name: "Intel Core i7-14700K (14 Gen)", score: 53500, watt: 125, cores: 20, text: "20/28" },
-            { name: "Intel Core i9-7900X (1 Gen HEDT)", score: 22000, watt: 140, cores: 10, text: "10/20" },
-            { name: "Intel Core i9-7980XE (1 Gen HEDT)", score: 29500, watt: 165, cores: 18, text: "18/36" },
-            { name: "Intel Core i9-9900K (9 Gen)", score: 18500, watt: 95, cores: 8, text: "8/16" },
-            { name: "Intel Core i9-9900KS (9 Gen)", score: 20000, watt: 127, cores: 8, text: "8/16" },
-            { name: "Intel Core i9-10900F (10 Gen)", score: 23500, watt: 65, cores: 10, text: "10/20" },
-            { name: "Intel Core i9-10900K (10 Gen)", score: 24000, watt: 125, cores: 10, text: "10/20" },
-            { name: "Intel Core i9-11900K (11 Gen)", score: 25500, watt: 125, cores: 8, text: "8/16" },
-            { name: "Intel Core i9-12900K (12 Gen)", score: 41000, watt: 125, cores: 16, text: "16/24" },
-            { name: "Intel Core i9-12900KS (12 Gen)", score: 44000, watt: 150, cores: 16, text: "16/24" },
-            { name: "Intel Core i9-13900K (13 Gen)", score: 59000, watt: 125, cores: 24, text: "24/32" },
-            { name: "Intel Core i9-13900KS (13 Gen)", score: 61500, watt: 150, cores: 24, text: "24/32" },
-            { name: "Intel Core i9-14900K (14 Gen)", score: 60500, watt: 125, cores: 24, text: "24/32" },
-            { name: "Intel Core i9-14900KS 👑", score: 64000, watt: 150, cores: 24, text: "24/32" },
-            { name: "AMD Ryzen 3 1200 (Zen)", score: 6300, watt: 65, cores: 4, text: "4/4" },
-            { name: "AMD Ryzen 3 1300X (Zen)", score: 6900, watt: 65, cores: 4, text: "4/4" },
-            { name: "AMD Ryzen 3 1200 AF (Zen+)", score: 6600, watt: 65, cores: 4, text: "4/4" },
-            { name: "AMD Ryzen 3 2200G (Zen+)", score: 6800, watt: 65, cores: 4, text: "4/4" },
-            { name: "AMD Ryzen 3 2200GE (Zen+)", score: 6100, watt: 35, cores: 4, text: "4/4" },
-            { name: "AMD Ryzen 3 3200G (Zen+)", score: 7200, watt: 65, cores: 4, text: "4/4" },
-            { name: "AMD Ryzen 3 3200GE (Zen+)", score: 6500, watt: 35, cores: 4, text: "4/4" },
-            { name: "AMD Ryzen 3 3100 (Zen 2)", score: 11500, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 3300X (Zen 2)", score: 12600, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 4100 (Zen 2)", score: 11100, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 4300G (Zen 2)", score: 11000, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 4300GE (Zen 2)", score: 10200, watt: 35, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 PRO 4350G", score: 11100, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 PRO 4350GE", score: 10300, watt: 35, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 5100 (Zen 3)", score: 11800, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 5300G (Zen 3)", score: 13500, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 5300GE (Zen 3)", score: 12500, watt: 35, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 PRO 5350G", score: 13600, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 PRO 5350GE", score: 12600, watt: 35, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 8300G 🆕 (Zen 4)", score: 15400, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 3 PRO 8300G", score: 15400, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 5 1400 (Zen)", score: 7800, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 5 1500X (Zen)", score: 9100, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 5 1600 (Zen)", score: 12100, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 1600X (Zen)", score: 13000, watt: 95, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 1600 AF (Zen+)", score: 12200, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 2400G (Zen+)", score: 8700, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 5 2400GE (Zen+)", score: 8100, watt: 35, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 5 2500X (Zen+)", score: 9600, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 5 2600 (Zen+)", score: 13200, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 2600X (Zen+)", score: 14000, watt: 95, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 3400G (Zen 2)", score: 9300, watt: 65, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 5 3400GE (Zen 2)", score: 8700, watt: 35, cores: 4, text: "4/8" },
-            { name: "AMD Ryzen 5 3500 (Zen 2)", score: 12800, watt: 65, cores: 6, text: "6/6" },
-            { name: "AMD Ryzen 5 3500X (Zen 2)", score: 13300, watt: 65, cores: 6, text: "6/6" },
-            { name: "AMD Ryzen 5 3600 (Zen 2)", score: 17800, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 3600X (Zen 2)", score: 18200, watt: 95, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 3600XT (Zen 2)", score: 18800, watt: 95, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 4500 (Zen 2)", score: 14900, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 4600G (Zen 2)", score: 15300, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 4600GE (Zen 2)", score: 14500, watt: 35, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 5500 (Zen 3)", score: 19500, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 5600 (Zen 3)", score: 21500, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 5600X (Zen 3)", score: 21900, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 5600G (Zen 3)", score: 19900, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 5600GE (Zen 3)", score: 18700, watt: 35, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 5600X3D 🔥 (Zen 3)", score: 22800, watt: 105, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 7500F (Zen 4)", score: 27000, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 7600 (Zen 4)", score: 27500, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 7600X (Zen 4)", score: 28500, watt: 105, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 8400F (Zen 4)", score: 24000, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 8500G (Zen 4)", score: 21800, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 8600G (Zen 4)", score: 25900, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 5 9600X 🚀 (Zen 5)", score: 32500, watt: 65, cores: 6, text: "6/12" },
-            { name: "AMD Ryzen 7 1700 (Zen)", score: 14700, watt: 65, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 1700X (Zen)", score: 15500, watt: 95, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 1800X (Zen)", score: 16200, watt: 95, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 2700 (Zen+)", score: 15000, watt: 65, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 2700X (Zen+)", score: 17500, watt: 105, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 3700X (Zen 2)", score: 22700, watt: 65, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 3800X (Zen 2)", score: 23300, watt: 105, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 3800XT (Zen 2)", score: 24000, watt: 105, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 4700G (Zen 2)", score: 19800, watt: 65, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 4700GE (Zen 2)", score: 18700, watt: 35, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 PRO 4750G", score: 20000, watt: 65, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 5700X (Zen 3)", score: 26700, watt: 65, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 5800X (Zen 3)", score: 27900, watt: 105, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 5700G (Zen 3)", score: 24500, watt: 65, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 5700GE (Zen 3)", score: 22100, watt: 35, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 5800X3D 👑 (Zen 3)", score: 28000, watt: 105, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 7700 (Zen 4)", score: 34800, watt: 65, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 7700X (Zen 4)", score: 36000, watt: 105, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 7800X3D 🎮 (Zen 4)", score: 34500, watt: 120, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 8700F (Zen 4)", score: 31000, watt: 65, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 8700G (Zen 4)", score: 32200, watt: 65, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 9700X (Zen 5)", score: 35500, watt: 65, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 9800X3D 🚀 (Zen 5)", score: 41000, watt: 120, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 7 10700X 🔮 (Zen 6)", score: 48500, watt: 65, cores: 8, text: "8/16" },
-            { name: "AMD Ryzen 9 3900X (Zen 2)", score: 32800, watt: 105, cores: 12, text: "12/24" },
-            { name: "AMD Ryzen 9 3900XT (Zen 2)", score: 33500, watt: 105, cores: 12, text: "12/24" },
-            { name: "AMD Ryzen 9 3950X (Zen 2)", score: 39000, watt: 105, cores: 16, text: "16/32" },
-            { name: "AMD Ryzen 9 5900X (Zen 3)", score: 39500, watt: 105, cores: 12, text: "12/24" },
-            { name: "AMD Ryzen 9 5950X (Zen 3)", score: 45800, watt: 105, cores: 16, text: "16/32" },
-            { name: "AMD Ryzen 9 7900 (Zen 4)", score: 48000, watt: 65, cores: 12, text: "12/24" },
-            { name: "AMD Ryzen 9 7900X (Zen 4)", score: 52000, watt: 170, cores: 12, text: "12/24" },
-            { name: "AMD Ryzen 9 7950X (Zen 4)", score: 63000, watt: 170, cores: 16, text: "16/32" },
-            { name: "AMD Ryzen 9 7900X3D (Zen 4)", score: 51000, watt: 120, cores: 12, text: "12/24" },
-            { name: "AMD Ryzen 9 7950X3D 🚀 (Zen 4)", score: 62500, watt: 120, cores: 16, text: "16/32" },
-            { name: "AMD Ryzen 9 9900X (Zen 5)", score: 54000, watt: 120, cores: 12, text: "12/24" },
-            { name: "AMD Ryzen 9 9950X (Zen 5)", score: 66000, watt: 170, cores: 16, text: "16/32" },
-            { name: "AMD Ryzen 9 9900X3D 🎮 (Zen 5)", score: 56000, watt: 120, cores: 12, text: "12/24" },
-            { name: "AMD Ryzen 9 9950X3D 🚀 (Zen 5)", score: 68500, watt: 120, cores: 16, text: "16/32" },
-            { name: "AMD Ryzen 9 9950X3D2 Dual 💥", score: 72000, watt: 120, cores: 16, text: "16/32" }
-        ];
+<div class="bg"></div>
+<header class="top">
+<a class="back" href="index.html"><span>←</span>На главную</a>
+<a class="brand" href="index.html"><svg viewBox="0 0 24 24"><path d="M12 2.5l8.5 4.9v9.2L12 21.5l-8.5-4.9V7.4L12 2.5z"/><path d="M12 12l8.5-4.6M12 12L3.5 7.4M12 12v9.5"/></svg><span>Hardware<b>VS</b></span></a>
+<nav><a href="builder.html">Конструктор</a><a href="cpu.html" class="on">Процессоры</a><a href="gpu.html">Видеокарты</a><a href="guide.html">Гайд</a></nav>
+<div class="sp"></div>
+<button class="theme" id="theme" aria-label="Тема">◐</button>
+</header>
 
-        let selectedIndex1 = null;
-        let selectedIndex2 = null;
+<main>
+<h1 class="rise">Сравнение процессоров</h1>
+<p class="lead rise" style="--d:.1s">Выберите два процессора и посмотрите, кто быстрее, холоднее и эффективнее.</p>
 
-        function setupSearchSelect(boxId, triggerId, searchId, listId, isFirstSelect) {
-            const box = document.getElementById(boxId);
-            const trigger = document.getElementById(triggerId);
-            const searchInput = document.getElementById(searchId);
-            const list = document.getElementById(listId);
+<section class="arena rise" style="--d:.2s"><div class="beam"></div>
+<div class="side a">
+<div class="sbox" id="boxA"><button class="trig" type="button"></button><div class="dd"><input type="text" placeholder="Поиск: 5600, i5, X3D…" autocomplete="off"><ul></ul></div></div>
+<div class="stage"><div class="ring"></div><div class="ring r2"></div><div class="shadow"></div><div class="crown mono">👑 ЛИДЕР</div><div class="chip" id="chA"></div></div>
+<div class="cores" id="coA"></div><div class="cap mono" id="cpA"></div>
+</div>
+<div class="mid"><div class="vs mono">VS</div><button class="swapbtn" id="swap">⇄ поменять</button></div>
+<div class="side b">
+<div class="sbox" id="boxB"><button class="trig" type="button"></button><div class="dd"><input type="text" placeholder="Поиск: 5600, i5, X3D…" autocomplete="off"><ul></ul></div></div>
+<div class="stage"><div class="ring"></div><div class="ring r2"></div><div class="shadow"></div><div class="crown mono">👑 ЛИДЕР</div><div class="chip" id="chB"></div></div>
+<div class="cores" id="coB"></div><div class="cap mono" id="cpB"></div>
+</div>
+</section>
 
-            function renderList(filterText = "") {
-                list.innerHTML = "";
-                let count = 0;
-                
-                cpuDatabase.forEach((cpu, index) => {
-                    if (cpu.name.toLowerCase().includes(filterText.toLowerCase())) {
-                        const li = document.createElement('li');
-                        li.className = 'option-item';
-                        li.textContent = cpu.name;
-                        li.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            trigger.textContent = cpu.name;
-                            if (isFirstSelect) selectedIndex1 = index; else selectedIndex2 = index;
-                            box.classList.remove('active');
-                        });
-                        list.appendChild(li);
-                        count++;
-                    }
-                });
+<section class="score rise" style="--d:.35s"><div class="n a mono" id="sA">0</div><div class="t mono">побед по параметрам</div><div class="n b mono" id="sB">0</div></section>
+<p class="verdict" id="verdict"></p>
+<section class="rows" id="rows"></section>
+<p class="foot">Баллы PassMark и TDP приблизительные.</p>
+</main>
 
-                if (count === 0) {
-                    const li = document.createElement('li');
-                    li.className = 'option-item no-results';
-                    li.textContent = 'Ничего не найдено';
-                    list.appendChild(li);
-                }
-            }
+<script>
+(function(){
+/* БАЗА: [название, баллы PassMark, TDP Вт, "ядра/потоки"] */
+var I=[
+["i3-530 (1 Gen)",1400,73,"2/4"],["i3-540 (1 Gen)",1500,73,"2/4"],["i3-2100 (2 Gen)",1800,65,"2/4"],["i3-2120 (2 Gen)",1900,65,"2/4"],["i3-3220 (3 Gen)",2200,55,"2/4"],["i3-3240 (3 Gen)",2300,55,"2/4"],["i3-4130 (4 Gen)",3300,54,"2/4"],["i3-4330 (4 Gen)",3600,54,"2/4"],["i3-5005U (5 Gen)",2000,15,"2/4"],["i3-6100 (6 Gen)",4100,51,"2/4"],["i3-6300 (6 Gen)",4400,51,"2/4"],["i3-7100 (7 Gen)",4300,51,"2/4"],["i3-7350K (7 Gen)",4900,60,"2/4"],["i3-8100 (8 Gen)",6100,65,"4/4"],["i3-8350K (8 Gen)",6900,91,"4/4"],["i3-9100 (9 Gen)",6600,65,"4/4"],["i3-9100F (9 Gen)",6700,65,"4/4"],["i3-10100 (10 Gen)",8600,65,"4/8"],["i3-10100F (10 Gen)",8700,65,"4/8"],["i3-10105F (11 Gen)",8900,65,"4/8"],["i3-1115G4 (11 Gen)",6100,28,"2/4"],["i3-12100 (12 Gen)",13500,60,"4/8"],["i3-12100F (12 Gen)",14000,58,"4/8"],["i3-13100 (13 Gen)",14800,60,"4/8"],["i3-13100F (13 Gen)",14900,58,"4/8"],["i3-14100 (14 Gen)",15100,60,"4/8"],["i3-14100F (14 Gen)",15300,60,"4/8"],
+["i5-750 (1 Gen)",2500,95,"4/4"],["i5-650 (1 Gen)",2100,73,"2/4"],["i5-2500 (2 Gen)",4000,95,"4/4"],["i5-2500K (2 Gen)",4100,95,"4/4"],["i5-3470 (3 Gen)",4600,77,"4/4"],["i5-3570K (3 Gen)",4900,77,"4/4"],["i5-4460 (4 Gen)",4800,84,"4/4"],["i5-4690K (4 Gen)",5600,88,"4/4"],["i5-5675C (5 Gen)",5900,65,"4/4"],["i5-6400 (6 Gen)",5100,65,"4/4"],["i5-6600K (6 Gen)",6300,91,"4/4"],["i5-7400 (7 Gen)",5400,65,"4/4"],["i5-7600K (7 Gen)",6800,91,"4/4"],["i5-8400 (8 Gen)",9200,65,"6/6"],["i5-8600K (8 Gen)",10200,95,"6/6"],["i5-9400F (9 Gen)",9500,65,"6/6"],["i5-9600K (9 Gen)",10800,95,"6/6"],["i5-10400F (10 Gen)",12100,65,"6/12"],["i5-10600K (10 Gen)",14300,125,"6/12"],["i5-11400F (11 Gen)",17000,65,"6/12"],["i5-11600K (11 Gen)",19800,125,"6/12"],["i5-12400F (12 Gen)",19500,65,"6/12"],["i5-12600K (12 Gen)",27500,125,"10/16"],["i5-13400F (13 Gen)",25000,65,"10/16"],["i5-13600K (13 Gen)",38000,125,"14/20"],["i5-14400F (14 Gen)",25800,65,"10/16"],["i5-14600K (14 Gen)",39000,125,"14/20"],
+["i7-920 (1 Gen)",2600,130,"4/8"],["i7-860 (1 Gen)",2800,95,"4/8"],["i7-980X (1 Gen)",4900,130,"6/12"],["i7-2600 (2 Gen)",5300,95,"4/8"],["i7-2600K (2 Gen)",5500,95,"4/8"],["i7-3770 (3 Gen)",6400,77,"4/8"],["i7-3770K (3 Gen)",7100,77,"4/8"],["i7-4770K (4 Gen)",7100,84,"4/8"],["i7-4790K (4 Gen)",8000,88,"4/8"],["i7-5775C (5 Gen)",7700,65,"4/8"],["i7-6700 (6 Gen)",8100,65,"4/8"],["i7-6700K (6 Gen)",8900,91,"4/8"],["i7-7700 (7 Gen)",8600,65,"4/8"],["i7-7700K (7 Gen)",9700,91,"4/8"],["i7-8700 (8 Gen)",13000,65,"6/12"],["i7-8700K (8 Gen)",13900,95,"6/12"],["i7-9700K (9 Gen)",14500,95,"8/8"],["i7-9700KF (9 Gen)",14600,95,"8/8"],["i7-10700F (10 Gen)",16900,65,"8/16"],["i7-10700K (10 Gen)",19200,125,"8/16"],["i7-11700F (11 Gen)",21000,65,"8/16"],["i7-11700K (11 Gen)",24700,125,"8/16"],["i7-12700F (12 Gen)",31000,65,"12/20"],["i7-12700K (12 Gen)",34500,125,"12/20"],["i7-13700F (13 Gen)",39500,65,"16/24"],["i7-13700K (13 Gen)",46500,125,"16/24"],["i7-14700F (14 Gen)",48000,65,"20/28"],["i7-14700K (14 Gen)",53500,125,"20/28"],
+["i9-7900X (1 Gen HEDT)",22000,140,"10/20"],["i9-7980XE (1 Gen HEDT)",29500,165,"18/36"],["i9-9900K (9 Gen)",18500,95,"8/16"],["i9-9900KS (9 Gen)",20000,127,"8/16"],["i9-10900F (10 Gen)",23500,65,"10/20"],["i9-10900K (10 Gen)",24000,125,"10/20"],["i9-11900K (11 Gen)",25500,125,"8/16"],["i9-12900K (12 Gen)",41000,125,"16/24"],["i9-12900KS (12 Gen)",44000,150,"16/24"],["i9-13900K (13 Gen)",59000,125,"24/32"],["i9-13900KS (13 Gen)",61500,150,"24/32"],["i9-14900K (14 Gen)",60500,125,"24/32"],["i9-14900KS 👑",64000,150,"24/32"]];
+var R=[
+["3 1200 (Zen)",6300,65,"4/4"],["3 1300X (Zen)",6900,65,"4/4"],["3 1200 AF (Zen+)",6600,65,"4/4"],["3 2200G (Zen+)",6800,65,"4/4"],["3 2200GE (Zen+)",6100,35,"4/4"],["3 3200G (Zen+)",7200,65,"4/4"],["3 3200GE (Zen+)",6500,35,"4/4"],["3 3100 (Zen 2)",11500,65,"4/8"],["3 3300X (Zen 2)",12600,65,"4/8"],["3 4100 (Zen 2)",11100,65,"4/8"],["3 4300G (Zen 2)",11000,65,"4/8"],["3 4300GE (Zen 2)",10200,35,"4/8"],["3 PRO 4350G",11100,65,"4/8"],["3 PRO 4350GE",10300,35,"4/8"],["3 5100 (Zen 3)",11800,65,"4/8"],["3 5300G (Zen 3)",13500,65,"4/8"],["3 5300GE (Zen 3)",12500,35,"4/8"],["3 PRO 5350G",13600,65,"4/8"],["3 PRO 5350GE",12600,35,"4/8"],["3 8300G 🆕 (Zen 4)",15400,65,"4/8"],["3 PRO 8300G",15400,65,"4/8"],
+["5 1400 (Zen)",7800,65,"4/8"],["5 1500X (Zen)",9100,65,"4/8"],["5 1600 (Zen)",12100,65,"6/12"],["5 1600X (Zen)",13000,95,"6/12"],["5 1600 AF (Zen+)",12200,65,"6/12"],["5 2400G (Zen+)",8700,65,"4/8"],["5 2400GE (Zen+)",8100,35,"4/8"],["5 2500X (Zen+)",9600,65,"4/8"],["5 2600 (Zen+)",13200,65,"6/12"],["5 2600X (Zen+)",14000,95,"6/12"],["5 3400G (Zen 2)",9300,65,"4/8"],["5 3400GE (Zen 2)",8700,35,"4/8"],["5 3500 (Zen 2)",12800,65,"6/6"],["5 3500X (Zen 2)",13300,65,"6/6"],["5 3600 (Zen 2)",17800,65,"6/12"],["5 3600X (Zen 2)",18200,95,"6/12"],["5 3600XT (Zen 2)",18800,95,"6/12"],["5 4500 (Zen 2)",14900,65,"6/12"],["5 4600G (Zen 2)",15300,65,"6/12"],["5 4600GE (Zen 2)",14500,35,"6/12"],["5 5500 (Zen 3)",19500,65,"6/12"],["5 5600 (Zen 3)",21500,65,"6/12"],["5 5600X (Zen 3)",21900,65,"6/12"],["5 5600G (Zen 3)",19900,65,"6/12"],["5 5600GE (Zen 3)",18700,35,"6/12"],["5 5600X3D 🔥 (Zen 3)",22800,105,"6/12"],["5 7500F (Zen 4)",27000,65,"6/12"],["5 7600 (Zen 4)",27500,65,"6/12"],["5 7600X (Zen 4)",28500,105,"6/12"],["5 8400F (Zen 4)",24000,65,"6/12"],["5 8500G (Zen 4)",21800,65,"6/12"],["5 8600G (Zen 4)",25900,65,"6/12"],["5 9600X 🚀 (Zen 5)",32500,65,"6/12"],
+["7 1700 (Zen)",14700,65,"8/16"],["7 1700X (Zen)",15500,95,"8/16"],["7 1800X (Zen)",16200,95,"8/16"],["7 2700 (Zen+)",15000,65,"8/16"],["7 2700X (Zen+)",17500,105,"8/16"],["7 3700X (Zen 2)",22700,65,"8/16"],["7 3800X (Zen 2)",23300,105,"8/16"],["7 3800XT (Zen 2)",24000,105,"8/16"],["7 4700G (Zen 2)",19800,65,"8/16"],["7 4700GE (Zen 2)",18700,35,"8/16"],["7 PRO 4750G",20000,65,"8/16"],["7 5700X (Zen 3)",26700,65,"8/16"],["7 5800X (Zen 3)",27900,105,"8/16"],["7 5700G (Zen 3)",24500,65,"8/16"],["7 5700GE (Zen 3)",22100,35,"8/16"],["7 5800X3D 👑 (Zen 3)",28000,105,"8/16"],["7 7700 (Zen 4)",34800,65,"8/16"],["7 7700X (Zen 4)",36000,105,"8/16"],["7 7800X3D 🎮 (Zen 4)",34500,120,"8/16"],["7 8700F (Zen 4)",31000,65,"8/16"],["7 8700G (Zen 4)",32200,65,"8/16"],["7 9700X (Zen 5)",35500,65,"8/16"],["7 9800X3D 🚀 (Zen 5)",41000,120,"8/16"],["7 10700X 🔮 (Zen 6)",48500,65,"8/16"],
+["9 3900X (Zen 2)",32800,105,"12/24"],["9 3900XT (Zen 2)",33500,105,"12/24"],["9 3950X (Zen 2)",39000,105,"16/32"],["9 5900X (Zen 3)",39500,105,"12/24"],["9 5950X (Zen 3)",45800,105,"16/32"],["9 7900 (Zen 4)",48000,65,"12/24"],["9 7900X (Zen 4)",52000,170,"12/24"],["9 7950X (Zen 4)",63000,170,"16/32"],["9 7900X3D (Zen 4)",51000,120,"12/24"],["9 7950X3D 🚀 (Zen 4)",62500,120,"16/32"],["9 9900X (Zen 5)",54000,120,"12/24"],["9 9950X (Zen 5)",66000,170,"16/32"],["9 9900X3D 🎮 (Zen 5)",56000,120,"12/24"],["9 9950X3D 🚀 (Zen 5)",68500,120,"16/32"],["9 9950X3D2 Dual 💥",72000,120,"16/32"]];
 
-            trigger.addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.querySelectorAll('.search-select-box').forEach(b => {
-                    if(b.id !== boxId) b.classList.remove('active');
-                });
-                box.classList.toggle('active');
-                if (box.classList.contains('active')) {
-                    searchInput.value = "";
-                    renderList("");
-                    searchInput.focus();
-                }
-            });
+var DB=[];
+I.forEach(function(e){var s=e[0].replace(/ \(.*\)/,''),p=s.split('-');DB.push({n:'Intel Core '+e[0],l1:'Core '+p[0],l2:p.slice(1).join('-'),p:e[1],w:e[2],c:parseInt(e[3]),t:e[3]})});
+R.forEach(function(e){var s=e[0].replace(/ \(.*\)/,''),i=s.indexOf(' ');DB.push({n:'AMD Ryzen '+e[0],l1:'Ryzen '+s.slice(0,i),l2:s.slice(i+1),p:e[1],w:e[2],c:parseInt(e[3]),t:e[3]})});
 
-            searchInput.addEventListener('input', (e) => {
-                renderList(e.target.value);
-            });
-        }
+var ROWS=[
+['Ядра / потоки',function(d){return d.c},function(d){return d.t},0],
+['Тепловыделение, Вт',function(d){return d.w},function(d){return d.w+' W'},1],
+['Мощность, PassMark',function(d){return d.p},function(d){return d.p},0],
+['Эффективность, баллов на Вт',function(d){return d.p/d.w},function(d){return (d.p/d.w).toFixed(0)},0]];
+var $=function(i){return document.getElementById(i)};
+var sel={A:DB.findIndex(function(d){return d.n.indexOf('i5-14600K')>-1}),B:DB.findIndex(function(d){return d.n.indexOf('7800X3D')>-1})};
 
-        setupSearchSelect('box1', 'trigger1', 'search1', 'list1', true);
-        setupSearchSelect('box2', 'trigger2', 'search2', 'list2', false);
+/* поиск */
+function search(id,key){
+ var box=$(id),trig=box.querySelector('.trig'),inp=box.querySelector('input'),ul=box.querySelector('ul');
+ function fill(q){
+  ul.innerHTML='';q=q.toLowerCase().trim();var n=0;
+  DB.forEach(function(d,i){if(d.n.toLowerCase().indexOf(q)<0)return;n++;var li=document.createElement('li');li.textContent=d.n;if(i===sel[key])li.className='sel';
+   li.addEventListener('click',function(e){e.stopPropagation();sel[key]=i;box.classList.remove('open');render(key==='A',key==='B')});ul.appendChild(li)});
+  if(!n){var li=document.createElement('li');li.className='none';li.textContent='Ничего не найдено';ul.appendChild(li)}
+ }
+ trig.addEventListener('click',function(e){e.stopPropagation();var o=!box.classList.contains('open');
+  document.querySelectorAll('.sbox').forEach(function(b){b.classList.remove('open')});
+  if(o){box.classList.add('open');inp.value='';fill('');inp.focus();var s=ul.querySelector('.sel');if(s)ul.scrollTop=s.offsetTop-80}});
+ inp.addEventListener('input',function(){fill(inp.value)});
+ inp.addEventListener('click',function(e){e.stopPropagation()});
+ inp.addEventListener('keydown',function(e){if(e.key==='Enter'){var f=ul.querySelector('li:not(.none)');if(f)f.click()}if(e.key==='Escape')box.classList.remove('open')});
+}
+search('boxA','A');search('boxB','B');
+document.addEventListener('click',function(){document.querySelectorAll('.sbox').forEach(function(b){b.classList.remove('open')})});
 
-        document.addEventListener('click', () => {
-            document.querySelectorAll('.search-select-box').forEach(b => b.classList.remove('active'));
-        });
+/* чипы */
+function mkChip(el){el.innerHTML='<div class="f bot-f"></div><div class="f e r"></div><div class="f e l"></div><div class="f e u"></div><div class="f e d"></div><div class="f top-f"><i class="scan"></i><div class="lbl mono"><span><span class="l1"></span><b class="l2"></b></span></div></div>'}
+mkChip($('chA'));mkChip($('chB'));
 
-        function compareCPUs() {
-            if (selectedIndex1 === null || selectedIndex2 === null) {
-                alert('Пожалуйста, выберите оба процессора из списков!');
-                return;
-            }
+/* единый плавный цикл: наклон + парение в одном transform */
+var reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+var m={x:0,y:0,tx:0,ty:0,sa:0,sb:0},last=performance.now();
+addEventListener('pointermove',function(e){if(e.pointerType==='touch')return;m.tx=e.clientX/innerWidth-.5;m.ty=e.clientY/innerHeight-.5},{passive:true});
+var chA=$('chA'),chB=$('chB');
+function loop(now){
+ requestAnimationFrame(loop);
+ var dt=Math.min((now-last)/1000,.05);last=now;
+ if(document.hidden)return;
+ var k=1-Math.exp(-dt*4);
+ m.x+=(m.tx-m.x)*k;m.y+=(m.ty-m.y)*k;var sd=Math.exp(-dt*4);m.sa*=sd;m.sb*=sd;
+ var bob=reduce?0:Math.sin(now/1100)*6,rx=58-m.y*7,rz=m.x*12;
+ chA.style.transform='translate3d(0,'+bob.toFixed(2)+'px,0) rotateX('+rx.toFixed(2)+'deg) rotateZ('+(-28+rz+m.sa).toFixed(2)+'deg)';
+ chB.style.transform='translate3d(0,'+(-bob).toFixed(2)+'px,0) rotateX('+rx.toFixed(2)+'deg) rotateZ('+(28+rz+m.sb).toFixed(2)+'deg)';
+}
+requestAnimationFrame(loop);
 
-            const proc1 = cpuDatabase[selectedIndex1];
-            const proc2 = cpuDatabase[selectedIndex2];
+/* строки */
+var rows=$('rows');
+ROWS.forEach(function(r,ri){var d=document.createElement('div');d.className='row';d.style.animationDelay=(.45+ri*.09)+'s';d.addEventListener('pointermove',function(e){var b=d.getBoundingClientRect();d.style.setProperty('--mx',(e.clientX-b.left)+'px');d.style.setProperty('--my',(e.clientY-b.top)+'px')});
+ d.innerHTML='<div class="v a mono"></div><div class="bar a"><i></i></div><div class="k">'+r[0]+'</div><div class="bar b"><i></i></div><div class="v b mono"></div>';rows.appendChild(d)});
+function countTo(el,to){var from=+el.textContent||0,t0=performance.now();el.classList.remove('pop');void el.offsetWidth;el.classList.add('pop');(function s(n){var p=Math.min(1,(n-t0)/500);el.textContent=Math.round(from+(to-from)*p);if(p<1)requestAnimationFrame(s)})(t0)}
+function cores(el,n){el.innerHTML='';for(var i=0;i<Math.min(n,24);i++){var x=document.createElement('i');x.style.animationDelay=(i*18)+'ms';el.appendChild(x)}}
+function render(upA,upB){
+ var A=DB[sel.A],B=DB[sel.B],wa=0,wb=0;
+ $('boxA').querySelector('.trig').textContent=A.n;$('boxB').querySelector('.trig').textContent=B.n;
+ [['A',A,upA],['B',B,upB]].forEach(function(p){
+  var ch=$('ch'+p[0]),d=p[1];
+  ch.querySelector('.l1').textContent=d.l1;ch.querySelector('.l2').textContent=d.l2;
+  $('cp'+p[0]).textContent=d.t+' · '+d.w+' W';
+  if(p[2]){m['s'+p[0].toLowerCase()]=-320;ch.classList.remove('swap');void ch.offsetWidth;ch.classList.add('swap');cores($('co'+p[0]),d.c)}
+ });
+ ROWS.forEach(function(r,i){
+  var a=r[1](A),b=r[1](B),low=r[3],row=rows.children[i],best=low?Math.min(a,b):Math.max(a,b)||1;
+  var wA=a!==b&&(low?a<b:a>b),wB=a!==b&&(low?b<a:b>a);
+  if(wA)wa++;if(wB)wb++;
+  var va=row.querySelector('.v.a'),vb=row.querySelector('.v.b');
+  va.textContent=r[2](A);vb.textContent=r[2](B);
+  va.classList.toggle('w',wA);vb.classList.toggle('w',wB);
+  var ba=row.querySelector('.bar.a'),bb=row.querySelector('.bar.b');
+  ba.classList.toggle('win',wA);bb.classList.toggle('win',wB);
+  var pa=low?best/a*100:a/best*100,pb=low?best/b*100:b/best*100;
+  setTimeout(function(){ba.firstChild.style.width=pa+'%';bb.firstChild.style.width=pb+'%'},40+i*70);
+ });
+ countTo($('sA'),wa);countTo($('sB'),wb);
+ document.querySelector('.side.a').classList.toggle('lead',A.p>B.p);document.querySelector('.side.b').classList.toggle('lead',B.p>A.p);
+ var vs=document.querySelector('.vs');vs.classList.remove('hit');void vs.offsetWidth;vs.classList.add('hit');
+ var diff=Math.round(Math.abs(A.p-B.p)/Math.min(A.p,B.p)*100);
+ $('verdict').innerHTML=A.p===B.p?'<b>Одинаковая</b> производительность в тестах.':'<b>'+(A.p>B.p?A.n:B.n)+'</b> мощнее в PassMark на <b>'+diff+'%</b> ('+Math.abs(A.p-B.p)+' баллов).';
+}
+$('swap').addEventListener('click',function(){var t=sel.A;sel.A=sel.B;sel.B=t;render(1,1)});
+render(1,1);
 
-            document.getElementById('coresName1').innerText = proc1.name;
-            document.getElementById('coresName2').innerText = proc2.name;
-            document.getElementById('wattName1').innerText = proc1.name;
-            document.getElementById('wattName2').innerText = proc2.name;
-            document.getElementById('powerName1').innerText = proc1.name;
-            document.getElementById('powerName2').innerText = proc2.name;
-
-            const maxCores = Math.max(proc1.cores, proc2.cores, 1);
-            const maxWatt = Math.max(proc1.watt, proc2.watt, 1);
-            const maxScore = Math.max(proc1.score, proc2.score, 1);
-
-            document.getElementById('resultsBlock').style.display = 'block';
-
-            setTimeout(() => {
-                const bCores1 = document.getElementById('barCores1'); const bCores2 = document.getElementById('barCores2');
-                bCores1.style.width = (proc1.cores / maxCores * 100) + '%'; bCores1.innerText = proc1.text;
-                bCores2.style.width = (proc2.cores / maxCores * 100) + '%'; bCores2.innerText = proc2.text;
-
-                const bWatt1 = document.getElementById('barWatt1'); const bWatt2 = document.getElementById('barWatt2');
-                bWatt1.style.width = (proc1.watt / maxWatt * 100) + '%'; bWatt1.innerText = proc1.watt + ' W';
-                bWatt2.style.width = (proc2.watt / maxWatt * 100) + '%'; bWatt2.innerText = proc2.watt + ' W';
-
-                const bPower1 = document.getElementById('barPower1'); const bPower2 = document.getElementById('barPower2');
-                bPower1.style.width = (proc1.score / maxScore * 100) + '%'; bPower1.innerText = proc1.score + ' pts';
-                bPower2.style.width = (proc2.score / maxScore * 100) + '%'; bPower2.innerText = proc2.score + ' pts';
-            }, 50);
-
-            function getBallWord(num) {
-                let n = Math.abs(num) % 100; if (n >= 5 && n <= 20) return 'баллов';
-                n %= 10; if (n === 1) return 'балл'; if (n >= 2 && n <= 4) return 'балла'; return 'баллов';
-            }
-
-            const diff = Math.abs(proc1.score - proc2.score);
-            let text = '';
-            if (proc1.score > proc2.score) {
-                text = `Процессор <strong>${proc1.name}</strong> мощнее в тестах ровно на <strong>${diff}</strong> ${getBallWord(diff)}!`;
-            } else if (proc2.score > proc1.score) {
-                text = `Процессор <strong>${proc2.name}</strong> мощнее в тестах ровно на <strong>${diff}</strong> ${getBallWord(diff)}!`;
-            } else {
-                text = `Обе модели процессоров имеют абсолютно одинаковую общую производительность!`;
-            }
-            document.getElementById('summaryText').innerHTML = text;
-        }
-    </script>
+$('theme').addEventListener('click',function(){var r=document.documentElement,n=r.getAttribute('data-theme')==='light'?'dark':'light';r.setAttribute('data-theme',n);try{localStorage.setItem('hardwarevs-theme',n)}catch(e){}});
+if(!reduce){var pf=document.createDocumentFragment();for(var pi=0;pi<16;pi++){var sp=document.createElement('span');sp.className='px';sp.style.left=(Math.random()*100)+'%';sp.style.setProperty('--dx',(Math.random()*80-40)+'px');sp.style.animationDuration=(9+Math.random()*10)+'s';sp.style.animationDelay=(-Math.random()*14)+'s';pf.appendChild(sp)}document.body.appendChild(pf)}
+document.querySelectorAll('a.back,a.brand,nav a').forEach(function(a){a.addEventListener('click',function(e){if(e.button||e.metaKey||e.ctrlKey||e.shiftKey)return;e.preventDefault();document.documentElement.classList.add('leaving');setTimeout(function(){location.href=a.getAttribute('href')},reduce?0:350)})});
+addEventListener('pageshow',function(e){if(e.persisted)document.documentElement.classList.remove('leaving')});
+})();
+</script>
 </body>
 </html>
