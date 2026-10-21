@@ -2,11 +2,10 @@
 <html lang="ru" data-theme="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>HardwareVS — 3D-конфигуратор ПК</title>
-
-    <!-- Тема применяется до отрисовки (тот же ключ, что и на главной) -->
-      <script>
+    <script>try{var t=localStorage.getItem('hardwarevs-theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}</script>
+    <script>
         window.addEventListener('error', function (e) {
             var d = document.createElement('div');
             d.style.cssText = 'position:fixed;z-index:99999;left:0;right:0;bottom:0;background:#7f1d1d;color:#fff;padding:10px;font:13px monospace;white-space:pre-wrap';
@@ -14,8 +13,7 @@
             (document.body || document.documentElement).appendChild(d);
         });
     </script>
-
-    <!-- 3D-библиотека и свечение (bloom): порядок важен -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
@@ -30,100 +28,106 @@
 
     <style>
         :root, :root[data-theme="dark"] {
-            --bg: #06020b; --panel: #0e0820; --card: #150d33; --card-hover: #1c1245;
-            --border: #2e1a53; --border-strong: #442a7a; --text: #ffffff; --muted: #9aa0a6;
-            --accent: #a855f7; --accent-2: #06b6d4; --ok: #22c55e; --warn: #f59e0b; --bad: #f87171;
-            --glass: rgba(14, 8, 32, 0.82); color-scheme: dark;
+            --bg: #08090b; --panel: #0d0f14; --card: rgba(255,255,255,.035); --card-hover: rgba(255,255,255,.07);
+            --border: rgba(255,255,255,.09); --border-strong: rgba(255,255,255,.18); --text: #ededef; --muted: #8a8f98;
+            --accent: #6f7dff; --accent-2: #2fd3b0; --ar: 111,125,255; --grad: linear-gradient(135deg, #6f7dff, #9b6bff);
+            --ok: #2fd3b0; --warn: #f59e0b; --bad: #f87171; --glass: rgba(13,15,20,.72); --grid: rgba(255,255,255,.04); color-scheme: dark;
         }
         :root[data-theme="light"] {
-            --bg: #f3f0fa; --panel: #ffffff; --card: #f1ecfb; --card-hover: #e7defa;
-            --border: #ddd2f3; --border-strong: #cbb8ee; --text: #1b1233; --muted: #6b6485;
-            --accent: #7c3aed; --accent-2: #0891b2; --ok: #16a34a; --warn: #b45309; --bad: #dc2626;
-            --glass: rgba(255, 255, 255, 0.85); color-scheme: light;
+            --bg: #f4f4f6; --panel: #ffffff; --card: rgba(15,16,20,.035); --card-hover: rgba(15,16,20,.07);
+            --border: rgba(15,16,20,.1); --border-strong: rgba(15,16,20,.2); --text: #0f1014; --muted: #666b76;
+            --accent: #4f5ce0; --accent-2: #0fa88a; --ar: 79,92,224; --grad: linear-gradient(135deg, #4f5ce0, #7c4dff);
+            --ok: #0fa88a; --warn: #b45309; --bad: #dc2626; --glass: rgba(255,255,255,.8); --grid: rgba(15,16,20,.05); color-scheme: light;
         }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Roboto, sans-serif; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
         html, body { height: 100%; background: var(--bg); color: var(--text); overflow: hidden;
             transition: background-color .4s ease, color .4s ease; }
+        ::-webkit-scrollbar { width: 8px; } ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; } ::-webkit-scrollbar-track { background: transparent; }
 
-        .app { display: grid; grid-template-columns: 410px 1fr; height: 100vh; height: 100dvh;
+        .app { display: grid; grid-template-columns: 420px 1fr; height: 100vh; height: 100dvh;
             animation: pageIn .6s ease backwards; transition: opacity .4s ease, filter .4s ease; }
         @keyframes pageIn { from { opacity: 0; filter: blur(6px); } }
         html.leaving .app { opacity: 0; filter: blur(8px); }
 
         /* ---------- ЛЕВАЯ ПАНЕЛЬ ---------- */
-        .sidebar { display: flex; flex-direction: column; min-height: 0; background: var(--panel);
+        .sidebar { display: flex; flex-direction: column; min-height: 0; position: relative; z-index: 5;
+            background: linear-gradient(180deg, rgba(var(--ar), .08), transparent 260px), var(--panel);
             border-right: 1px solid var(--border); transition: background-color .4s ease; }
-        .sb-head { padding: 16px 18px 12px; border-bottom: 1px solid var(--border); }
-        .back { display: inline-block; color: var(--muted); text-decoration: none; font-size: 13px; margin-bottom: 8px; }
-        .back:hover { color: var(--accent); }
-        .sb-head h1 { font-size: 22px; font-weight: 800; letter-spacing: .5px;
-            background: linear-gradient(90deg, #a855f7, #06b6d4, #f59e0b); -webkit-background-clip: text;
+        .sb-head { padding: 18px 20px 14px; border-bottom: 1px solid var(--border); }
+        .back { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; margin-bottom: 10px; transition: color .2s, transform .2s; }
+        .back:hover { color: var(--text); transform: translateX(-2px); }
+        .sb-head h1 { font-size: 22px; font-weight: 800; letter-spacing: -.02em;
+            background: linear-gradient(90deg, var(--accent), var(--accent-2)); -webkit-background-clip: text;
             background-clip: text; -webkit-text-fill-color: transparent; color: transparent; }
-        .scroll { flex: 1; overflow-y: auto; padding: 16px 18px 8px; min-height: 0; }
+        .scroll { flex: 1; overflow-y: auto; padding: 16px 20px 8px; min-height: 0; }
 
-        .stepper { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; margin-bottom: 16px; }
+        .stepper { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; margin-bottom: 18px; }
         .chip { position: relative; aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center;
-            background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer;
-            font-size: 18px; color: var(--text); transition: border-color .2s, background-color .2s, box-shadow .2s; }
-        .chip:hover:not(:disabled) { border-color: var(--accent); }
-        .chip:disabled { opacity: .35; cursor: not-allowed; }
-        .chip.active { border-color: var(--accent); box-shadow: 0 0 12px rgba(168,85,247,.45); }
+            background: var(--card); border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+            font-size: 17px; color: var(--text); transition: border-color .2s, background-color .2s, box-shadow .2s, transform .2s; }
+        .chip:hover:not(:disabled) { border-color: var(--accent); transform: translateY(-1px); }
+        .chip:disabled { opacity: .3; cursor: not-allowed; }
+        .chip.active { border-color: var(--accent); background: rgba(var(--ar), .16); box-shadow: 0 0 16px -2px rgba(var(--ar), .6); }
         .chip.done::after { content: '✓'; position: absolute; top: -5px; right: -5px; width: 16px; height: 16px;
-            border-radius: 50%; background: var(--ok); color: #fff; font-size: 10px; font-weight: 700;
+            border-radius: 50%; background: var(--ok); color: #04130f; font-size: 10px; font-weight: 800;
             display: flex; align-items: center; justify-content: center; }
         .chip:focus-visible, .opt:focus-visible, .tb-btn:focus-visible, .gear-btn:focus-visible,
         .theme-option:focus-visible, .btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-        .eyebrow { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
-        .step-head h2 { font-size: 24px; margin: 2px 0 4px; }
-        .step-head p { font-size: 13px; color: var(--muted); min-height: 18px; margin-bottom: 12px; }
+        .eyebrow { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+        .step-head h2 { font-size: 26px; font-weight: 800; letter-spacing: -.03em; margin: 3px 0 4px; }
+        .step-head p { font-size: 13px; color: var(--muted); min-height: 18px; margin-bottom: 14px; line-height: 1.45; }
 
         .options { display: flex; flex-direction: column; gap: 8px; }
         .opt { text-align: left; width: 100%; padding: 12px 14px; background: var(--card); color: var(--text);
-            border: 1px solid var(--border); border-radius: 10px; cursor: pointer;
+            border: 1px solid var(--border); border-radius: 12px; cursor: pointer; position: relative; overflow: hidden;
             transition: border-color .2s, background-color .2s, transform .2s, box-shadow .2s; }
-        .opt:hover:not(:disabled) { border-color: var(--accent); background: var(--card-hover); transform: translateY(-1px); }
-        .opt.sel { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent), 0 0 16px rgba(168,85,247,.3); }
-        .opt:disabled { opacity: .55; cursor: not-allowed; }
-        .opt-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; }
-        .opt-name { font-weight: 700; font-size: 14px; }
-        .opt-price { font-size: 13px; color: var(--accent-2); font-weight: 600; white-space: nowrap; }
-        .opt-spec { font-size: 12px; color: var(--muted); margin-top: 3px; }
-        .opt-note { font-size: 12px; margin-top: 6px; }
+        .opt::before { content: ''; position: absolute; left: 0; top: 10px; bottom: 10px; width: 3px; border-radius: 3px; background: var(--grad); opacity: 0; transition: opacity .2s; }
+        .opt:hover:not(:disabled) { border-color: rgba(var(--ar), .6); background: var(--card-hover); transform: translateY(-1px); }
+        .opt:hover:not(:disabled)::before { opacity: .6; }
+        .opt.sel { border-color: var(--accent); background: rgba(var(--ar), .1); box-shadow: 0 0 0 1px var(--accent), 0 0 22px -6px rgba(var(--ar), .7); }
+        .opt.sel::before { opacity: 1; }
+        .opt:disabled { opacity: .5; cursor: not-allowed; }
+        .opt-top { display: flex; justify-content: space-between; gap: 10px; align-items: baseline; flex-wrap: wrap; }
+        .opt-name { font-weight: 700; font-size: 14px; overflow-wrap: anywhere; }
+        .opt-price { font-size: 13px; color: var(--accent-2); font-weight: 600; white-space: nowrap; font-family: 'JetBrains Mono', monospace; }
+        .opt-spec { font-size: 12px; color: var(--muted); margin-top: 3px; line-height: 1.4; overflow-wrap: anywhere; }
+        .opt-note { font-size: 12px; margin-top: 6px; line-height: 1.4; }
         .opt-note.bad { color: var(--bad); } .opt-note.warn { color: var(--warn); } .opt-note.ok { color: var(--ok); }
 
         .filters { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
-        .filters input[type="search"] { flex: 1 1 150px; min-width: 0; padding: 9px 12px; background: var(--card); color: var(--text);
-            border: 1px solid var(--border); border-radius: 8px; font-size: 13px; outline: none; }
-        .filters input[type="search"]:focus { border-color: var(--accent); }
+        .filters input[type="search"] { flex: 1 1 150px; min-width: 0; padding: 10px 12px; background: var(--card); color: var(--text);
+            border: 1px solid var(--border); border-radius: 10px; font-size: 13px; outline: none; transition: border-color .2s, box-shadow .2s; }
+        .filters input[type="search"]:focus { border-color: var(--accent); box-shadow: 0 0 18px -8px var(--accent); }
         .only-ok { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); cursor: pointer; white-space: nowrap; }
         .only-ok input { accent-color: var(--accent); }
-        .opt-count { font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+        .opt-count { font-size: 11px; color: var(--muted); margin-bottom: 8px; font-family: 'JetBrains Mono', monospace; }
         .empty-opts { padding: 18px 12px; text-align: center; color: var(--muted); font-size: 13px; }
-        .banner { padding: 12px 14px; border: 1px solid var(--ok); border-radius: 10px; margin-bottom: 12px;
-            background: rgba(34,197,94,.08); font-size: 13px; line-height: 1.45; }
+        .banner { padding: 12px 14px; border: 1px solid var(--ok); border-radius: 12px; margin-bottom: 12px;
+            background: color-mix(in srgb, var(--ok) 10%, transparent); font-size: 13px; line-height: 1.45; }
         .banner b { color: var(--ok); }
         .banner .btn { margin-top: 10px; }
-        .banner.warn { border-color: var(--warn); background: rgba(245,158,11,.08); }
+        .banner.warn { border-color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); }
         .banner.warn b { color: var(--warn); }
 
-        details.build { margin: 16px 0 8px; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
-        details.build summary { cursor: pointer; padding: 11px 14px; font-size: 13px; font-weight: 600; }
+        details.build { margin: 16px 0 8px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); overflow: hidden; }
+        details.build summary { cursor: pointer; padding: 12px 14px; font-size: 13px; font-weight: 600; }
         .build-row { display: flex; justify-content: space-between; gap: 10px; padding: 7px 14px;
             border-top: 1px solid var(--border); font-size: 12px; }
-        .build-row span:first-child { color: var(--muted); } .build-row span:last-child { text-align: right; }
+        .build-row span:first-child { color: var(--muted); flex: none; } .build-row span:last-child { text-align: right; overflow-wrap: anywhere; }
 
-        .footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 18px;
+        .footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px;
             border-top: 1px solid var(--border); background: var(--panel); }
         .total-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); }
-        .total { font-size: 20px; font-weight: 800; }
+        .total { font-size: 22px; font-weight: 800; letter-spacing: -.02em; font-family: 'JetBrains Mono', monospace; }
         .power { font-size: 12px; color: var(--muted); }
 
-        .btn { padding: 10px 16px; border-radius: 6px; border: 1px solid var(--border-strong); background: var(--card);
-            color: var(--text); font-size: 12px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase;
-            cursor: pointer; transition: border-color .2s, box-shadow .2s, background-color .2s; }
-        .btn:hover { border-color: var(--accent); box-shadow: 0 0 12px rgba(168,85,247,.3); }
-        .btn.primary { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); border-color: #a855f7; color: #fff; }
+        .btn { padding: 10px 16px; border-radius: 10px; border: 1px solid var(--border-strong); background: var(--card);
+            color: var(--text); font-size: 12px; font-weight: 600; letter-spacing: .8px; text-transform: uppercase;
+            cursor: pointer; transition: border-color .2s, box-shadow .2s, background-color .2s, transform .1s; }
+        .btn:hover { border-color: var(--accent); box-shadow: 0 0 18px -6px rgba(var(--ar), .7); }
+        .btn:active { transform: scale(.97); }
+        .btn.primary { background: var(--grad); border-color: transparent; color: #fff; box-shadow: 0 6px 18px -8px rgba(var(--ar), .8); }
 
         /* ---------- 3D-ОБЛАСТЬ ---------- */
         .viewport { position: relative; min-height: 0; min-width: 0; overflow: hidden; }
@@ -133,19 +137,21 @@
             pointer-events: none; text-align: center; padding: 20px; color: var(--muted); font-size: 16px; }
         .empty-hint[hidden] { display: none; }
         .toolbar { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); display: flex; gap: 6px;
-            flex-wrap: wrap; justify-content: center; padding: 6px; background: var(--glass); border: 1px solid var(--border);
-            border-radius: 10px; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); max-width: calc(100% - 24px); }
+            flex-wrap: wrap; justify-content: center; padding: 8px; background: var(--glass); border: 1px solid var(--border-strong);
+            border-radius: 16px; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); max-width: calc(100% - 24px);
+            box-shadow: 0 14px 40px -12px rgba(0,0,0,.5); }
         .toolbar[hidden] { display: none; }
-        .tb-btn { padding: 8px 12px; border-radius: 6px; border: 1px solid transparent; background: var(--card);
-            color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; transition: border-color .2s, background-color .2s; }
+        .tb-btn { padding: 8px 12px; border-radius: 10px; border: 1px solid transparent; background: var(--card);
+            color: var(--text); font-size: 12px; font-weight: 600; cursor: pointer; transition: border-color .2s, background-color .2s, transform .1s; }
         .tb-btn[hidden] { display: none; }
         .tb-btn:hover { border-color: var(--accent); }
-        .tb-btn[aria-pressed="true"] { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%); color: #fff; border-color: #a855f7; }
+        .tb-btn:active { transform: scale(.96); }
+        .tb-btn[aria-pressed="true"] { background: var(--grad); color: #fff; border-color: transparent; }
         .tb-show { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); background: var(--glass);
-            border: 1px solid var(--border-strong); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
-        .light-panel { position: absolute; left: 50%; bottom: calc(100% + 8px); transform: translateX(-50%); width: min(330px, calc(100vw - 24px));
-            max-height: 72vh; overflow-y: auto; padding: 12px; background: var(--glass); border: 1px solid var(--border-strong); border-radius: 10px;
-            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); box-shadow: 0 12px 30px rgba(0,0,0,.35); }
+            border: 1px solid var(--border-strong); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+        .light-panel { position: absolute; left: 50%; bottom: calc(100% + 10px); transform: translateX(-50%); width: min(340px, calc(100vw - 24px));
+            max-height: 72vh; overflow-y: auto; padding: 14px; background: var(--glass); border: 1px solid var(--border-strong); border-radius: 14px;
+            backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); box-shadow: 0 18px 44px rgba(0,0,0,.4); }
         .light-panel[hidden] { display: none; }
         .lp-title { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--muted); margin: 8px 0; }
         .light-panel > .lp-title:first-child { margin-top: 0; }
@@ -155,30 +161,29 @@
         .lp-sw[aria-pressed="true"] { border-color: var(--text); box-shadow: 0 0 0 2px var(--accent), 0 0 12px var(--accent); }
         .lp-sw:focus-visible, .lp-row input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
         .lp-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 13px; margin-top: 8px; }
-        .lp-row input[type="color"] { width: 44px; height: 30px; padding: 0; border: 1px solid var(--border-strong); border-radius: 6px; background: none; cursor: pointer; }
+        .lp-row input[type="color"] { width: 44px; height: 30px; padding: 0; border: 1px solid var(--border-strong); border-radius: 8px; background: none; cursor: pointer; }
         .lp-row input[type="range"] { flex: 1; max-width: 170px; accent-color: var(--accent); }
         .lp-fx { display: flex; gap: 6px; margin-top: 10px; }
         .lp-fx .tb-btn { flex: 1; padding: 8px 4px; }
         .lp-sync { width: 100%; margin: 8px 0 0; }
         .fan-opts { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 10px; }
         .toast { position: absolute; top: 16px; left: 50%; transform: translate(-50%, -12px); max-width: 80%;
-            padding: 10px 16px; border-radius: 8px; background: var(--glass); border: 1px solid var(--warn);
-            font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; text-align: center; }
+            padding: 10px 16px; border-radius: 12px; background: var(--glass); border: 1px solid var(--warn); backdrop-filter: blur(12px);
+            font-size: 13px; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; text-align: center; z-index: 30; }
         .toast.show { opacity: 1; transform: translate(-50%, 0); }
 
-        /* Шестерёнка и выбор темы */
         .settings { position: absolute; top: 16px; right: 16px; z-index: 20; }
         .gear-btn { width: 42px; height: 42px; display: flex; align-items: center; justify-content: center;
-            background: var(--glass); color: var(--text); border: 1px solid var(--border-strong); border-radius: 50%;
-            cursor: pointer; backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+            background: var(--glass); color: var(--text); border: 1px solid var(--border-strong); border-radius: 12px;
+            cursor: pointer; backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
             transition: border-color .2s, box-shadow .2s; }
         .gear-btn svg { width: 21px; height: 21px; transition: transform .6s ease; }
-        .gear-btn:hover { border-color: var(--accent); box-shadow: 0 0 14px rgba(168,85,247,.4); }
+        .gear-btn:hover { border-color: var(--accent); box-shadow: 0 0 18px -4px rgba(var(--ar), .7); }
         .gear-btn:hover svg { transform: rotate(60deg); }
         .gear-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
         .settings-panel { position: absolute; top: 52px; right: 0; width: 220px; padding: 14px; background: var(--glass);
-            border: 1px solid var(--border-strong); border-radius: 10px; backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px); box-shadow: 0 12px 30px rgba(0,0,0,.35); opacity: 0; visibility: hidden;
+            border: 1px solid var(--border-strong); border-radius: 14px; backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px); box-shadow: 0 16px 40px rgba(0,0,0,.4); opacity: 0; visibility: hidden;
             transform: translateY(-8px) scale(.97); transform-origin: top right;
             transition: opacity .25s ease, transform .25s ease, visibility .25s; }
         .settings-panel.open { opacity: 1; visibility: visible; transform: none; }
@@ -186,13 +191,12 @@
             color: var(--muted); margin-bottom: 10px; }
         .theme-switch { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
         .theme-option { padding: 10px 0; background: var(--card); color: var(--text); border: 1px solid transparent;
-            border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+            border-radius: 10px; cursor: pointer; font-size: 13px; font-weight: 600; }
         .theme-option:hover { border-color: var(--accent); }
-        .theme-option[aria-pressed="true"] { background: linear-gradient(180deg, #7c3aed 0%, #5b21b6 100%);
-            border-color: #a855f7; color: #fff; }
+        .theme-option[aria-pressed="true"] { background: var(--grad); border-color: transparent; color: #fff; }
 
         /* ---------- АККАУНТ И СОХРАНЁННЫЕ СБОРКИ ---------- */
-        .save-row { display: flex; align-items: center; gap: 8px; padding: 10px 18px; border-top: 1px solid var(--border); background: var(--panel); flex-wrap: wrap; }
+        .save-row { display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-top: 1px solid var(--border); background: var(--panel); flex-wrap: wrap; }
         .save-row[hidden] { display: none; }
         .save-row .btn { padding: 8px 12px; }
         .who { margin-left: auto; display: flex; align-items: center; gap: 8px; min-width: 0; font-size: 12px; color: var(--muted); }
@@ -200,21 +204,21 @@
         .who button { background: none; border: 0; padding: 2px; cursor: pointer; font: inherit; font-weight: 600; color: var(--accent); }
         .who button:hover { text-decoration: underline; }
         .who button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
-        .modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, .55); }
+        .modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 16px; background: rgba(0, 0, 0, .6); backdrop-filter: blur(4px); }
         .modal[hidden] { display: none; }
         .m-card { width: 100%; max-width: 460px; max-height: 85vh; display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--border-strong);
-            border-radius: 12px; box-shadow: 0 20px 50px rgba(0, 0, 0, .5); }
+            border-radius: 16px; box-shadow: 0 24px 60px rgba(0, 0, 0, .55); }
         .m-head { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; border-bottom: 1px solid var(--border); }
         .m-head h3 { font-size: 17px; }
         .m-x { background: none; border: 0; color: var(--muted); font-size: 22px; line-height: 1; cursor: pointer; padding: 2px 6px; }
         .m-x:hover { color: var(--accent); }
         .m-body { padding: 16px 18px; overflow-y: auto; }
-        .m-input { width: 100%; padding: 10px 12px; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 8px; font-size: 14px; outline: none; }
+        .m-input { width: 100%; padding: 10px 12px; background: var(--card); color: var(--text); border: 1px solid var(--border); border-radius: 10px; font-size: 14px; outline: none; }
         .m-input:focus { border-color: var(--accent); }
         .m-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
         .m-msg { margin-top: 10px; font-size: 13px; color: var(--bad); min-height: 16px; }
         .m-muted { color: var(--muted); font-size: 13px; text-align: center; padding: 14px 0; }
-        .b-item { padding: 10px 12px; margin-bottom: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 10px; }
+        .b-item { padding: 10px 12px; margin-bottom: 8px; background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
         .b-name { font-weight: 700; font-size: 14px; overflow-wrap: anywhere; }
         .b-meta { font-size: 12px; color: var(--muted); margin: 2px 0 8px; }
         .b-item .m-actions { margin-top: 0; }
@@ -228,19 +232,22 @@
             .sidebar { border-right: 0; border-top: 1px solid var(--border); }
             .toolbar, .tb-show { bottom: 8px; }
             .tb-btn { padding: 6px 9px; font-size: 11px; }
+            .scroll { padding: 14px 14px 8px; }
+            .sb-head, .footer, .save-row { padding-left: 14px; padding-right: 14px; }
+            .step-head h2 { font-size: 22px; }
+            .total { font-size: 19px; }
         }
         @media (prefers-reduced-motion: reduce) {
             .app { animation: none; }
         }
 
-        /* Закрытый доступ: только VIP */
         .vip-gate { position: fixed; inset: 0; z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 16px; background: var(--bg); }
         .vip-gate[hidden] { display: none; }
-        .vip-card { width: 100%; max-width: 380px; padding: 28px 22px; text-align: center; background: var(--panel); border: 1px solid var(--border-strong); border-radius: 14px; }
+        .vip-card { width: 100%; max-width: 380px; padding: 28px 22px; text-align: center; background: var(--panel); border: 1px solid var(--border-strong); border-radius: 16px; }
         .vip-card h2 { font-size: 22px; margin: 8px 0; }
         .vip-card p { color: var(--muted); font-size: 14px; line-height: 1.5; margin-bottom: 18px; }
         .vip-actions { display: flex; flex-direction: column; gap: 8px; }
-        .vip-btn { display: block; padding: 12px; border-radius: 8px; text-decoration: none; font-weight: 700; color: #fff; background: linear-gradient(135deg, #f59e0b, #b45309); }
+        .vip-btn { display: block; padding: 12px; border-radius: 10px; text-decoration: none; font-weight: 700; color: #fff; background: linear-gradient(135deg, #f59e0b, #b45309); }
         .vip-btn.ghost { background: var(--card); color: var(--text); border: 1px solid var(--border); font-weight: 600; }
         .vip-btn:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     </style>
@@ -248,7 +255,6 @@
 <body>
 <div class="app" id="app">
 
-    <!-- ===== ЛЕВАЯ ПАНЕЛЬ ===== -->
     <aside class="sidebar">
         <div class="sb-head">
             <a class="back" id="back-link" href="https://vysotskiyxsamitov-gif.github.io/hardwarevs/index.html">← На главную</a>
@@ -287,7 +293,6 @@
         </div>
     </aside>
 
-    <!-- ===== 3D-ОБЛАСТЬ ===== -->
     <main class="viewport" id="viewport">
         <canvas id="canvas"></canvas>
         <div class="empty-hint" id="emptyHint">Выберите корпус слева, чтобы начать сборку</div>
@@ -315,9 +320,9 @@
                 <button class="tb-btn lp-sync" type="button" id="lpGpuSync" hidden>↺ Видеокарта — как вся сборка</button>
                 <div class="lp-title">Цвет подсветки</div>
                 <div class="lp-swatches" id="lpSwatches"></div>
-                <label class="lp-row">Свой цвет <input type="color" id="lpCustom" value="#a855f7"></label>
-                <label class="lp-row">Яркость <input type="range" id="lpBright" min="0.2" max="4" step="0.1" value="2.2"></label>
-                <label class="lp-row">Свечение <input type="range" id="lpGlow" min="0" max="3" step="0.1" value="1.3"></label>
+                <label class="lp-row">Свой цвет <input type="color" id="lpCustom" value="#6f7dff"></label>
+                <label class="lp-row">Яркость <input type="range" id="lpBright" min="0.2" max="6" step="0.1" value="3.4"></label>
+                <label class="lp-row">Свечение <input type="range" id="lpGlow" min="0" max="3" step="0.1" value="1.5"></label>
                 <label class="lp-row">Скорость <input type="range" id="lpSpeed" min="0.2" max="4" step="0.1" value="1"></label>
                 <div class="lp-fx" role="group" aria-label="Эффект подсветки">
                     <button class="tb-btn" type="button" data-fx="static" aria-pressed="true">Постоянный</button>
@@ -375,9 +380,7 @@ const $ = id => document.getElementById(id);
 const root = document.documentElement;
 const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/* =====================================================================
-   ДАННЫЕ (все цены и характеристики условные — замените на свои)
-   ===================================================================== */
+/* ДАННЫЕ (все цены и характеристики условные — замените на свои) */
 const CURRENCY = '₽';
 const fmt = n => n.toLocaleString('ru-RU') + ' ' + CURRENCY;
 const FORMS = { ATX: { w: 30.5, h: 24.4 }, mATX: { w: 24.4, h: 24.4 }, ITX: { w: 17, h: 17 } };
@@ -397,7 +400,6 @@ const STEPS = [
 const mk = (keys, rows) => rows.map(r => { const o = {}; keys.forEach((k, i) => { o[k] = r[i]; }); return o; });
 
 const DATA = {
-    // radMax — максимальный радиатор СЖО (0 = нельзя), thickMax — макс. толщина видеокарты, cpuTdpMax — предел по охлаждению CPU
     case: [
         { id: 'aurora',  name: 'Aurora ATX Midi-Tower',     price: 8990,  dims: { x: 46, y: 45, z: 21 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 38,   thickMax: 8,   coolerMax: 17, radMax: 280, wall: 0.85, color: '#1a1626', frame: '#3b2a63', fronts: [13, 26, 39] },
         { id: 'crystal', name: 'Crystal ATX White',         price: 10990, dims: { x: 44, y: 43, z: 21 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 36,   thickMax: 7.5, coolerMax: 17, radMax: 280, wall: 0.45, glassOp: 0.22, color: '#e9e7f2', frame: '#a9a4c4', fronts: [13, 25, 37] },
@@ -406,22 +408,18 @@ const DATA = {
         { id: 'mesh',    name: 'Vent mATX Mesh',            price: 5490,  dims: { x: 39, y: 38, z: 19.5 }, forms: ['mATX', 'ITX'],      gpuMax: 31.5, thickMax: 6.5, coolerMax: 16, radMax: 240, color: '#22303a', frame: '#3b82a0', fronts: [12, 26], panel: 'mesh' },
         { id: 'pico',    name: 'Pico Mini-ITX',             price: 11990, dims: { x: 36, y: 34, z: 17 }, forms: ['ITX'],                gpuMax: 28,   thickMax: 6,   coolerMax: 7,  radMax: 0,   cpuTdpMax: 125, wall: 0.9, color: '#2b3340', frame: '#5b6b86', fronts: [15] },
         { id: 'cube',    name: 'Cube ITX Slim',             price: 9490,  dims: { x: 34, y: 34, z: 17 }, forms: ['ITX'],                gpuMax: 26.5, thickMax: 5.5, coolerMax: 7,  radMax: 0,   cpuTdpMax: 125, wall: 0.55, color: '#d9cbb4', frame: '#a08b6b', fronts: [15] },
-        // ---- Аквариумы: панорамное стекло спереди и сбоку ----
         { id: 'aqua',    name: 'Aqua ATX Panorama',         price: 14990, dims: { x: 47, y: 46, z: 23 },   forms: ['ATX', 'mATX', 'ITX'], gpuMax: 39,   thickMax: 9,   coolerMax: 16.5, radMax: 360, color: '#0f1a28', frame: '#06b6d4', fronts: [],             panel: 'aquarium' },
         { id: 'prism',   name: 'Prism ATX White',           price: 16990, dims: { x: 46, y: 47, z: 22.5 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 38,   thickMax: 8.5, coolerMax: 16,   radMax: 360, color: '#eef0f7', frame: '#f472b6', fronts: [],             panel: 'aquarium' },
         { id: 'orb',     name: 'Orb ITX Aquarium',          price: 15490, dims: { x: 36, y: 36, z: 17.5 }, forms: ['ITX'],                gpuMax: 28,   thickMax: 6,   coolerMax: 7.5,  radMax: 0,   cpuTdpMax: 150, color: '#101a24', frame: '#38bdf8', fronts: [],      panel: 'aquarium' },
-        // ---- Закрытые: глухая боковая панель ----
         { id: 'stealth', name: 'Stealth ATX Silent',        price: 9990,  dims: { x: 45, y: 44, z: 21 },   forms: ['ATX', 'mATX', 'ITX'], gpuMax: 37,   thickMax: 7.5, coolerMax: 16.5, radMax: 280, color: '#15161b', frame: '#4b5563', fronts: [14, 28],       panel: 'solid' },
         { id: 'vault',   name: 'Vault Full-Tower Steel',    price: 15990, dims: { x: 54, y: 53, z: 24 },   forms: ['ATX', 'mATX', 'ITX'], gpuMax: 46,   thickMax: 10,  coolerMax: 19,   radMax: 420, color: '#2a2d34', frame: '#9ca3af', fronts: [14, 27, 40],   panel: 'solid' },
         { id: 'retro',   name: 'Retro Wood ATX',            price: 12490, dims: { x: 45, y: 44, z: 21.5 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 37,   thickMax: 7.5, coolerMax: 16,   radMax: 240, color: '#7a5230', frame: '#d6b27a', fronts: [14, 28],       panel: 'solid' },
-        // ---- Сетка и стекло разных размеров ----
         { id: 'airflow', name: 'Airflow ATX Mesh',          price: 7990,  dims: { x: 46, y: 44, z: 20.5 }, forms: ['ATX', 'mATX', 'ITX'], gpuMax: 38,   thickMax: 7,   coolerMax: 17,   radMax: 360, color: '#1d2228', frame: '#22c55e', fronts: [13, 26, 39],   panel: 'mesh' },
         { id: 'sakura',  name: 'Sakura ATX White-Pink',     price: 11490, dims: { x: 44, y: 43, z: 21 },   forms: ['ATX', 'mATX', 'ITX'], gpuMax: 36,   thickMax: 7.5, coolerMax: 16.5, radMax: 280, wall: 0.4, glassOp: 0.2, color: '#f7e8ef', frame: '#ec4899', fronts: [13, 25, 37] },
         { id: 'micro',   name: 'Micro mATX Tower',          price: 4990,  dims: { x: 37, y: 36, z: 19 },   forms: ['mATX', 'ITX'],        gpuMax: 29,   thickMax: 6.5, coolerMax: 15,   radMax: 120, wall: 0.75, color: '#262b36', frame: '#64748b', fronts: [12, 25] },
         { id: 'pixel',   name: 'Pixel ITX Glass',           price: 12990, dims: { x: 37, y: 35, z: 17 },   forms: ['ITX'],                gpuMax: 29,   thickMax: 5.5, coolerMax: 7.5,  radMax: 0,   cpuTdpMax: 150, wall: 0.3, glassOp: 0.24, color: '#e5e7eb', frame: '#a78bfa', fronts: [15] }
     ],
     mb: mk(['id', 'name', 'chip', 'vendor', 'socket', 'form', 'mem', 'price'], [
-        // LGA1700
         ['h610m',    'Intel H610M mATX (DDR4)',      'H610', 'intel', 'LGA1700', 'mATX', 'DDR4', 6990],
         ['b760m-d4', 'Intel B760M mATX (DDR4)',      'B760', 'intel', 'LGA1700', 'mATX', 'DDR4', 9990],
         ['b760m-d5', 'Intel B760M mATX (DDR5)',      'B760', 'intel', 'LGA1700', 'mATX', 'DDR5', 11990],
@@ -431,12 +429,10 @@ const DATA = {
         ['z790',     'Intel Z790 ATX (DDR5)',        'Z790', 'intel', 'LGA1700', 'ATX',  'DDR5', 24990],
         ['b760i',    'Intel B760 Mini-ITX (DDR5)',   'B760', 'intel', 'LGA1700', 'ITX',  'DDR5', 17990],
         ['z790i',    'Intel Z790 Mini-ITX (DDR5)',   'Z790', 'intel', 'LGA1700', 'ITX',  'DDR5', 27990],
-        // LGA1851
         ['b860m',    'Intel B860M mATX',             'B860', 'intel', 'LGA1851', 'mATX', 'DDR5', 15990],
         ['b860',     'Intel B860 ATX',               'B860', 'intel', 'LGA1851', 'ATX',  'DDR5', 19990],
         ['z890',     'Intel Z890 ATX',               'Z890', 'intel', 'LGA1851', 'ATX',  'DDR5', 34990],
         ['z890i',    'Intel Z890 Mini-ITX',          'Z890', 'intel', 'LGA1851', 'ITX',  'DDR5', 36990],
-        // AM5
         ['a620m',    'AMD A620M mATX',               'A620', 'amd', 'AM5', 'mATX', 'DDR5', 7990],
         ['b650m',    'AMD B650M mATX',               'B650', 'amd', 'AM5', 'mATX', 'DDR5', 11990],
         ['b650',     'AMD B650 ATX',                 'B650', 'amd', 'AM5', 'ATX',  'DDR5', 16990],
@@ -444,31 +440,26 @@ const DATA = {
         ['x670e',    'AMD X670E ATX',                'X670E','amd', 'AM5', 'ATX',  'DDR5', 31990],
         ['x870e',    'AMD X870E ATX',                'X870E','amd', 'AM5', 'ATX',  'DDR5', 39990],
         ['b650i',    'AMD B650 Mini-ITX',            'B650', 'amd', 'AM5', 'ITX',  'DDR5', 19990],
-        // AM4
         ['a520m',    'AMD A520M mATX (DDR4)',        'A520', 'amd', 'AM4', 'mATX', 'DDR4', 4990],
         ['b550m',    'AMD B550M mATX (DDR4)',        'B550', 'amd', 'AM4', 'mATX', 'DDR4', 7990],
         ['b550',     'AMD B550 ATX (DDR4)',          'B550', 'amd', 'AM4', 'ATX',  'DDR4', 10990],
         ['x570',     'AMD X570 ATX (DDR4)',          'X570', 'amd', 'AM4', 'ATX',  'DDR4', 17990],
         ['b550i',    'AMD B550 Mini-ITX (DDR4)',     'B550', 'amd', 'AM4', 'ITX',  'DDR4', 12990],
-        // LGA1151 (6–7 поколения, DDR4)
         ['h110m',    'Intel H110M mATX',            'H110', 'intel', 'LGA1151', 'mATX', 'DDR4', 3990],
         ['b250',     'Intel B250 ATX',              'B250', 'intel', 'LGA1151', 'ATX',  'DDR4', 5490],
         ['z270',     'Intel Z270 ATX',              'Z270', 'intel', 'LGA1151', 'ATX',  'DDR4', 7990],
         ['z270i',    'Intel Z270 Mini-ITX',         'Z270', 'intel', 'LGA1151', 'ITX',  'DDR4', 8990],
-        // LGA1151 v2 (8–9 поколения, DDR4)
         ['h310m',    'Intel H310M mATX',            'H310', 'intel', 'LGA1151v2', 'mATX', 'DDR4', 4490],
         ['b360m',    'Intel B360M mATX',            'B360', 'intel', 'LGA1151v2', 'mATX', 'DDR4', 5990],
         ['b365',     'Intel B365 ATX',              'B365', 'intel', 'LGA1151v2', 'ATX',  'DDR4', 7490],
         ['z390',     'Intel Z390 ATX',              'Z390', 'intel', 'LGA1151v2', 'ATX',  'DDR4', 11990],
         ['z390i',    'Intel Z390 Mini-ITX',         'Z390', 'intel', 'LGA1151v2', 'ITX',  'DDR4', 12990],
-        // LGA1200 (10–11 поколения, DDR4)
         ['h410m',    'Intel H410M mATX',            'H410', 'intel', 'LGA1200', 'mATX', 'DDR4', 4990],
         ['b460m',    'Intel B460M mATX',            'B460', 'intel', 'LGA1200', 'mATX', 'DDR4', 6490],
         ['b560m',    'Intel B560M mATX',            'B560', 'intel', 'LGA1200', 'mATX', 'DDR4', 8490],
         ['z490',     'Intel Z490 ATX',              'Z490', 'intel', 'LGA1200', 'ATX',  'DDR4', 12990],
         ['z590',     'Intel Z590 ATX',              'Z590', 'intel', 'LGA1200', 'ATX',  'DDR4', 15990],
         ['z590i',    'Intel Z590 Mini-ITX',         'Z590', 'intel', 'LGA1200', 'ITX',  'DDR4', 17990],
-        // AM4 (старые чипсеты, Ryzen 1000–5000)
         ['a320m',    'AMD A320M mATX (DDR4)',       'A320', 'amd', 'AM4', 'mATX', 'DDR4', 3490],
         ['b350',     'AMD B350 ATX (DDR4)',         'B350', 'amd', 'AM4', 'ATX',  'DDR4', 5490],
         ['b450m',    'AMD B450M mATX (DDR4)',       'B450', 'amd', 'AM4', 'mATX', 'DDR4', 5490],
@@ -477,77 +468,63 @@ const DATA = {
         ['b450i',    'AMD B450 Mini-ITX (DDR4)',    'B450', 'amd', 'AM4', 'ITX',  'DDR4', 9990]
     ]),
     cpu: mk(['id', 'name', 'short', 'brand', 'socket', 'cores', 'threads', 'tdp', 'price'], [
-        // ===== Intel Core 6-е поколение (LGA1151) =====
         ['i3-6100',   'Intel Core i3-6100',   'i3-6100',   'intel', 'LGA1151', 2, 4, 51, 3490],
         ['i5-6400',   'Intel Core i5-6400',   'i5-6400',   'intel', 'LGA1151', 4, 4, 65, 5490],
         ['i5-6600k',  'Intel Core i5-6600K',  'i5-6600K',  'intel', 'LGA1151', 4, 4, 91, 7490],
         ['i7-6700',   'Intel Core i7-6700',   'i7-6700',   'intel', 'LGA1151', 4, 8, 65, 8990],
         ['i7-6700k',  'Intel Core i7-6700K',  'i7-6700K',  'intel', 'LGA1151', 4, 8, 91, 10990],
-        // ===== 7-е поколение (LGA1151) =====
         ['i3-7100',   'Intel Core i3-7100',   'i3-7100',   'intel', 'LGA1151', 2, 4, 51, 3990],
         ['i5-7400',   'Intel Core i5-7400',   'i5-7400',   'intel', 'LGA1151', 4, 4, 65, 5990],
         ['i5-7600k',  'Intel Core i5-7600K',  'i5-7600K',  'intel', 'LGA1151', 4, 4, 91, 7990],
         ['i7-7700',   'Intel Core i7-7700',   'i7-7700',   'intel', 'LGA1151', 4, 8, 65, 9990],
         ['i7-7700k',  'Intel Core i7-7700K',  'i7-7700K',  'intel', 'LGA1151', 4, 8, 91, 11990],
-        // ===== 8-е поколение (LGA1151 v2) =====
         ['i3-8100',   'Intel Core i3-8100',   'i3-8100',   'intel', 'LGA1151v2', 4, 4, 65, 5490],
         ['i3-8350k',  'Intel Core i3-8350K',  'i3-8350K',  'intel', 'LGA1151v2', 4, 4, 91, 6490],
         ['i5-8400',   'Intel Core i5-8400',   'i5-8400',   'intel', 'LGA1151v2', 6, 6, 65, 7990],
         ['i5-8600k',  'Intel Core i5-8600K',  'i5-8600K',  'intel', 'LGA1151v2', 6, 6, 95, 9990],
         ['i7-8700',   'Intel Core i7-8700',   'i7-8700',   'intel', 'LGA1151v2', 6, 12, 65, 11990],
         ['i7-8700k',  'Intel Core i7-8700K',  'i7-8700K',  'intel', 'LGA1151v2', 6, 12, 95, 13990],
-        // ===== 9-е поколение (LGA1151 v2) =====
         ['i3-9100f',  'Intel Core i3-9100F',  'i3-9100F',  'intel', 'LGA1151v2', 4, 4, 65, 5990],
         ['i5-9400f',  'Intel Core i5-9400F',  'i5-9400F',  'intel', 'LGA1151v2', 6, 6, 65, 8490],
         ['i5-9600k',  'Intel Core i5-9600K',  'i5-9600K',  'intel', 'LGA1151v2', 6, 6, 95, 11490],
         ['i7-9700k',  'Intel Core i7-9700K',  'i7-9700K',  'intel', 'LGA1151v2', 8, 8, 95, 15990],
         ['i9-9900k',  'Intel Core i9-9900K',  'i9-9900K',  'intel', 'LGA1151v2', 8, 16, 95, 19990],
         ['i9-9900ks', 'Intel Core i9-9900KS', 'i9-9900KS', 'intel', 'LGA1151v2', 8, 16, 127, 22990],
-        // ===== 10-е поколение (LGA1200) =====
         ['i3-10100f', 'Intel Core i3-10100F', 'i3-10100F', 'intel', 'LGA1200', 4, 8, 65, 5990],
         ['i5-10400f', 'Intel Core i5-10400F', 'i5-10400F', 'intel', 'LGA1200', 6, 12, 65, 8990],
         ['i5-10600k', 'Intel Core i5-10600K', 'i5-10600K', 'intel', 'LGA1200', 6, 12, 125, 13490],
         ['i7-10700k', 'Intel Core i7-10700K', 'i7-10700K', 'intel', 'LGA1200', 8, 16, 125, 18990],
         ['i9-10900k', 'Intel Core i9-10900K', 'i9-10900K', 'intel', 'LGA1200', 10, 20, 125, 23990],
-        // ===== 11-е поколение (LGA1200) =====
         ['i5-11400f', 'Intel Core i5-11400F', 'i5-11400F', 'intel', 'LGA1200', 6, 12, 65, 9990],
         ['i5-11600k', 'Intel Core i5-11600K', 'i5-11600K', 'intel', 'LGA1200', 6, 12, 125, 14990],
         ['i7-11700k', 'Intel Core i7-11700K', 'i7-11700K', 'intel', 'LGA1200', 8, 16, 125, 20990],
         ['i9-11900k', 'Intel Core i9-11900K', 'i9-11900K', 'intel', 'LGA1200', 8, 16, 125, 25990],
-        // ===== 12-е поколение (LGA1700) =====
         ['i3-12100f', 'Intel Core i3-12100F', 'i3-12100F', 'intel', 'LGA1700', 4, 8, 58, 7990],
         ['i5-12400f', 'Intel Core i5-12400F', 'i5-12400F', 'intel', 'LGA1700', 6, 12, 65, 11990],
         ['i5-12600k', 'Intel Core i5-12600K', 'i5-12600K', 'intel', 'LGA1700', 10, 16, 125, 19990],
         ['i7-12700k', 'Intel Core i7-12700K', 'i7-12700K', 'intel', 'LGA1700', 12, 20, 125, 25990],
         ['i9-12900k', 'Intel Core i9-12900K', 'i9-12900K', 'intel', 'LGA1700', 16, 24, 125, 32990],
-        // ===== 13-е поколение (LGA1700) =====
         ['i3-13100f', 'Intel Core i3-13100F', 'i3-13100F', 'intel', 'LGA1700', 4, 8, 58, 8990],
         ['i5-13400f', 'Intel Core i5-13400F', 'i5-13400F', 'intel', 'LGA1700', 10, 16, 65, 15990],
         ['i5-13600k', 'Intel Core i5-13600K', 'i5-13600K', 'intel', 'LGA1700', 14, 20, 125, 26990],
         ['i7-13700k', 'Intel Core i7-13700K', 'i7-13700K', 'intel', 'LGA1700', 16, 24, 125, 33990],
         ['i9-13900k', 'Intel Core i9-13900K', 'i9-13900K', 'intel', 'LGA1700', 24, 32, 125, 46990],
-        // ===== 14-е поколение (LGA1700) =====
         ['i3-14100f', 'Intel Core i3-14100F', 'i3-14100F', 'intel', 'LGA1700', 4, 8, 58, 9490],
         ['i5-14400f', 'Intel Core i5-14400F', 'i5-14400F', 'intel', 'LGA1700', 10, 16, 65, 17990],
         ['i5-14600k', 'Intel Core i5-14600K', 'i5-14600K', 'intel', 'LGA1700', 14, 20, 125, 29990],
         ['i7-14700k', 'Intel Core i7-14700K', 'i7-14700K', 'intel', 'LGA1700', 20, 28, 125, 38990],
         ['i9-14900k', 'Intel Core i9-14900K', 'i9-14900K', 'intel', 'LGA1700', 24, 32, 125, 52990],
-        // ===== Intel Core Ultra 200S (LGA1851) =====
         ['u5-225',    'Intel Core Ultra 5 225',  'U5 225',  'intel', 'LGA1851', 10, 10, 65, 20990],
         ['u5-245k',   'Intel Core Ultra 5 245K', 'U5 245K', 'intel', 'LGA1851', 14, 14, 125, 29990],
         ['u7-265k',   'Intel Core Ultra 7 265K', 'U7 265K', 'intel', 'LGA1851', 20, 20, 125, 41990],
         ['u9-285k',   'Intel Core Ultra 9 285K', 'U9 285K', 'intel', 'LGA1851', 24, 24, 125, 60990],
-
-        // ===== AMD Ryzen 1000 (AM4) =====
         ['r3-1200',   'AMD Ryzen 3 1200',   'R3 1200',   'amd', 'AM4', 4, 4, 65, 3490],
         ['r5-1600',   'AMD Ryzen 5 1600',   'R5 1600',   'amd', 'AM4', 6, 12, 65, 5490],
         ['r7-1700',   'AMD Ryzen 7 1700',   'R7 1700',   'amd', 'AM4', 8, 16, 65, 7990],
         ['r7-1800x',  'AMD Ryzen 7 1800X',  'R7 1800X',  'amd', 'AM4', 8, 16, 95, 9990],
-        // ===== Ryzen 2000 =====
         ['r5-2600',   'AMD Ryzen 5 2600',   'R5 2600',   'amd', 'AM4', 6, 12, 65, 6490],
         ['r5-2600x',  'AMD Ryzen 5 2600X',  'R5 2600X',  'amd', 'AM4', 6, 12, 95, 7490],
         ['r7-2700x',  'AMD Ryzen 7 2700X',  'R7 2700X',  'amd', 'AM4', 8, 16, 105, 10990],
-        // ===== Ryzen 3000 =====
         ['r3-3100',   'AMD Ryzen 3 3100',   'R3 3100',   'amd', 'AM4', 4, 8, 65, 5490],
         ['r3-3300x',  'AMD Ryzen 3 3300X',  'R3 3300X',  'amd', 'AM4', 4, 8, 65, 6990],
         ['r5-3600',   'AMD Ryzen 5 3600',   'R5 3600',   'amd', 'AM4', 6, 12, 65, 8490],
@@ -556,7 +533,6 @@ const DATA = {
         ['r7-3800x',  'AMD Ryzen 7 3800X',  'R7 3800X',  'amd', 'AM4', 8, 16, 105, 14990],
         ['r9-3900x',  'AMD Ryzen 9 3900X',  'R9 3900X',  'amd', 'AM4', 12, 24, 105, 20990],
         ['r9-3950x',  'AMD Ryzen 9 3950X',  'R9 3950X',  'amd', 'AM4', 16, 32, 105, 29990],
-        // ===== Ryzen 5000 =====
         ['r5-5500',   'AMD Ryzen 5 5500',   'R5 5500',   'amd', 'AM4', 6, 12, 65, 6990],
         ['r5-5600',   'AMD Ryzen 5 5600',   'R5 5600',   'amd', 'AM4', 6, 12, 65, 8990],
         ['r5-5600g',  'AMD Ryzen 5 5600G',  'R5 5600G',  'amd', 'AM4', 6, 12, 65, 9990],
@@ -568,7 +544,6 @@ const DATA = {
         ['r7-5800x3d','AMD Ryzen 7 5800X3D','R7 5800X3D','amd', 'AM4', 8, 16, 105, 26990],
         ['r9-5900x',  'AMD Ryzen 9 5900X',  'R9 5900X',  'amd', 'AM4', 12, 24, 105, 24990],
         ['r9-5950x',  'AMD Ryzen 9 5950X',  'R9 5950X',  'amd', 'AM4', 16, 32, 105, 33990],
-        // ===== Ryzen 7000 (AM5) =====
         ['r5-7500f',  'AMD Ryzen 5 7500F',  'R5 7500F',  'amd', 'AM5', 6, 12, 65, 13990],
         ['r5-7600',   'AMD Ryzen 5 7600',   'R5 7600',   'amd', 'AM5', 6, 12, 65, 17990],
         ['r5-7600x',  'AMD Ryzen 5 7600X',  'R5 7600X',  'amd', 'AM5', 6, 12, 105, 19990],
@@ -580,11 +555,9 @@ const DATA = {
         ['r9-7900x3d','AMD Ryzen 9 7900X3D','R9 7900X3D','amd', 'AM5', 12, 24, 120, 44990],
         ['r9-7950x',  'AMD Ryzen 9 7950X',  'R9 7950X',  'amd', 'AM5', 16, 32, 170, 52990],
         ['r9-7950x3d','AMD Ryzen 9 7950X3D','R9 7950X3D','amd', 'AM5', 16, 32, 120, 64990],
-        // ===== Ryzen 8000G / 8000F (AM5) =====
         ['r5-8600g',  'AMD Ryzen 5 8600G',  'R5 8600G',  'amd', 'AM5', 6, 12, 65, 19990],
         ['r7-8700f',  'AMD Ryzen 7 8700F',  'R7 8700F',  'amd', 'AM5', 8, 16, 65, 23990],
         ['r7-8700g',  'AMD Ryzen 7 8700G',  'R7 8700G',  'amd', 'AM5', 8, 16, 65, 28990],
-        // ===== Ryzen 9000 (AM5) =====
         ['r5-9600',   'AMD Ryzen 5 9600',   'R5 9600',   'amd', 'AM5', 6, 12, 65, 21990],
         ['r5-9600x',  'AMD Ryzen 5 9600X',  'R5 9600X',  'amd', 'AM5', 6, 12, 65, 24990],
         ['r7-9700x',  'AMD Ryzen 7 9700X',  'R7 9700X',  'amd', 'AM5', 8, 16, 65, 33990],
@@ -594,7 +567,7 @@ const DATA = {
         ['r9-9950x',  'AMD Ryzen 9 9950X',  'R9 9950X',  'amd', 'AM5', 16, 32, 170, 58990],
         ['r9-9950x3d','AMD Ryzen 9 9950X3D','R9 9950X3D','amd', 'AM5', 16, 32, 170, 69990]
     ]),
-        cooler: [
+    cooler: [
         { id: 'low-slim', name: 'Низкопрофильный 70 мм',     type: 'low',   kind: 'Низкий профиль 3.5 см',  height: 3.5,  tdpMax: 65,  price: 2490 },
         { id: 'low',      name: 'Низкопрофильный 92 мм',     type: 'low',   kind: 'Низкий профиль 4.7 см',  height: 4.7,  tdpMax: 125, price: 3990 },
         { id: 'tower-b',  name: 'Башенный бюджетный 120 мм', type: 'tower', kind: 'Башня 14.5 см',          height: 14.5, fan: 12, tdpMax: 150, price: 1990 },
@@ -604,13 +577,11 @@ const DATA = {
         { id: 'aio240',   name: 'СЖО 240 мм',                type: 'aio',   kind: 'СЖО 240 мм', rad: 240, tdpMax: 250, price: 8990 },
         { id: 'aio280',   name: 'СЖО 280 мм',                type: 'aio',   kind: 'СЖО 280 мм', rad: 280, tdpMax: 280, price: 10990 },
         { id: 'aio360',   name: 'СЖО 360 мм',                type: 'aio',   kind: 'СЖО 360 мм', rad: 360, tdpMax: 320, price: 13990 },
-        // ---- С экраном на помпе: только для VIP ----
         { id: 'aio240s',  name: 'СЖО 240 мм с экраном',      type: 'aio',   screen: true, vip: true, kind: 'СЖО 240 мм · экран на помпе', rad: 240, tdpMax: 250, price: 11990 },
         { id: 'aio280s',  name: 'СЖО 280 мм с экраном',      type: 'aio',   screen: true, vip: true, kind: 'СЖО 280 мм · экран на помпе', rad: 280, tdpMax: 280, price: 13990 },
         { id: 'aio360s',  name: 'СЖО 360 мм с экраном',      type: 'aio',   screen: true, vip: true, kind: 'СЖО 360 мм · экран на помпе', rad: 360, tdpMax: 320, price: 16990 }
     ],
     ram: mk(['id', 'name', 'type', 'kit', 'n', 'color', 'price'], [
-        // DDR4
         ['d4-8',    '8 ГБ DDR4-3200',            'DDR4', '1×8 ГБ',   1, '#33384a', 1490],
         ['d4-16',   '16 ГБ DDR4-3200',           'DDR4', '2×8 ГБ',   2, '#33384a', 2990],
         ['d4-16b',  '16 ГБ DDR4-3600 (чёрная)',  'DDR4', '2×8 ГБ',   2, '#1b1b22', 3490],
@@ -618,7 +589,6 @@ const DATA = {
         ['d4-32w',  '32 ГБ DDR4-3600 (белая)',   'DDR4', '2×16 ГБ',  2, '#e8e9ef', 6490],
         ['d4-64',   '64 ГБ DDR4-3600',           'DDR4', '2×32 ГБ',  2, '#33384a', 11990],
         ['d4-128',  '128 ГБ DDR4-3200',          'DDR4', '4×32 ГБ',  4, '#33384a', 22990],
-        // DDR5
         ['d5-16',   '16 ГБ DDR5-5200',           'DDR5', '2×8 ГБ',   2, '#1b1b22', 4990],
         ['d5-32a',  '32 ГБ DDR5-5600',           'DDR5', '2×16 ГБ',  2, '#cfd3da', 7990],
         ['d5-32',   '32 ГБ DDR5-6000',           'DDR5', '2×16 ГБ',  2, '#e8e9ef', 9490],
@@ -629,7 +599,6 @@ const DATA = {
         ['d5-128',  '128 ГБ DDR5-5600',          'DDR5', '4×32 ГБ',  4, '#cfd3da', 38990]
     ]),
     gpu: mk(['id', 'name', 'short', 'brand', 'vram', 'tdp', 'len', 'thick', 'fans', 'price'], [
-        // ===== NVIDIA GeForce GTX 10 =====
         ['gt1030',    'NVIDIA GeForce GT 1030',            'GT 1030',       'nvidia', 2,  30,  15.0, 2.0, 1, 5490],
         ['gtx1050',   'NVIDIA GeForce GTX 1050 2GB',       'GTX 1050',      'nvidia', 2,  75,  17.0, 3.8, 1, 8990],
         ['gtx1050ti', 'NVIDIA GeForce GTX 1050 Ti',        'GTX 1050 Ti',   'nvidia', 4,  75,  18.0, 3.8, 1, 10990],
@@ -638,13 +607,11 @@ const DATA = {
         ['gtx1070ti', 'NVIDIA GeForce GTX 1070 Ti',        'GTX 1070 Ti',   'nvidia', 8,  180, 27.0, 4.2, 2, 20990],
         ['gtx1080',   'NVIDIA GeForce GTX 1080',           'GTX 1080',      'nvidia', 8,  180, 27.0, 4.2, 2, 24990],
         ['gtx1080ti', 'NVIDIA GeForce GTX 1080 Ti',        'GTX 1080 Ti',   'nvidia', 11, 250, 28.0, 4.5, 2, 32990],
-        // ===== GTX 16 =====
         ['gtx1650',   'NVIDIA GeForce GTX 1650',           'GTX 1650',      'nvidia', 4,  75,  17.5, 3.8, 1, 12990],
         ['gtx1650s',  'NVIDIA GeForce GTX 1650 SUPER',     'GTX 1650 S',    'nvidia', 4,  100, 22.0, 3.8, 2, 14990],
         ['gtx1660',   'NVIDIA GeForce GTX 1660',           'GTX 1660',      'nvidia', 6,  120, 24.0, 4.0, 2, 16990],
         ['gtx1660s',  'NVIDIA GeForce GTX 1660 SUPER',     'GTX 1660 S',    'nvidia', 6,  125, 24.0, 4.0, 2, 18990],
         ['gtx1660ti', 'NVIDIA GeForce GTX 1660 Ti',        'GTX 1660 Ti',   'nvidia', 6,  120, 24.0, 4.0, 2, 20990],
-        // ===== RTX 20 =====
         ['rtx2060',   'NVIDIA GeForce RTX 2060',           'RTX 2060',      'nvidia', 6,  160, 26.0, 4.2, 2, 22990],
         ['rtx2060s',  'NVIDIA GeForce RTX 2060 SUPER',     'RTX 2060 S',    'nvidia', 8,  175, 26.5, 4.2, 2, 25990],
         ['rtx2070',   'NVIDIA GeForce RTX 2070',           'RTX 2070',      'nvidia', 8,  175, 27.0, 4.3, 2, 27990],
@@ -652,7 +619,6 @@ const DATA = {
         ['rtx2080',   'NVIDIA GeForce RTX 2080',           'RTX 2080',      'nvidia', 8,  215, 28.0, 4.5, 2, 34990],
         ['rtx2080s',  'NVIDIA GeForce RTX 2080 SUPER',     'RTX 2080 S',    'nvidia', 8,  250, 28.0, 4.5, 2, 37990],
         ['rtx2080ti', 'NVIDIA GeForce RTX 2080 Ti',        'RTX 2080 Ti',   'nvidia', 11, 250, 29.0, 4.8, 2, 49990],
-        // ===== RTX 30 =====
         ['rtx3050-6', 'NVIDIA GeForce RTX 3050 6GB',       'RTX 3050 6GB',  'nvidia', 6,  70,  17.0, 3.8, 1, 14990],
         ['rtx3050',   'NVIDIA GeForce RTX 3050 8GB',       'RTX 3050',      'nvidia', 8,  130, 24.0, 4.0, 2, 19990],
         ['rtx3060',   'NVIDIA GeForce RTX 3060 12GB',      'RTX 3060',      'nvidia', 12, 170, 24.5, 4.2, 2, 27990],
@@ -664,7 +630,6 @@ const DATA = {
         ['rtx3080ti', 'NVIDIA GeForce RTX 3080 Ti',        'RTX 3080 Ti',   'nvidia', 12, 350, 31.0, 5.8, 3, 64990],
         ['rtx3090',   'NVIDIA GeForce RTX 3090',           'RTX 3090',      'nvidia', 24, 350, 31.5, 6.0, 3, 84990],
         ['rtx3090ti', 'NVIDIA GeForce RTX 3090 Ti',        'RTX 3090 Ti',   'nvidia', 24, 450, 32.5, 6.5, 3, 99990],
-        // ===== RTX 40 =====
         ['rtx4060',   'NVIDIA GeForce RTX 4060',           'RTX 4060',      'nvidia', 8,  115, 24.0, 4.0, 2, 29990],
         ['rtx4060ti', 'NVIDIA GeForce RTX 4060 Ti 8GB',    'RTX 4060 Ti',   'nvidia', 8,  160, 24.8, 4.3, 2, 39990],
         ['rtx4060ti16','NVIDIA GeForce RTX 4060 Ti 16GB',  'RTX 4060 Ti 16','nvidia', 16, 165, 25.0, 4.3, 2, 47990],
@@ -675,7 +640,6 @@ const DATA = {
         ['rtx4080',   'NVIDIA GeForce RTX 4080',           'RTX 4080',      'nvidia', 16, 320, 31.0, 6.0, 3, 104990],
         ['rtx4080s',  'NVIDIA GeForce RTX 4080 Super',     'RTX 4080 SUPER','nvidia', 16, 320, 31.0, 6.0, 3, 109990],
         ['rtx4090',   'NVIDIA GeForce RTX 4090',           'RTX 4090',      'nvidia', 24, 450, 34.0, 7.0, 3, 189990],
-        // ===== RTX 50 =====
         ['rtx5050',   'NVIDIA GeForce RTX 5050',           'RTX 5050',      'nvidia', 8,  130, 22.0, 4.0, 2, 24990],
         ['rtx5060',   'NVIDIA GeForce RTX 5060',           'RTX 5060',      'nvidia', 8,  145, 24.0, 4.2, 2, 32990],
         ['rtx5060ti8','NVIDIA GeForce RTX 5060 Ti 8GB',    'RTX 5060 Ti 8GB','nvidia',8,  180, 24.5, 4.4, 2, 42990],
@@ -684,8 +648,6 @@ const DATA = {
         ['rtx5070ti', 'NVIDIA GeForce RTX 5070 Ti',        'RTX 5070 Ti',   'nvidia', 16, 300, 30.0, 5.0, 3, 89990],
         ['rtx5080',   'NVIDIA GeForce RTX 5080',           'RTX 5080',      'nvidia', 16, 360, 30.5, 5.5, 3, 109990],
         ['rtx5090',   'NVIDIA GeForce RTX 5090',           'RTX 5090',      'nvidia', 32, 575, 33.5, 6.5, 3, 249990],
-
-        // ===== AMD Radeon RX 400 / 500 =====
         ['rx460',     'AMD Radeon RX 460',                 'RX 460',        'amd', 4,  75,  18.0, 3.8, 1, 7990],
         ['rx470',     'AMD Radeon RX 470',                 'RX 470',        'amd', 4,  120, 24.0, 4.0, 2, 10990],
         ['rx480',     'AMD Radeon RX 480',                 'RX 480',        'amd', 8,  150, 24.5, 4.2, 2, 13990],
@@ -694,16 +656,13 @@ const DATA = {
         ['rx570',     'AMD Radeon RX 570',                 'RX 570',        'amd', 8,  150, 24.0, 4.0, 2, 9990],
         ['rx580',     'AMD Radeon RX 580',                 'RX 580',        'amd', 8,  185, 24.5, 4.2, 2, 11990],
         ['rx590',     'AMD Radeon RX 590',                 'RX 590',        'amd', 8,  175, 25.0, 4.2, 2, 13990],
-        // ===== Vega / Radeon VII =====
         ['vega56',    'AMD Radeon RX Vega 56',             'Vega 56',       'amd', 8,  210, 27.0, 4.5, 2, 17990],
         ['vega64',    'AMD Radeon RX Vega 64',             'Vega 64',       'amd', 8,  295, 28.0, 4.5, 2, 21990],
         ['radeon7',   'AMD Radeon VII',                    'Radeon VII',    'amd', 16, 300, 27.0, 4.5, 3, 34990],
-        // ===== RX 5000 =====
         ['rx5500xt',  'AMD Radeon RX 5500 XT',             'RX 5500 XT',    'amd', 8,  130, 22.0, 4.0, 2, 14990],
         ['rx5600xt',  'AMD Radeon RX 5600 XT',             'RX 5600 XT',    'amd', 6,  150, 25.0, 4.2, 2, 19990],
         ['rx5700',    'AMD Radeon RX 5700',                'RX 5700',       'amd', 8,  180, 26.0, 4.2, 2, 24990],
         ['rx5700xt',  'AMD Radeon RX 5700 XT',             'RX 5700 XT',    'amd', 8,  225, 27.0, 4.5, 2, 27990],
-        // ===== RX 6000 =====
         ['rx6400',    'AMD Radeon RX 6400',                'RX 6400',       'amd', 4,  53,  16.0, 2.0, 1, 11990],
         ['rx6500xt',  'AMD Radeon RX 6500 XT',             'RX 6500 XT',    'amd', 4,  107, 20.0, 3.8, 2, 13990],
         ['rx6600',    'AMD Radeon RX 6600',                'RX 6600',       'amd', 8,  132, 24.0, 3.8, 2, 17990],
@@ -715,7 +674,6 @@ const DATA = {
         ['rx6800xt',  'AMD Radeon RX 6800 XT',             'RX 6800 XT',    'amd', 16, 300, 31.0, 5.5, 3, 52990],
         ['rx6900xt',  'AMD Radeon RX 6900 XT',             'RX 6900 XT',    'amd', 16, 300, 31.0, 5.5, 3, 62990],
         ['rx6950xt',  'AMD Radeon RX 6950 XT',             'RX 6950 XT',    'amd', 16, 335, 32.0, 5.8, 3, 69990],
-        // ===== RX 7000 =====
         ['rx7600',    'AMD Radeon RX 7600',                'RX 7600',       'amd', 8,  165, 24.5, 4.0, 2, 25990],
         ['rx7600xt',  'AMD Radeon RX 7600 XT',             'RX 7600 XT',    'amd', 16, 190, 27.0, 4.4, 2, 34990],
         ['rx7700xt',  'AMD Radeon RX 7700 XT',             'RX 7700 XT',    'amd', 12, 245, 28.0, 5.2, 3, 44990],
@@ -723,13 +681,10 @@ const DATA = {
         ['rx7900gre', 'AMD Radeon RX 7900 GRE',            'RX 7900 GRE',   'amd', 16, 260, 28.0, 5.2, 3, 58990],
         ['rx7900xt',  'AMD Radeon RX 7900 XT',             'RX 7900 XT',    'amd', 20, 315, 32.0, 6.0, 3, 84990],
         ['rx7900xtx', 'AMD Radeon RX 7900 XTX',            'RX 7900 XTX',   'amd', 24, 355, 33.0, 6.5, 3, 99990],
-        // ===== RX 9000 =====
         ['rx9060xt8', 'AMD Radeon RX 9060 XT 8GB',         'RX 9060 XT 8GB','amd', 8,  150, 24.0, 4.0, 2, 33990],
         ['rx9060xt',  'AMD Radeon RX 9060 XT 16GB',        'RX 9060 XT',    'amd', 16, 160, 24.5, 4.2, 2, 39990],
         ['rx9070',    'AMD Radeon RX 9070',                'RX 9070',       'amd', 16, 220, 28.0, 5.0, 3, 64990],
         ['rx9070xt',  'AMD Radeon RX 9070 XT',             'RX 9070 XT',    'amd', 16, 304, 32.0, 5.8, 3, 74990],
-
-        // ===== Intel Arc (оставлены из прежнего списка + серия A) =====
         ['arca380',   'Intel Arc A380',                    'Arc A380',      'intel', 6,  75,  17.0, 3.8, 1, 10990],
         ['arca580',   'Intel Arc A580',                    'Arc A580',      'intel', 8,  185, 26.0, 4.2, 2, 18990],
         ['arca750',   'Intel Arc A750',                    'Arc A750',      'intel', 8,  225, 27.0, 4.4, 2, 22990],
@@ -762,7 +717,6 @@ const DATA = {
     ])
 };
 
-/* ---------- Белые версии: добавляются в список сразу после обычных ---------- */
 function addWhite(list, ok, suffix, plus) {
     const out = [];
     list.forEach(o => {
@@ -777,7 +731,6 @@ DATA.cooler = addWhite(DATA.cooler, o => o.type !== 'low', o => o.type === 'aio'
 DATA.gpu    = addWhite(DATA.gpu,    o => o.price >= 20000, ' White', 2000);
 DATA.psu    = addWhite(DATA.psu,    () => true,            ' (белый)', 1000);
 
-// Фигурки на видеокарте: только для VIP
 DATA.fig = [
     { id: 'miku',  name: 'Мику-тян',          vip: true, price: 0, desc: 'Аниме-фигурка · бирюзовые хвостики · светящаяся подставка' },
     { id: 'neko',  name: 'Нэко с бубенчиком', vip: true, price: 0, desc: 'Чёрная кошечка · зелёные глаза' },
@@ -805,9 +758,7 @@ function specOf(key, o) {
     return '';
 }
 
-/* =====================================================================
-   СОСТОЯНИЕ, VIP-ЗАМКИ И ПРОВЕРКА СОВМЕСТИМОСТИ
-   ===================================================================== */
+/* СОСТОЯНИЕ, VIP-ЗАМКИ И ПРОВЕРКА СОВМЕСТИМОСТИ */
 let state = {};
 let active = 0;
 
@@ -817,11 +768,9 @@ function requiredPower(s) {
     return Math.ceil((s.cpu.tdp + s.gpu.tdp + 150) / 50) * 50;
 }
 
-// VIP нужен только для деталей с флагом vip (водянки с экраном и фигурки)
 const vipOk = () => { const w = window.HW_CK; return !!(w && w.vip_active); };
 const isVipReason = r => typeof r === 'string' && r.indexOf('👑') === 0;
 
-// Возвращает текст причины несовместимости или null
 function check(key, o, s) {
     s = s || state;
     if (o.vip && !vipOk()) return '👑 Только для VIP — оформите VIP в магазине';
@@ -862,7 +811,6 @@ function check(key, o, s) {
     return null;
 }
 
-// Убирает из сборки несовместимые детали (VIP-замок деталь не убирает: уже собранное остаётся)
 function revalidate(s) {
     const removed = [];
     STEPS.forEach(step => {
@@ -879,9 +827,7 @@ function firstMissing() {
     return -1;
 }
 
-/* =====================================================================
-   3D: СЦЕНА, СВЕТ, КАМЕРА
-   ===================================================================== */
+/* 3D: СЦЕНА, СВЕТ, КАМЕРА */
 const canvas = $('canvas');
 const viewport = $('viewport');
 let renderer;
@@ -899,80 +845,77 @@ renderer.toneMappingExposure = 1.15;
 
 const scene = new T.Scene();
 const camera = new T.PerspectiveCamera(38, 1, 0.5, 600);
-const rig = new T.Group();           // сюда добавляются все детали (координаты — «в корпусе»)
+const rig = new T.Group();
 scene.add(rig);
 
 const ambient = new T.AmbientLight(0xffffff, 0.6);
-const hemi = new T.HemisphereLight(0xcdbfff, 0x20103a, 0.35);
+const hemi = new T.HemisphereLight(0xcdd3ff, 0x10131f, 0.35);
 const sun = new T.DirectionalLight(0xffffff, 0.85);
 sun.position.set(40, 90, 70);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -70, right: 70, top: 70, bottom: -70, near: 10, far: 260 });
 sun.shadow.bias = -0.0006;
-const pl1 = new T.PointLight(0xa855f7, 0.7, 260); pl1.position.set(-60, 30, 50);
-const pl2 = new T.PointLight(0x06b6d4, 0.6, 260); pl2.position.set(60, 10, 60);
+const pl1 = new T.PointLight(0x6f7dff, 0.7, 260); pl1.position.set(-60, 30, 50);
+const pl2 = new T.PointLight(0x2fd3b0, 0.6, 260); pl2.position.set(60, 10, 60);
 scene.add(ambient, hemi, sun, pl1, pl2);
-try {   // процедурная студийная карта окружения: металл и лак получают настоящие отражения
+try {
     const pm = new T.PMREMGenerator(renderer), es = new T.Scene();
-    es.add(new T.Mesh(new T.BoxGeometry(100, 100, 100), new T.MeshBasicMaterial({ color: 0x241d3a, side: T.BackSide })));
+    es.add(new T.Mesh(new T.BoxGeometry(100, 100, 100), new T.MeshBasicMaterial({ color: 0x1c2030, side: T.BackSide })));
     [[0, 48, 0, 60, 1, 60, 0xffffff, 4], [-48, 5, 0, 1, 40, 60, 0xc4b5fd, 2.5], [48, 5, 10, 1, 30, 50, 0x67e8f9, 2], [0, 5, -48, 70, 40, 1, 0xffffff, 1.5], [0, -48, 0, 80, 1, 80, 0x3b2a63, 0.6]]
         .forEach(k => { const m = new T.MeshBasicMaterial({ color: new T.Color(k[6]).multiplyScalar(k[7]) }); const b = new T.Mesh(new T.BoxGeometry(k[3], k[4], k[5]), m); b.position.set(k[0], k[1], k[2]); es.add(b); });
     scene.environment = pm.fromScene(es, 0.03).texture;
 } catch (e) {}
 
-const floor = new T.Mesh(new T.CircleGeometry(95, 64), new T.MeshStandardMaterial({ color: 0x120a24, roughness: 0.95, metalness: 0 }));
+const floor = new T.Mesh(new T.CircleGeometry(95, 64), new T.MeshStandardMaterial({ color: 0x10131a, roughness: 0.95, metalness: 0 }));
 floor.rotation.x = -Math.PI / 2;
 floor.receiveShadow = true;
 scene.add(floor);
 
-/* ---------- Неон: цветная лампа внутри корпуса + свечение (bloom) ---------- */
-const rgbLamp = new T.PointLight(0xa855f7, 0, 150, 1.5);   // подсвечивает детали цветом подсветки: блики на металле
+/* Неон: цветная лампа внутри корпуса + свечение (bloom) — ярче, но без «слепящего» эффекта */
+const rgbLamp = new T.PointLight(0x6f7dff, 0, 190, 1.5);
 rig.add(rgbLamp);
 let composer = null, bloomPass = null;
-try {   // если скрипты свечения не загрузились, всё работает и без него
+try {
     if (T.EffectComposer && T.RenderPass && T.UnrealBloomPass) {
         composer = new T.EffectComposer(renderer);
         composer.addPass(new T.RenderPass(scene, camera));
-        bloomPass = new T.UnrealBloomPass(new T.Vector2(256, 256), 1.3, 0.55, 0.78);
+        bloomPass = new T.UnrealBloomPass(new T.Vector2(256, 256), 1.5, 0.6, 0.72);
         composer.addPass(bloomPass);
     }
 } catch (e) { composer = null; bloomPass = null; }
 
 function applySceneTheme() {
     const light = root.getAttribute('data-theme') === 'light';
-    const bg = new T.Color(light ? '#f3f0fa' : '#06020b');
+    const bg = new T.Color(light ? '#f4f4f6' : '#08090b');
     renderer.setClearColor(bg, 1);
     scene.fog = new T.Fog(bg, 110, 230);
-    floor.material.color.set(light ? '#e1daf3' : '#120a24');
+    floor.material.color.set(light ? '#e4e5ea' : '#10131a');
     ambient.intensity = light ? 0.5 : 0.28;
     sun.intensity = light ? 0.8 : 0.85;
     pl1.intensity = light ? 0.35 : 0.7;
     pl2.intensity = light ? 0.3 : 0.6;
 }
 
-// --- Камера (орбита без внешних библиотек) ---
 const cam = { base: 0.55, phi: 1.28, tPhi: 1.28, theta: 0.55, zoom: 1, tZoom: 1, auto: 0 };
 let backOn = true, autoRotate = true, glassOn = false, rgbOn = true, dragging = false;
 
-/* Настройки подсветки по зонам: «all» — вся сборка, «gpu» — видеокарта (если own = true, у неё свой цвет) */
 const LIGHT = {
-    all: { hex: null, col: null, bright: 2.2, speed: 1, fx: 'static' },
-    gpu: { own: false, hex: null, col: null, bright: 2.2, speed: 1, fx: 'static' }
+    all: { hex: null, col: null, bright: 3.4, speed: 1, fx: 'static' },
+    gpu: { own: false, hex: null, col: null, bright: 3.4, speed: 1, fx: 'static' }
 };
-let rgbGlow = 1.3;                                    // сила свечения (bloom)
-const fanCfg = { front: 'rgb', rear: 'rgb' };         // стиль вентиляторов корпуса
+let rgbGlow = 1.5;
+const fanCfg = { front: 'rgb', rear: 'rgb' };
 const lightFor = zone => (zone === 'gpu' && LIGHT.gpu.own) ? LIGHT.gpu : LIGHT.all;
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
 function caseDims() { return state.case ? state.case.dims : { x: 46, y: 45, z: 21 }; }
 
-const FIT_REF = 56;   // единый масштаб кадра: большие корпуса занимают больше места, маленькие — меньше
+const FIT_REF = 56;
 function fitRadius() {
     const D = caseDims();
     const target = Math.max(D.x, D.y) * 1.18;
     const ref = FIT_REF * 1.18;
-    // 65% — реальное соотношение размеров, 35% — подгонка под кадр (чтобы мелкий корпус не терялся)
     const span = ref * Math.pow(target / ref, 0.65);
     cam.span = cam.span ? cam.span + (span - cam.span) * 0.12 : span;
     return 1.45 * cam.span * Math.max(1, 1 / camera.aspect);
@@ -1037,10 +980,8 @@ function drawScene() {
     else renderer.render(scene, camera);
 }
 
-/* =====================================================================
-   3D: ПОМОЩНИКИ ДЛЯ ПОСТРОЕНИЯ ДЕТАЛЕЙ
-   ===================================================================== */
-let CTX = null; // собирает RGB-материалы и вращающиеся вентиляторы текущей детали
+/* 3D: ПОМОЩНИКИ ДЛЯ ПОСТРОЕНИЯ ДЕТАЛЕЙ */
+let CTX = null;
 
 function mat(color, o) {
     const q = Object.assign({ color: color, metalness: 0.3, roughness: 0.55 }, o || {});
@@ -1048,7 +989,7 @@ function mat(color, o) {
     return new T.MeshStandardMaterial(q);
 }
 const BEV = {};
-function bevBox(w, h, d) {   // коробка со скруглёнными рёбрами — ловит блики на гранях
+function bevBox(w, h, d) {
     const mn = Math.min(w, h, d);
     if (mn < 1.0) return new T.BoxGeometry(w, h, d);
     const b = Math.min(0.14, mn * 0.1), key = [w, h, d].join();
@@ -1064,7 +1005,7 @@ function box(w, h, d, color, o) {
     m.castShadow = true; m.receiveShadow = true;
     return m;
 }
-function cyl(r, h, color, o, seg) {          // цилиндр, ось вдоль Z
+function cyl(r, h, color, o, seg) {
     const m = new T.Mesh(new T.CylinderGeometry(r, r, h, seg || 32), mat(color, o));
     m.rotation.x = Math.PI / 2;
     m.castShadow = true; m.receiveShadow = true;
@@ -1072,7 +1013,6 @@ function cyl(r, h, color, o, seg) {          // цилиндр, ось вдол�
 }
 function at(obj, x, y, z) { obj.position.set(x, y, z); return obj; }
 
-// Светящийся материал. zone: 'all' — вся сборка, 'gpu' — зона видеокарты (может иметь свой цвет)
 function rgbMat(zone) {
     const m = new T.MeshStandardMaterial({ color: '#1a1a1f', emissive: new T.Color(0x000000), emissiveIntensity: 1.4, roughness: 0.4 });
     m.userData.off = (CTX.rgb.length * 0.11) % 1;
@@ -1104,7 +1044,6 @@ function tube(pts, r, color) {
     return m;
 }
 
-/* ---------- Вентиляторы: стили (для корпуса выбираются кнопкой «🌀 Вентиляторы») ---------- */
 const FAN_STYLES = {
     rgb:        { name: 'Чёрные + RGB-кольцо',  frame: '#16141f', blade: '#25222f', hub: '#0c0b12', hub2: '#2e2b3a', ring: true,  rgbBlades: false },
     argb:       { name: 'Чёрные + RGB-лопасти', frame: '#16141f', blade: null,      hub: '#0c0b12', hub2: '#2e2b3a', ring: true,  rgbBlades: true  },
@@ -1113,7 +1052,6 @@ const FAN_STYLES = {
     plain:      { name: 'Чёрные без подсветки', frame: '#16141f', blade: '#25222f', hub: '#0c0b12', hub2: '#2e2b3a', ring: false, rgbBlades: false }
 };
 
-// Вентилятор: смотрит вдоль +Z, толщина th, центр в начале координат
 function fan(size, th, zone, style) {
     th = th || 2.5;
     const S = FAN_STYLES[style] || FAN_STYLES.rgb;
@@ -1146,12 +1084,7 @@ function fan(size, th, zone, style) {
     return g;
 }
 
-/* =====================================================================
-   3D: РАСКЛАДКА ВНУТРИ КОРПУСА
-   Система координат: начало — задний нижний угол у задней стенки (материнская
-   «тарелка» в плоскости z=0), X — от задней стенки к передней, Y — вверх,
-   Z — в сторону открытой боковины (на зрителя).
-   ===================================================================== */
+/* 3D: РАСКЛАДКА ВНУТРИ КОРПУСА */
 function layoutNow() {
     const c = state.case, mb = state.mb;
     if (!c || !mb) return null;
@@ -1170,8 +1103,7 @@ function gpuGeom(L, gpu) {
     return { x0: x0, x1: x0 + gpu.len, y0: y0, y1: y1, z0: z0, z1: z0 + (gpu.model ? gpu.len * 0.47 : 11.5) };
 }
 
-/* ---------- Готовая 3D-модель видеокарты (GLB) ---------- */
-DATA.gpu.filter(x => x.id === 'rtx3070ti' || x.id === 'rtx3070ti-w').forEach(x => { x.model = 'models/gpu_rtx3070ti_tuf.glb'; });   // белая версия — та же модель, перекрашенная
+DATA.gpu.filter(x => x.id === 'rtx3070ti' || x.id === 'rtx3070ti-w').forEach(x => { x.model = 'models/gpu_rtx3070ti_tuf.glb'; });
 const MODEL_CACHE = {};
 function loadModel(url) {
     if (MODEL_CACHE[url] || !T.GLTFLoader) return MODEL_CACHE[url];
@@ -1188,7 +1120,7 @@ function gpuFromModel(gpu, G, g) {
     if (!gltf || !gltf.scene) return null;
     const s = gpu.len / 4.89, H = G.z1 - G.z0, m = gltf.scene.clone(true);
     m.traverse(o => { if (o.isMesh) { o.castShadow = o.receiveShadow = true; o.material = o.material.clone(); } });
-    if (gpu.white) m.traverse(o => {   // белая версия: красим материалы модели почти в белый
+    if (gpu.white) m.traverse(o => {
         if (o.isMesh && o.material && o.material.color) {
             o.material.color.lerp(new T.Color('#f4f5f9'), 0.88);
             if (o.material.metalness !== undefined) o.material.metalness = Math.min(o.material.metalness, 0.35);
@@ -1206,18 +1138,16 @@ function gpuFromModel(gpu, G, g) {
     });
     const gy = (G.y0 + G.y1) / 2;
     g.add(at(box(0.3, gpu.thick + 0.5, H + 0.5, gpu.white ? '#cfd3dd' : '#b8bcc6', { metalness: 0.8, roughness: 0.3 }), G.x0 - 0.15, gy, G.z0 + H / 2));
-    for (let i = 0; i < 4; i++) {   // i=0 HDMI, остальные DisplayPort
+    for (let i = 0; i < 4; i++) {
         const hy = G.y0 + gpu.thick * (0.2 + i * 0.2), hdmi = i === 0, cz = G.z0 + H / 2;
         g.add(at(box(0.3, gpu.thick * 0.14, H * 0.3, hdmi ? '#3a3a46' : '#2a2a34', { metalness: 0.8 }), G.x0 - 0.35, hy, cz));
         g.add(at(box(0.34, gpu.thick * 0.08, H * 0.22, '#030305'), G.x0 - 0.38, hy, cz));
         g.add(at(box(0.2, gpu.thick * 0.03, H * 0.16, hdmi ? '#9aa1ad' : '#15151b', { metalness: 0.9 }), G.x0 - 0.42, hy, cz));
     }
-    // полоса подсветки видеокарты (зона «gpu»: любой цвет)
     g.add(at(new T.Mesh(new T.BoxGeometry(gpu.len * 0.86, 0.26, 0.12), rgbMat('gpu')), G.x0 + gpu.len / 2, G.y1 - 0.35, G.z1 + 0.06));
     return g;
 }
 
-/* ---------- Фигурки (стоят на видеокарте) ---------- */
 const fMesh = (geo, col, o) => { const m = new T.Mesh(geo, mat(col, o)); m.castShadow = true; return m; };
 const Sp = (r, col, o) => fMesh(new T.SphereGeometry(r, 20, 14), col, o);
 const Cy = (rt, rb, h, col, o) => fMesh(new T.CylinderGeometry(rt, rb, h, 20), col, o);
@@ -1272,21 +1202,19 @@ function figBase(g) {
     const r = new T.Mesh(new T.TorusGeometry(2.8, 0.09, 8, 48), rgbMat()); r.rotation.x = Math.PI / 2; r.position.y = 0.52; g.add(r);
 }
 
-/* ---------- Кожух и блок питания внизу корпуса ---------- */
-function shroudH(c) {   // высота кожуха БП: не залезает под плату самого большого формата
+function shroudH(c) {
     const hmax = Math.max.apply(null, c.forms.map(f => FORMS[f].h));
     return Math.max(5, Math.min(9.6, c.dims.y - 3 - hmax - 1.2));
 }
-function psuBox(c) {    // БП стоит внутри кожуха у задней стенки
+function psuBox(c) {
     const sh = shroudH(c), h = Math.min(8.6, sh - 0.9), w = Math.min(14, c.dims.z - 3.4);
     return { x0: 0.1, x1: 15.3, y0: 0.5, y1: 0.5 + h, z0: 1.1, z1: 1.1 + w };
 }
 
-/* ---------- Экран на помпе СЖО: параметры и работа с картинкой ---------- */
 const AIO_SR = 7, AIO_SL = 0.95, AIO_SH = 5.4, AIO_SA = AIO_SR * AIO_SL / AIO_SH;
-let aioMedia = null;   // { tex, url, video?, w, h }
+let aioMedia = null;
 
-function aioFit(m) {   // обрезка «по центру», чтобы картинка не растягивалась
+function aioFit(m) {
     const t = m.tex, ma = m.w / m.h;
     t.repeat.set(1, 1); t.offset.set(0, 0);
     if (ma > AIO_SA) { t.repeat.x = AIO_SA / ma; t.offset.x = (1 - t.repeat.x) / 2; }
@@ -1310,7 +1238,7 @@ function aioClear() {
     aioMedia.tex.dispose();
     aioMedia = null;
 }
-function aioShow(tex) {   // подменяет картинку на уже стоящем экране, без перестройки детали
+function aioShow(tex) {
     const p = parts.cooler, s = p && p.group.userData.aioScreen;
     if (!s) return;
     if (s.material.map && s.material.map !== tex) s.material.map.dispose();
@@ -1323,70 +1251,65 @@ function aioApply(media) {
     aioShow(media.tex);
 }
 function aioReset() { aioClear(); aioShow(aioScreenTex()); }
-    /* =====================================================================
-   3D: СБОРЩИКИ ДЕТАЛЕЙ
-   ===================================================================== */
-const shroudX1 = c => c.fronts.length ? c.dims.x - 3.2 : c.dims.x - 0.4;   // передний торец кожуха БП
+
+/* 3D: СБОРЩИКИ ДЕТАЛЕЙ */
+const shroudX1 = c => c.fronts.length ? c.dims.x - 3.2 : c.dims.x - 0.4;
 
 const BUILDERS = {
     case() {
         const c = state.case, D = c.dims, g = new T.Group();
         const body = c.color, fr = c.frame, mo = { metalness: 0.5, roughness: 0.55 };
-        // прозрачность стенок зависит от типа корпуса (c.wall можно задать вручную: 1 — глухой, 0.2 — почти стекло)
         const WALL_DEF = { solid: 1, mesh: 0.85, glass: 0.7, aquarium: 0.2 };
         const wo = c.wall != null ? c.wall : WALL_DEF[c.panel || 'glass'];
-        const solid = (w, h, d, x, y, z) => g.add(at(box(w, h, d, body, mo), x, y, z));   // глухая стенка
+        const solid = (w, h, d, x, y, z) => g.add(at(box(w, h, d, body, mo), x, y, z));
         const wall = (w, h, d, x, y, z) => {
             const m = wo >= 1 ? box(w, h, d, body, mo)
                 : new T.Mesh(new T.BoxGeometry(w, h, d), mat(body, Object.assign({ transparent: true, opacity: wo, depthWrite: false }, mo)));
             return g.add(at(m, x, y, z));
         };
-        const neon = (w, h, d, x, y, z) => g.add(at(new T.Mesh(new T.BoxGeometry(w, h, d), rgbMat('all')), x, y, z));   // неоновая полоса
-        solid(D.x, D.y, 0.4, D.x / 2, D.y / 2, -0.2);        // тыльная панель (лоток)
-        solid(D.x, 0.4, D.z, D.x / 2, -0.2, D.z / 2);        // дно: непрозрачное
-        solid(D.x, 0.4, D.z, D.x / 2, D.y + 0.2, D.z / 2);   // потолок: глухой, как стена
-        wall(0.4, D.y, D.z, -0.2, D.y / 2, D.z / 2);         // задняя стенка
-        if (c.panel === 'aquarium') {                        // аквариум: передняя панель из стекла
+        const neon = (w, h, d, x, y, z) => g.add(at(new T.Mesh(new T.BoxGeometry(w, h, d), rgbMat('all')), x, y, z));
+        solid(D.x, D.y, 0.4, D.x / 2, D.y / 2, -0.2);
+        solid(D.x, 0.4, D.z, D.x / 2, -0.2, D.z / 2);
+        solid(D.x, 0.4, D.z, D.x / 2, D.y + 0.2, D.z / 2);
+        wall(0.4, D.y, D.z, -0.2, D.y / 2, D.z / 2);
+        if (c.panel === 'aquarium') {
             g.add(at(new T.Mesh(new T.BoxGeometry(0.3, D.y, D.z), mat('#7dd3fc', { transparent: true, opacity: 0.16, roughness: 0.05, metalness: 0.2, depthWrite: false })), D.x + 0.15, D.y / 2, D.z / 2));
         } else {
-            wall(0.4, D.y, D.z, D.x + 0.2, D.y / 2, D.z / 2);   // передняя панель
+            wall(0.4, D.y, D.z, D.x + 0.2, D.y / 2, D.z / 2);
         }
         const bar = (w, h, d, x, y, z) => g.add(at(box(w, h, d, fr, { metalness: 0.6, roughness: 0.4 }), x, y, z));
         bar(D.x, 0.6, 0.6, D.x / 2, D.y, 0.3);        bar(D.x, 0.6, 0.6, D.x / 2, D.y, D.z - 0.3);
         bar(0.6, 0.6, D.z, 0.3, D.y, D.z / 2);        bar(0.6, 0.6, D.z, D.x - 0.3, D.y, D.z / 2);
         bar(D.x, 0.6, 0.6, D.x / 2, 0.3, D.z - 0.3);
         bar(0.6, D.y, 0.6, 0.3, D.y / 2, D.z - 0.3);  bar(0.6, D.y, 0.6, D.x - 0.3, D.y / 2, D.z - 0.3);
-        // неоновый контур открытой стороны
         neon(D.x - 1.2, 0.32, 0.32, D.x / 2, D.y - 0.45, D.z - 0.2);
         neon(D.x - 1.2, 0.32, 0.32, D.x / 2, 0.9, D.z - 0.2);
         neon(0.32, D.y - 2.4, 0.32, 0.9, D.y / 2, D.z - 0.2);
         neon(0.32, D.y - 2.4, 0.32, D.x - 0.9, D.y / 2, D.z - 0.2);
-        // неоновая вертикаль на фронтальной панели и полоса на потолке
         neon(0.28, D.y * 0.7, 0.32, D.x + 0.5, D.y * 0.5, D.z * 0.5);
         neon(D.x * 0.5, 0.26, 0.32, D.x * 0.45, D.y + 0.45, D.z * 0.5);
         const P = (w, h, d, col, x, y, z, o) => g.add(at(box(w, h, d, col, o), x, y, z));
         [[3, 3], [D.x - 3, 3], [3, D.z - 3], [D.x - 3, D.z - 3]].forEach(k => P(2.6, 1.2, 2.6, '#0b0b0f', k[0], -1.0, k[1], { roughness: 0.9 }));
-        for (let i = 0; i < (D.y > 40 ? 5 : 3); i++) P(0.4, 1.7, 11, '#2a2c35', 0.2, 1.2 + i * 2.0, 7, { metalness: 0.7 });   // заглушки слотов PCIe
-        // кнопка питания и разъёмы на потолке
+        for (let i = 0; i < (D.y > 40 ? 5 : 3); i++) P(0.4, 1.7, 11, '#2a2c35', 0.2, 1.2 + i * 2.0, 7, { metalness: 0.7 });
         P(1.5, 0.3, 1.5, '#d4d4dc', D.x - 4, D.y + 0.55, D.z - 0.3, { metalness: 0.8 });
         P(0.5, 0.15, 0.5, '#22c55e', D.x - 4, D.y + 0.75, D.z - 0.3, { emissive: '#22c55e', emissiveIntensity: 1 });
         for (let i = 0; i < 2; i++) P(1.2, 0.12, 0.5, '#111116', D.x - 7.5 + i * 1.6, D.y + 0.46, D.z - 0.3);
         g.add(at(cyl(0.35, 0.14, '#111116'), D.x - 11, D.y + 0.46, D.z - 0.3));
-        {   // кожух БП: почти на всю длину корпуса, внутри стоит блок питания
+        {
             const SH = shroudH(c), x0 = 0.1, x1 = shroudX1(c), SZ = D.z - 1.4;
             const sc = new T.Group();
             sc.add(at(box(x1 - x0, SH, SZ, body, mo), (x0 + x1) / 2, 0.4 + SH / 2, 0.8 + SZ / 2));
-            for (let i = 0; i < 8; i++) sc.add(at(box(0.35, 0.1, SZ * 0.5, '#050507'), x1 - 14 + i * 1.2, SH + 0.45, D.z * 0.55));   // вентиляционные прорези
-            sc.add(at(new T.Mesh(new T.BoxGeometry(x1 - x0 - 1, 0.28, 0.14), rgbMat('all')), (x0 + x1) / 2, 0.4 + SH * 0.5, D.z - 0.5));   // неоновая полоса на кожухе
+            for (let i = 0; i < 8; i++) sc.add(at(box(0.35, 0.1, SZ * 0.5, '#050507'), x1 - 14 + i * 1.2, SH + 0.45, D.z * 0.55));
+            sc.add(at(new T.Mesh(new T.BoxGeometry(x1 - x0 - 1, 0.28, 0.14), rgbMat('all')), (x0 + x1) / 2, 0.4 + SH * 0.5, D.z - 0.5));
             g.add(sc);
         }
         if (c.panel !== 'aquarium') { const lg = labelPlane(c.name.split(' ')[0].toUpperCase(), D.z * 0.55, 2.0, fr); lg.rotation.y = Math.PI / 2; g.add(at(lg, D.x + 0.45, 4.5, D.z / 2)); }
         if (c.panel === 'mesh') for (let i = 0; i < 6; i++) P(0.1, D.y * 0.8, 0.12, fr, D.x + 0.45, D.y * 0.5, 2 + i * (D.z - 4) / 5);
-        c.fronts.forEach(y => {   // фронтальные вентиляторы (стиль выбирается кнопкой «Вентиляторы»)
+        c.fronts.forEach(y => {
             const f = fan(12, 2.5, 'all', fanCfg.front); f.rotation.y = Math.PI / 2; at(f, D.x - 1.8, y, D.z / 2); g.add(f);
         });
-        const rf = fan(12, 2.5, 'all', fanCfg.rear); rf.rotation.y = Math.PI / 2; at(rf, 1.8, D.y - 7.5, D.z - 6.5); g.add(rf);   // задний вентилятор
-        let glass;   // боковая панель (кнопка «Стекло»)
+        const rf = fan(12, 2.5, 'all', fanCfg.rear); rf.rotation.y = Math.PI / 2; at(rf, 1.8, D.y - 7.5, D.z - 6.5); g.add(rf);
+        let glass;
         if (c.panel === 'solid') {
             glass = box(D.x, D.y, 0.4, body, mo);
         } else if (c.panel === 'mesh') {
@@ -1406,13 +1329,12 @@ const BUILDERS = {
         glass.visible = glassOn;
         g.userData.glass = glass;
         g.add(glass);
-        // стенки кабельного отсека и задняя крышка (кнопка «Задняя крышка» её снимает)
         [[D.x, 0.4, 9.6, D.x / 2, -0.2, -4.8], [D.x, 0.4, 9.6, D.x / 2, D.y + 0.2, -4.8], [0.4, D.y, 9.6, -0.2, D.y / 2, -4.8], [0.4, D.y, 9.6, D.x + 0.2, D.y / 2, -4.8]]
             .forEach(k => g.add(at(box(k[0], k[1], k[2], body, mo), k[3], k[4], k[5])));
         const cover = new T.Group();
         cover.add(at(box(D.x, D.y, 0.4, body, mo), D.x / 2, D.y / 2, -9.8));
-        for (let i = 0; i < 8; i++) cover.add(at(box(D.x * 0.5, 0.35, 0.1, '#050507'), D.x * 0.5, D.y * 0.62 + i * 0.9, -10.05));   // вентиляционные прорези
-        [[1.5, 1.5], [D.x - 1.5, 1.5], [1.5, D.y - 1.5], [D.x - 1.5, D.y - 1.5]].forEach(k => cover.add(at(cyl(0.6, 0.35, '#c9ccd4', { metalness: 0.9 }), k[0], k[1], -10.15)));   // винты
+        for (let i = 0; i < 8; i++) cover.add(at(box(D.x * 0.5, 0.35, 0.1, '#050507'), D.x * 0.5, D.y * 0.62 + i * 0.9, -10.05));
+        [[1.5, 1.5], [D.x - 1.5, 1.5], [1.5, D.y - 1.5], [D.x - 1.5, D.y - 1.5]].forEach(k => cover.add(at(cyl(0.6, 0.35, '#c9ccd4', { metalness: 0.9 }), k[0], k[1], -10.15)));
         g.add(cover); g.userData.back = cover;
         return g;
     },
@@ -1424,44 +1346,37 @@ const BUILDERS = {
         const txt = W ? '#1a1a22' : '#e9d5ff', ribs = W ? '#aeb4c2' : '#3a4050';
         const metal = { metalness: 0.7, roughness: 0.4 };
         g.add(at(box(L.bw, L.bh, 0.18, pcb, { metalness: 0.2, roughness: 0.7 }), L.bx + L.bw / 2, L.top - L.bh / 2, L.zb));
-        // кожух портов ввода-вывода
         g.add(at(box(4.2, L.bh * 0.5, 2.6, W ? '#dfe3ec' : '#1c1d26'), L.bx + 2.1, L.top - L.bh * 0.25, L.zs + 1.3));
         g.add(at(box(4.25, 0.25, 2.65, acc, { emissive: acc, emissiveIntensity: 0.5 }), L.bx + 2.1, L.top - L.bh * 0.5, L.zs + 1.3));
         g.add(at(labelPlane(mb.chip, 3.4, 1.2, txt), L.bx + 2.1, L.top - L.bh * 0.2, L.zs + 2.62));
-        // радиаторы VRM
         g.add(at(box(L.bw * 0.34, 2.2, 2.0, hs, metal), L.bx + L.bw * 0.38, L.top - 1.3, L.zs + 1.0));
         if (!L.itx) g.add(at(box(1.8, L.bh * 0.3, 2.0, hs, metal), L.cpu.x - 3.9, L.cpu.y, L.zs + 1.0));
-        // сокет
         g.add(at(box(5.2, 5.2, 0.3, '#8b909b', { metalness: 0.8, roughness: 0.35 }), L.cpu.x, L.cpu.y, L.zs + 0.15));
-        // слоты ОЗУ
         for (let i = 0; i < L.ram.n; i++) g.add(at(box(0.7, 13.5, 1.1, W ? '#cdd2dc' : '#17151d'), L.ram.x + i * 0.85, L.ram.y, L.zs + 0.55));
-        // слоты PCIe
         g.add(at(box(8.9, 0.8, 1.1, W ? '#cdd2dc' : '#17151d'), L.bx + 5.4, L.gpuY, L.zs + 0.55));
         if (!L.itx) g.add(at(box(4.5, 0.8, 1.1, W ? '#cdd2dc' : '#17151d'), L.bx + 3.4, L.top - L.bh * 0.80, L.zs + 0.55));
-        // чипсет
         if (!L.itx) {
             g.add(at(box(4.2, 4.2, 1.0, hs, metal), L.bx + L.bw * 0.70, L.top - L.bh * 0.84, L.zs + 0.5));
             g.add(at(labelPlane(mb.chip, 3.4, 1.2, txt), L.bx + L.bw * 0.70, L.top - L.bh * 0.84, L.zs + 1.02));
         }
-        // разъём 24-pin
         g.add(at(box(1.2, 5.0, 1.6, '#e8e8ee'), L.bx + L.bw - 0.9, L.top - L.bh * 0.55, L.zs + 0.8));
         const M = (w, h, d, col, x, y, z, o) => g.add(at(box(w, h, d, col, o), x, y, z));
-        for (let i = 0; i < 9; i++) M(0.15, 2.0, 0.7, ribs, L.bx + L.bw * 0.21 + i * L.bw * 0.34 / 9, L.top - 1.3, L.zs + 2.35, metal);   // ребра VRM
-        for (let i = 0; i < 6; i++) g.add(at(cyl(0.45, 0.7, W ? '#aeb4c2' : '#2b2f3a', metal), L.cpu.x - 3 + i * 1.2, L.cpu.y + 3.6, L.zs + 0.45));   // дроссели
-        M(2.4, 1.0, 1.4, '#e8e8ee', L.bx + L.bw * 0.15, L.top - 0.7, L.zs + 0.7);                                                         // 8-pin CPU
+        for (let i = 0; i < 9; i++) M(0.15, 2.0, 0.7, ribs, L.bx + L.bw * 0.21 + i * L.bw * 0.34 / 9, L.top - 1.3, L.zs + 2.35, metal);
+        for (let i = 0; i < 6; i++) g.add(at(cyl(0.45, 0.7, W ? '#aeb4c2' : '#2b2f3a', metal), L.cpu.x - 3 + i * 1.2, L.cpu.y + 3.6, L.zs + 0.45));
+        M(2.4, 1.0, 1.4, '#e8e8ee', L.bx + L.bw * 0.15, L.top - 0.7, L.zs + 0.7);
         for (let i = 0; i < L.ram.n; i++) { M(0.6, 0.5, 0.9, '#2a2a30', L.ram.x + i * 0.85, L.ram.y + 7.0, L.zs + 0.5); M(0.6, 0.5, 0.9, '#2a2a30', L.ram.x + i * 0.85, L.ram.y - 7.0, L.zs + 0.5); }
         [[0.5, 0.5], [0.5, L.bh - 0.5], [L.bw - 0.5, 0.5], [L.bw - 0.5, L.bh - 0.5], [L.bw * 0.5, L.bh * 0.5]].forEach(k => g.add(at(cyl(0.3, 0.2, '#c9ccd4', { metalness: 0.9 }), L.bx + k[0], L.top - k[1], L.zs + 0.05)));
-        g.add(at(cyl(1.0, 0.35, '#c0c4cc', { metalness: 0.9 }), L.bx + L.bw * 0.45, L.top - L.bh + 1.8, L.zs + 0.2));       // батарейка CMOS
-        M(0.5, 1.0, 1.2, '#2a2a32', L.bx + 10.1, L.gpuY, L.zs + 0.6);                                                        // фиксатор PCIe
-        for (let i = 0; i < 3; i++) M(2.0, 0.6, 0.8, '#e8e8ee', L.bx + L.bw * (0.3 + 0.1 * i), L.top - L.bh + 0.5, L.zs + 0.4);   // разъёмы вентиляторов
-        for (let i = 0; i < 4; i++) g.add(at(cyl(0.3, 0.6, '#d4a73a', { metalness: 0.9 }), L.bx + 1.5 + i * 0.9, L.top - L.bh + 1.2, L.zs + 0.35));   // аудио-конденсаторы
-        if (!L.itx) for (let i = 0; i < 5; i++) M(3.8, 0.15, 0.3, ribs, L.bx + L.bw * 0.70, L.top - L.bh * 0.84 - 1.6 + i * 0.8, L.zs + 1.15, metal);   // ребра чипсета
+        g.add(at(cyl(1.0, 0.35, '#c0c4cc', { metalness: 0.9 }), L.bx + L.bw * 0.45, L.top - L.bh + 1.8, L.zs + 0.2));
+        M(0.5, 1.0, 1.2, '#2a2a32', L.bx + 10.1, L.gpuY, L.zs + 0.6);
+        for (let i = 0; i < 3; i++) M(2.0, 0.6, 0.8, '#e8e8ee', L.bx + L.bw * (0.3 + 0.1 * i), L.top - L.bh + 0.5, L.zs + 0.4);
+        for (let i = 0; i < 4; i++) g.add(at(cyl(0.3, 0.6, '#d4a73a', { metalness: 0.9 }), L.bx + 1.5 + i * 0.9, L.top - L.bh + 1.2, L.zs + 0.35));
+        if (!L.itx) for (let i = 0; i < 5; i++) M(3.8, 0.15, 0.3, ribs, L.bx + L.bw * 0.70, L.top - L.bh * 0.84 - 1.6 + i * 0.8, L.zs + 1.15, metal);
         M(10, 10, 0.06, '#050507', L.cpu.x, L.cpu.y, -0.43);
         M(7.5, 7.5, 0.5, '#7f8591', L.cpu.x, L.cpu.y, -0.7, { metalness: 0.9, roughness: 0.35 });
         [[1, 1], [-1, 1], [1, -1], [-1, -1]].forEach(k => g.add(at(cyl(0.35, 0.4, '#d1d5db', { metalness: 0.9 }), L.cpu.x + k[0] * 3, L.cpu.y + k[1] * 3, -1.1)));
-        if (!L.itx) for (let i = 0; i < 4; i++) M(2.2, 0.7, 0.9, '#111114', L.bx + L.bw * 0.9, L.top - L.bh * 0.9 + i * 0.9, L.zs + 0.45);   // SATA
-        g.add(at(new T.Mesh(new T.BoxGeometry(L.bw * 0.78, 0.2, 0.12), rgbMat('all')), L.bx + L.bw * 0.5, L.top - L.bh + 0.35, L.zs + 0.12));   // неоновая полоса по нижнему краю платы
-        const iy = L.top - 1.4, iz = L.zs + 2.2, io = (dy, z, h, d, col) => M(0.8, h, d, col, -1.02, iy - dy, z);   // разъёмы видны сзади
+        if (!L.itx) for (let i = 0; i < 4; i++) M(2.2, 0.7, 0.9, '#111114', L.bx + L.bw * 0.9, L.top - L.bh * 0.9 + i * 0.9, L.zs + 0.45);
+        g.add(at(new T.Mesh(new T.BoxGeometry(L.bw * 0.78, 0.2, 0.12), rgbMat('all')), L.bx + L.bw * 0.5, L.top - L.bh + 0.35, L.zs + 0.12));
+        const iy = L.top - 1.4, iz = L.zs + 2.2, io = (dy, z, h, d, col) => M(0.8, h, d, col, -1.02, iy - dy, z);
         M(0.2, 14.2, 4.6, W ? '#dfe3ec' : '#17181f', -0.52, iy - 6.4, iz);
         [0, 1.9].forEach(dy => { io(dy, iz + 1.1, 1.3, 0.8, '#3b82f6'); io(dy, iz - 0.2, 1.3, 0.8, '#3b82f6'); });
         io(4.6, iz - 0.5, 1.7, 1.6, '#94a3b8'); io(7.0, iz + 0.9, 1.9, 0.8, '#0b0b10'); io(9.1, iz + 0.9, 1.9, 0.8, '#0b0b10');
@@ -1474,10 +1389,10 @@ const BUILDERS = {
         g.add(at(box(3.9, 3.9, 0.35, W ? '#f1f3f8' : '#c8ccd4', { metalness: 0.85, roughness: 0.3 }), L.cpu.x, L.cpu.y, L.zs + 0.47));
         g.add(at(labelPlane(cpu.short, 3.4, 1.3, '#1a1a22'), L.cpu.x, L.cpu.y, L.zs + 0.66));
         const ms = { metalness: 0.9, roughness: 0.3 };
-        g.add(at(box(4.2, 4.2, 0.1, '#8d929c', ms), L.cpu.x, L.cpu.y, L.zs + 0.3));                       // подложка (PCB)
-        [[0, 2.5, 5.2, 0.35], [0, -2.5, 5.2, 0.35], [2.5, 0, 0.35, 4.8], [-2.5, 0, 0.35, 4.8]].forEach(k => g.add(at(box(k[2], k[3], 0.5, '#a3a8b3', ms), L.cpu.x + k[0], L.cpu.y + k[1], L.zs + 0.45)));   // рамка
-        g.add(at(cyl(0.12, 5.2, '#d1d5db', ms), L.cpu.x + 2.9, L.cpu.y, L.zs + 0.5));                       // рычаг
-        g.add(at(box(0.5, 0.5, 0.12, '#f59e0b'), L.cpu.x - 1.7, L.cpu.y - 1.7, L.zs + 0.67));            // маркер 1-го контакта
+        g.add(at(box(4.2, 4.2, 0.1, '#8d929c', ms), L.cpu.x, L.cpu.y, L.zs + 0.3));
+        [[0, 2.5, 5.2, 0.35], [0, -2.5, 5.2, 0.35], [2.5, 0, 0.35, 4.8], [-2.5, 0, 0.35, 4.8]].forEach(k => g.add(at(box(k[2], k[3], 0.5, '#a3a8b3', ms), L.cpu.x + k[0], L.cpu.y + k[1], L.zs + 0.45)));
+        g.add(at(cyl(0.12, 5.2, '#d1d5db', ms), L.cpu.x + 2.9, L.cpu.y, L.zs + 0.5));
+        g.add(at(box(0.5, 0.5, 0.12, '#f59e0b'), L.cpu.x - 1.7, L.cpu.y - 1.7, L.zs + 0.67));
         return g;
     },
 
@@ -1488,31 +1403,31 @@ const BUILDERS = {
             const fh = cl.height - 2.0;
             g.add(at(box(9, 9, 0.6, '#4a4f5a', { metalness: 0.6 }), p.x, p.y, zc + 0.3));
             g.add(at(cyl(4.3, fh, W ? '#e4e7ee' : '#9aa1ad', { metalness: 0.7, roughness: 0.4 }), p.x, p.y, zc + 0.6 + fh / 2));
-            for (let i = 0; i < 7; i++) g.add(at(cyl(4.0, 0.1, W ? '#f3f4f8' : '#b5bcc8', { metalness: 0.8, roughness: 0.35 }), p.x, p.y, zc + 0.9 + i * (fh - 0.8) / 7));   // пластины радиатора
-            [[1, 1], [-1, 1], [1, -1], [-1, -1]].forEach(k => g.add(at(cyl(0.3, 0.5, '#d1d5db', { metalness: 0.9 }), p.x + k[0] * 3.9, p.y + k[1] * 3.9, zc + 0.85)));   // винты основания
+            for (let i = 0; i < 7; i++) g.add(at(cyl(4.0, 0.1, W ? '#f3f4f8' : '#b5bcc8', { metalness: 0.8, roughness: 0.35 }), p.x, p.y, zc + 0.9 + i * (fh - 0.8) / 7));
+            [[1, 1], [-1, 1], [1, -1], [-1, -1]].forEach(k => g.add(at(cyl(0.3, 0.5, '#d1d5db', { metalness: 0.9 }), p.x + k[0] * 3.9, p.y + k[1] * 3.9, zc + 0.85)));
             const f = fan(8.6, 1.4, 'all', fstyle); at(f, p.x, p.y, zc + 0.6 + fh + 0.7); g.add(f);
         } else if (cl.type === 'tower') {
             const h = cl.height, fs = cl.fan || 12;
             g.add(at(box(4.2, 4.2, 0.8, '#b87333', { metalness: 0.9, roughness: 0.3 }), p.x, p.y, zc + 0.4));
             for (let i = 0; i < 9; i++) g.add(at(box(0.12, fs, h - 1, W ? '#f1f3f8' : '#9aa1ad', { metalness: 0.75, roughness: 0.4 }), p.x - 3.4 + i * 0.5, p.y, zc + 1 + (h - 1) / 2));
             g.add(at(box(5.2, fs + 0.2, 0.3, W ? '#d8dce5' : '#1b1b24'), p.x - 1.0, p.y, zc + h - 0.15));
-            for (let i = 0; i < 4; i++) g.add(at(cyl(0.28, h - 0.6, '#b87333', { metalness: 0.9, roughness: 0.3 }), p.x - 3 + i * 1.3, p.y + (i % 2 ? 1.2 : -1.2), zc + 0.8 + (h - 0.6) / 2));   // тепловые трубки
-            g.add(at(box(4.6, fs * 0.9, 0.12, W ? '#e8ebf2' : '#2a2d38', { metalness: 0.8 }), p.x - 1.0, p.y, zc + h + 0.05));                                                          // верхняя крышка
-            [-1, 1].forEach(k => g.add(at(box(0.25, 0.9, 0.6, '#4b5563'), p.x + 1.7, p.y + k * (fs / 2 - 0.5), zc + 1 + fs / 2)));                                       // крепление вентилятора
+            for (let i = 0; i < 4; i++) g.add(at(cyl(0.28, h - 0.6, '#b87333', { metalness: 0.9, roughness: 0.3 }), p.x - 3 + i * 1.3, p.y + (i % 2 ? 1.2 : -1.2), zc + 0.8 + (h - 0.6) / 2));
+            g.add(at(box(4.6, fs * 0.9, 0.12, W ? '#e8ebf2' : '#2a2d38', { metalness: 0.8 }), p.x - 1.0, p.y, zc + h + 0.05));
+            [-1, 1].forEach(k => g.add(at(box(0.25, 0.9, 0.6, '#4b5563'), p.x + 1.7, p.y + k * (fs / 2 - 0.5), zc + 1 + fs / 2)));
             const f = fan(fs, 2.5, 'all', fstyle); f.rotation.y = Math.PI / 2; at(f, p.x + 2.75, p.y, zc + 1 + fs / 2); g.add(f);
-        } else { // СЖО: с изогнутым экраном на помпе или с круглой помпой
+        } else {
             const D = L.D, ry = D.y - 2.85;
             const n = cl.rad === 360 ? 3 : 2, fs = cl.rad === 280 ? 14 : 12;
             const len = n * fs + 3.5, x0 = 6.25, rz = 5.6 + fs / 2;
             const pumpC = W ? '#eceef4' : '#15121f';
             g.add(at(cyl(3.9, 0.3, W ? '#cfd3dc' : '#2a2d38', { metalness: 0.8 }), p.x, p.y, zc + 0.15));
             if (cl.screen) {
-                g.add(at(box(8.6, 6.6, 3.4, pumpC, { metalness: 0.6, roughness: 0.35 }), p.x, p.y, zc + 1.9));   // корпус помпы
+                g.add(at(box(8.6, 6.6, 3.4, pumpC, { metalness: 0.6, roughness: 0.35 }), p.x, p.y, zc + 1.9));
                 const scr = new T.Mesh(new T.CylinderGeometry(AIO_SR, AIO_SR, AIO_SH, 28, 1, true, -AIO_SL / 2, AIO_SL),
-                    new T.MeshBasicMaterial({ map: aioScreenTex(), toneMapped: false }));                         // изогнутый экран
+                    new T.MeshBasicMaterial({ map: aioScreenTex(), toneMapped: false }));
                 at(scr, p.x, p.y + 0.1, zc + 4.55 - AIO_SR);
                 g.add(scr); g.userData.aioScreen = scr;
-                g.add(at(new T.Mesh(new T.BoxGeometry(6.2, 0.18, 0.12), rgbMat('all')), p.x, p.y - 2.95, zc + 3.66));   // подсветка под экраном
+                g.add(at(new T.Mesh(new T.BoxGeometry(6.2, 0.18, 0.12), rgbMat('all')), p.x, p.y - 2.95, zc + 3.66));
             } else {
                 g.add(at(cyl(3.7, 5.0, pumpC, { metalness: 0.6, roughness: 0.35 }), p.x, p.y, zc + 2.5));
                 g.add(at(labelPlane('AIO ' + cl.rad, 4.6, 1.2, W ? '#1a1a22' : '#e9d5ff'), p.x, p.y, zc + 5.05));
@@ -1525,8 +1440,8 @@ const BUILDERS = {
             }
             [0, 1].forEach(j => {
                 const sy = p.y + (j ? -1.6 : 1.6), ez = rz + (j ? 3 : -3), fm = { metalness: 0.85, roughness: 0.3 };
-                g.add(at(box(1.8, 1.3, 1.3, '#9aa1ad', fm), p.x - 4.4, sy, zc + 3.2));             // штуцер на помпе
-                g.add(at(box(1.4, 1.2, 1.2, '#9aa1ad', fm), x0 - 0.7, ry, ez));                    // штуцер на радиаторе
+                g.add(at(box(1.8, 1.3, 1.3, '#9aa1ad', fm), p.x - 4.4, sy, zc + 3.2));
+                g.add(at(box(1.4, 1.2, 1.2, '#9aa1ad', fm), x0 - 0.7, ry, ez));
                 g.add(tube([[p.x - 5.3, sy, zc + 3.2], [Math.max(2, p.x - 7.6), (sy + ry) / 2, (zc + 3.2 + ez) / 2], [x0 - 2.3, ry - 0.4, ez], [x0 - 1.45, ry, ez]], 0.45, W ? '#d5d9e2' : '#0d0d12'));
             });
         }
@@ -1542,9 +1457,9 @@ const BUILDERS = {
             g.add(at(box(0.8, 13.3, 3.9, col, { metalness: 0.5, roughness: 0.4 }), x, L.ram.y, L.zs + 0.5 + 1.95));
             const strip = new T.Mesh(new T.BoxGeometry(0.55, 12.2, 0.14), rgbMat('all'));
             g.add(at(strip, x, L.ram.y, L.zs + 0.5 + 3.9 + 0.05));
-            g.add(at(box(0.85, 0.8, 4.0, '#c9ccd4', { metalness: 0.9, roughness: 0.3 }), x, L.ram.y + 6.8, L.zs + 0.5 + 2.0));     // верхний гребень
-            g.add(at(box(0.82, 10.2, 0.1, '#0d0d12'), x, L.ram.y - 0.4, L.zs + 0.5 + 3.95));                                      // этикетка
-            g.add(at(box(0.5, 1.2, 0.6, '#d4a73a', { metalness: 1, roughness: 0.25 }), x, L.ram.y - 7.1, L.zs + 0.5 + 0.3));    // контакты
+            g.add(at(box(0.85, 0.8, 4.0, '#c9ccd4', { metalness: 0.9, roughness: 0.3 }), x, L.ram.y + 6.8, L.zs + 0.5 + 2.0));
+            g.add(at(box(0.82, 10.2, 0.1, '#0d0d12'), x, L.ram.y - 0.4, L.zs + 0.5 + 3.95));
+            g.add(at(box(0.5, 1.2, 0.6, '#d4a73a', { metalness: 1, roughness: 0.25 }), x, L.ram.y - 7.1, L.zs + 0.5 + 0.3));
         });
         return g;
     },
@@ -1557,7 +1472,7 @@ const BUILDERS = {
         g.add(at(box(len, th, H, W ? '#eceef3' : '#1b1b24', { metalness: 0.5, roughness: 0.45 }), G.x0 + len / 2, (G.y0 + G.y1) / 2, G.z0 + H / 2));
         g.add(at(box(0.3, th + 0.5, H + 0.5, W ? '#cfd3dd' : '#b8bcc6', { metalness: 0.8, roughness: 0.3 }), G.x0 - 0.15, (G.y0 + G.y1) / 2, G.z0 + H / 2));
         const gy = (G.y0 + G.y1) / 2;
-        const zq = (w, h, d, x, y, z) => g.add(at(new T.Mesh(new T.BoxGeometry(w, h, d), rgbMat('gpu')), x, y, z));   // полоса подсветки видеокарты (любой цвет)
+        const zq = (w, h, d, x, y, z) => g.add(at(new T.Mesh(new T.BoxGeometry(w, h, d), rgbMat('gpu')), x, y, z));
         zq(len * 0.92, 0.3, 0.1, G.x0 + len / 2, G.y1 - th * 0.18, G.z1 + 0.05);
         g.add(at(labelPlane(gpu.short, len * 0.5, th * 0.5, brandCol), G.x0 + len * 0.45, gy - th * 0.08, G.z1 + 0.03));
         const fs = Math.min(9.6, (len - 2) / gpu.fans);
@@ -1566,21 +1481,21 @@ const BUILDERS = {
             at(f, G.x0 + 1 + fs * (i + 0.5), G.y0 + 0.05, G.z0 + H / 2); g.add(f);
         }
         const Q = (w, h, d, col, x, y, z, o) => g.add(at(box(w, h, d, col, o), x, y, z));
-        Q(len * 0.96, 0.25, 0.14, '#3a3a48', G.x0 + len / 2, G.y1 - 0.4, G.z1 + 0.07, { metalness: 0.8 });                 // кант бэкплейта
+        Q(len * 0.96, 0.25, 0.14, '#3a3a48', G.x0 + len / 2, G.y1 - 0.4, G.z1 + 0.07, { metalness: 0.8 });
         Q(len * 0.96, 0.25, 0.14, '#3a3a48', G.x0 + len / 2, G.y0 + 0.4, G.z1 + 0.07, { metalness: 0.8 });
-        for (let i = 0; i < 9; i++) Q(len * 0.025, th * 0.45, 0.1, '#06060a', G.x0 + len * 0.72 + i * len * 0.028, gy, G.z1 + 0.06);   // прорези
-        Q(3.6, 1.8, 0.9, '#0b0b10', G.x1 - 3, gy, G.z1 + 0.45);                                                              // разъём питания
-        zq(2.8, 0.5, 0.2, G.x1 - 3, gy, G.z1 + 0.95);                                                                        // подсветка у разъёма
-        for (let i = 0; i < 4; i++) {   // порты: i=0 HDMI, остальные DisplayPort
+        for (let i = 0; i < 9; i++) Q(len * 0.025, th * 0.45, 0.1, '#06060a', G.x0 + len * 0.72 + i * len * 0.028, gy, G.z1 + 0.06);
+        Q(3.6, 1.8, 0.9, '#0b0b10', G.x1 - 3, gy, G.z1 + 0.45);
+        zq(2.8, 0.5, 0.2, G.x1 - 3, gy, G.z1 + 0.95);
+        for (let i = 0; i < 4; i++) {
             const hy = G.y0 + th * (0.2 + i * 0.2), hdmi = i === 0;
             Q(0.3, th * 0.14, H * 0.3, hdmi ? '#3a3a46' : '#2a2a34', G.x0 - 0.35, hy, G.z0 + H / 2, { metalness: 0.8 });
             Q(0.34, th * 0.08, H * 0.22, '#030305', G.x0 - 0.38, hy, G.z0 + H / 2);
             Q(0.2, th * 0.03, H * 0.16, hdmi ? '#9aa1ad' : '#15151b', G.x0 - 0.42, hy, G.z0 + H / 2, { metalness: 0.9 });
         }
-        for (let i = 0; i < 3; i++) { const hp = cyl(0.3, len * 0.55, '#b87333', { metalness: 0.9 }); hp.rotation.y = Math.PI / 2; g.add(at(hp, G.x0 + len * 0.5, G.y1 + 0.55, G.z0 + H * (0.25 + i * 0.25))); }   // тепловые трубки
-        zq(len * 0.28, 0.18, 0.1, G.x0 + len * 0.22, gy + th * 0.28, G.z1 + 0.06);   // акцентные полосы (те, что были зелёными): любой цвет
+        for (let i = 0; i < 3; i++) { const hp = cyl(0.3, len * 0.55, '#b87333', { metalness: 0.9 }); hp.rotation.y = Math.PI / 2; g.add(at(hp, G.x0 + len * 0.5, G.y1 + 0.55, G.z0 + H * (0.25 + i * 0.25))); }
+        zq(len * 0.28, 0.18, 0.1, G.x0 + len * 0.22, gy + th * 0.28, G.z1 + 0.06);
         zq(len * 0.18, 0.18, 0.1, G.x0 + len * 0.17, gy + th * 0.18, G.z1 + 0.06);
-        for (let i = 0; i < 10; i++) Q(len * 0.84 / 10 * 0.5, 0.35, H * 0.5, W ? '#dfe3ea' : '#9aa1ad', G.x0 + len * 0.1 + i * len * 0.84 / 10, G.y1 + 0.18, G.z0 + H * 0.45, { metalness: 0.85 });   // ребра радиатора
+        for (let i = 0; i < 10; i++) Q(len * 0.84 / 10 * 0.5, 0.35, H * 0.5, W ? '#dfe3ea' : '#9aa1ad', G.x0 + len * 0.1 + i * len * 0.84 / 10, G.y1 + 0.18, G.z0 + H * 0.45, { metalness: 0.85 });
         return g;
     },
 
@@ -1611,19 +1526,17 @@ const BUILDERS = {
         return g;
     },
 
-    psu() {   // БП стоит внутри кожуха внизу; проводов нет
+    psu() {
         const p = state.psu, c = state.case, D = c.dims, g = new T.Group(), B = psuBox(c), W = !!p.white;
         const cx = (B.x0 + B.x1) / 2, cy = (B.y0 + B.y1) / 2, cz = (B.z0 + B.z1) / 2, ph = B.y1 - B.y0, pw = B.z1 - B.z0;
-        g.add(at(box(B.x1 - B.x0, ph, pw, W ? '#eceef4' : '#1c1c24', { metalness: 0.4, roughness: 0.6 }), cx, cy, cz));   // сам БП (спрятан в кожухе)
-        // задняя панель БП с розеткой, выключателем и решёткой: выходит наружу корпуса
+        g.add(at(box(B.x1 - B.x0, ph, pw, W ? '#eceef4' : '#1c1c24', { metalness: 0.4, roughness: 0.6 }), cx, cy, cz));
         const rx = -0.5;
         g.add(at(box(0.2, ph, pw, W ? '#dfe3eb' : '#17181f', { metalness: 0.5 }), rx, cy, cz));
-        g.add(at(box(0.3, 3.0, 4.2, '#0a0a0e'), rx - 0.12, B.y0 + 2.0, B.z0 + pw * 0.3));          // розетка
+        g.add(at(box(0.3, 3.0, 4.2, '#0a0a0e'), rx - 0.12, B.y0 + 2.0, B.z0 + pw * 0.3));
         g.add(at(box(0.34, 1.4, 2.4, '#2a2a34'), rx - 0.14, B.y0 + 2.0, B.z0 + pw * 0.3));
-        g.add(at(box(0.3, 2.0, 1.4, '#0a0a0e'), rx - 0.12, B.y0 + 2.0, B.z0 + pw * 0.75));         // выключатель
+        g.add(at(box(0.3, 2.0, 1.4, '#0a0a0e'), rx - 0.12, B.y0 + 2.0, B.z0 + pw * 0.75));
         g.add(at(box(0.34, 1.0, 1.0, '#ef4444'), rx - 0.14, B.y0 + 2.2, B.z0 + pw * 0.75));
-        for (let y = B.y0 + 4.2; y < B.y1 - 0.4; y += 0.55) g.add(at(box(0.3, 0.12, pw - 1.5, W ? '#9aa1ad' : '#050507'), rx - 0.1, y, cz));   // решётка вентилятора
-        // табличка на торце кожуха: мощность и сертификат
+        for (let y = B.y0 + 4.2; y < B.y1 - 0.4; y += 0.55) g.add(at(box(0.3, 0.12, pw - 1.5, W ? '#9aa1ad' : '#050507'), rx - 0.1, y, cz));
         const SH = shroudH(c), x1 = shroudX1(c), tc = W ? '#1a1a22' : '#e9d5ff';
         const l1 = labelPlane(p.watt + ' W', 7, 2.4, tc); l1.rotation.y = Math.PI / 2; g.add(at(l1, x1 + 0.08, 0.4 + SH * 0.5 + 0.9, D.z * 0.5));
         const l2 = labelPlane('80+ ' + p.cert.toUpperCase(), 7, 1.1, W ? '#6b7280' : '#facc15'); l2.rotation.y = Math.PI / 2; g.add(at(l2, x1 + 0.08, 0.4 + SH * 0.5 - 1.2, D.z * 0.5));
@@ -1631,7 +1544,6 @@ const BUILDERS = {
     }
 };
 
-// От чего зависит деталь: req — обязательные
 const PARTSPEC = {
     case:   { req: ['case'] },
     mb:     { req: ['case', 'mb'] },
@@ -1649,10 +1561,8 @@ const OFFS = {
     ssd:    new T.Vector3(0, 0, 12),  psu: new T.Vector3(-16, 0, 0), fig: new T.Vector3(0, 14, 0)
 };
 
-/* =====================================================================
-   3D: УПРАВЛЕНИЕ ДЕТАЛЯМИ В СЦЕНЕ (появление, удаление, синхронизация)
-   ===================================================================== */
-const parts = {};   // key -> { key, group }
+/* 3D: УПРАВЛЕНИЕ ДЕТАЛЯМИ В СЦЕНЕ */
+const parts = {};
 
 function buildPart(key) {
     CTX = { rgb: [], spin: [] };
@@ -1699,7 +1609,7 @@ function wantKey(key) {
     const sp = PARTSPEC[key];
     if (!sp.req.every(k => state[k])) return null;
     let id = sp.req.map(k => state[k].id).join('|');
-    if (key === 'case') id += '|' + fanCfg.front + '|' + fanCfg.rear;   // смена стиля вентиляторов пересобирает корпус
+    if (key === 'case') id += '|' + fanCfg.front + '|' + fanCfg.rear;
     return id;
 }
 function sync() {
@@ -1733,11 +1643,9 @@ function applyGlass() {
     $('tbFans').hidden = !state.case;
 }
 
-/* =====================================================================
-   ЦИКЛ ОТРИСОВКИ
-   ===================================================================== */
+/* ЦИКЛ ОТРИСОВКИ */
 let lastT = performance.now();
-function fxMul(L, now) {   // эффект подсветки: постоянный, дыхание, мигание
+function fxMul(L, now) {
     return L.fx === 'breath' ? 0.5 + 0.5 * Math.sin(now * 0.0022 * L.speed)
          : L.fx === 'pulse'  ? (Math.sin(now * 0.007 * L.speed) > 0 ? 1 : 0.1) : 1;
 }
@@ -1753,24 +1661,22 @@ function frame(now) {
             const z = m.userData.zone || 'all', L = lightFor(z);
             if (!rgbOn) m.emissive.setRGB(0, 0, 0);
             else if (L.col) m.emissive.copy(L.col);
-            else m.emissive.setHSL((now * 0.0001 * L.speed + m.userData.off) % 1, 1, 0.5);
+            else m.emissive.setHSL((now * 0.0001 * L.speed + m.userData.off) % 1, 1, 0.55);
             m.emissiveIntensity = L.bright * fxs[z];
         });
     }
-    const A = LIGHT.all;   // цветная лампа внутри корпуса: блики на деталях
+    const A = LIGHT.all;
     if (rgbOn) {
-        if (A.col) rgbLamp.color.copy(A.col); else rgbLamp.color.setHSL((now * 0.0001 * A.speed) % 1, 1, 0.5);
-        rgbLamp.intensity = 1.1 * A.bright * fxs.all;
+        if (A.col) rgbLamp.color.copy(A.col); else rgbLamp.color.setHSL((now * 0.0001 * A.speed) % 1, 1, 0.55);
+        rgbLamp.intensity = 1.8 * A.bright * fxs.all;
     } else rgbLamp.intensity = 0;
-    if (bloomPass) { bloomPass.threshold = root.getAttribute('data-theme') === 'light' ? 0.95 : 0.78; bloomPass.radius = 0.55; }
+    if (bloomPass) { bloomPass.threshold = root.getAttribute('data-theme') === 'light' ? 0.9 : 0.72; bloomPass.radius = 0.6; }
     updateCamera(dt);
     drawScene();
     requestAnimationFrame(frame);
 }
 
-/* =====================================================================
-   ИНТЕРФЕЙС
-   ===================================================================== */
+/* ИНТЕРФЕЙС */
 const stepperEl = $('stepper'), headEl = $('stepHead'), optionsEl = $('options'), bannerEl = $('banner');
 let advanceTimer = null;
 
@@ -1807,7 +1713,6 @@ function renderOptions() {
     const all = DATA[key].map(o => ({ o: o, reason: check(key, o), sel: !!(state[key] && state[key].id === o.id) }));
     const anyOk = all.some(x => !x.reason || isVipReason(x.reason));
     const q = filterText.trim().toLowerCase();
-    // VIP-позиции всегда видны (с замком), а при «Только совместимые» скрываются только реально несовместимые
     let list = all.filter(x => (!q || x.o.name.toLowerCase().includes(q)) && (!onlyOk || !x.reason || x.sel || isVipReason(x.reason)));
     const rank = x => !x.reason ? 0 : isVipReason(x.reason) ? 1 : 2;
     list = list.map((x, i) => ({ x: x, i: i })).sort((a, b) => rank(a.x) - rank(b.x) || a.i - b.i).map(e => e.x);
@@ -1903,7 +1808,8 @@ $('resetBtn').addEventListener('click', () => {
     state = {};
     sync(); setActive(0);
 });
-    /* ---------- Панель инструментов 3D ---------- */
+
+/* Панель инструментов 3D */
 function toggle(btn, get, set) {
     btn.addEventListener('click', () => {
         const v = !get();
@@ -1912,7 +1818,7 @@ function toggle(btn, get, set) {
     });
 }
 toggle($('tbRotate'), () => autoRotate, v => { autoRotate = v; });
-toggle($('tbBack'), () => backOn, v => { backOn = v; applyGlass(); cam.base = v ? 0.55 : Math.PI + 0.55; });   // без крышки камера уходит назад
+toggle($('tbBack'), () => backOn, v => { backOn = v; applyGlass(); cam.base = v ? 0.55 : Math.PI + 0.55; });
 toggle($('tbGlass'), () => glassOn, v => { glassOn = v; applyGlass(); });
 toggle($('tbRgb'), () => rgbOn, v => { rgbOn = v; });
 $('tbCam').addEventListener('click', () => { cam.base = backOn ? 0.55 : Math.PI + 0.55; cam.tPhi = 1.28; cam.tZoom = 1; });
@@ -1926,7 +1832,6 @@ function saveShot() {
 }
 $('tbShot').addEventListener('click', saveShot);
 
-/* ---------- Скрыть / показать меню ---------- */
 const toolbarEl = $('toolbar'), tbShow = $('tbShow');
 function setMenuHidden(h) {
     toolbarEl.hidden = h;
@@ -1936,8 +1841,8 @@ function setMenuHidden(h) {
 $('tbHide').addEventListener('click', () => setMenuHidden(true));
 tbShow.addEventListener('click', () => setMenuHidden(false));
 
-/* ---------- Подсветка: зоны, цвет, яркость, свечение, скорость, эффекты ---------- */
-const LIGHT_KEY = 'hardwarevs-rgb2';
+/* Подсветка: зоны, цвет, яркость, свечение, скорость, эффекты */
+const LIGHT_KEY = 'hardwarevs-rgb3';
 const LIGHT_COLORS = [
     ['Радуга', null], ['Красный', '#ff1744'], ['Оранжевый', '#ff7a00'], ['Жёлтый', '#ffd600'], ['Зелёный', '#00e676'], ['Бирюзовый', '#00e5ff'],
     ['Синий', '#2979ff'], ['Фиолетовый', '#a855f7'], ['Розовый', '#ff4fa3'], ['Белый', '#ffffff'], ['Лайм', '#b6ff00'], ['Неон-голубой', '#00f0ff']
@@ -1947,7 +1852,7 @@ const lightPanel = $('lightPanel'), tbLight = $('tbLight'), lpSync = $('lpGpuSyn
 const fxBtns = document.querySelectorAll('.lp-fx [data-fx]'), zoneBtns = document.querySelectorAll('.lp-fx [data-zone]');
 let zone = 'all';
 
-function editable() {   // зона видеокарты получает собственные настройки при первом изменении
+function editable() {
     if (zone === 'gpu' && !LIGHT.gpu.own) {
         const A = LIGHT.all;
         Object.assign(LIGHT.gpu, { own: true, hex: A.hex, col: A.col, bright: A.bright, speed: A.speed, fx: A.fx });
@@ -1973,7 +1878,7 @@ function setRgbColor(hex, turnOn) {
     const L = editable();
     L.hex = hex ? hex.toLowerCase() : null;
     L.col = L.hex ? new T.Color(L.hex) : null;
-    if (turnOn) { rgbOn = true; $('tbRgb').setAttribute('aria-pressed', 'true'); }   // выбор цвета включает подсветку
+    if (turnOn) { rgbOn = true; $('tbRgb').setAttribute('aria-pressed', 'true'); }
     paintLight(); saveLight();
 }
 LIGHT_COLORS.forEach(c => {
@@ -1992,13 +1897,13 @@ fxBtns.forEach(b => b.addEventListener('click', () => { editable().fx = b.datase
 zoneBtns.forEach(b => b.addEventListener('click', () => { zone = b.dataset.zone; paintLight(); }));
 lpSync.addEventListener('click', () => { LIGHT.gpu.own = false; paintLight(); saveLight(); toast('Видеокарта снова светится как вся сборка'); });
 
-try {   // восстанавливаем сохранённые настройки подсветки и вентиляторов
+try {
     const s = JSON.parse(localStorage.getItem(LIGHT_KEY) || 'null');
     if (s) {
         ['all', 'gpu'].forEach(z => {
             const o = s[z], L = LIGHT[z];
             if (!o) return;
-            if (typeof o.bright === 'number') L.bright = clamp(o.bright, 0.2, 4);
+            if (typeof o.bright === 'number') L.bright = clamp(o.bright, 0.2, 6);
             if (typeof o.speed === 'number') L.speed = clamp(o.speed, 0.2, 4);
             if (o.fx === 'static' || o.fx === 'breath' || o.fx === 'pulse') L.fx = o.fx;
             if (typeof o.hex === 'string' && /^#[0-9a-f]{6}$/i.test(o.hex)) { L.hex = o.hex.toLowerCase(); L.col = new T.Color(L.hex); }
@@ -2021,7 +1926,7 @@ tbLight.addEventListener('click', e => { e.stopPropagation(); setLightPanel(ligh
 document.addEventListener('click', e => { if (!lightPanel.contains(e.target)) setLightPanel(false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') setLightPanel(false); });
 
-/* ---------- Окно (модалка) ---------- */
+/* Окно (модалка) */
 const modal = $('modal'), modalBody = $('modalBody');
 function el(tag, cls, text) { const n = document.createElement(tag); if (cls) n.className = cls; if (text != null) n.textContent = text; return n; }
 function openModal(title) { $('modalTitle').textContent = title; modalBody.textContent = ''; modal.hidden = false; }
@@ -2030,7 +1935,6 @@ $('modalClose').addEventListener('click', closeModal);
 modal.addEventListener('click', e => { if (e.target === modal) closeModal(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
 
-/* ---------- Вентиляторы корпуса: выбор стиля ---------- */
 $('tbFans').addEventListener('click', () => {
     if (!state.case) return;
     openModal('Вентиляторы корпуса');
@@ -2054,7 +1958,6 @@ $('tbFans').addEventListener('click', () => {
     addGroup('Задний вентилятор', 'rear');
 });
 
-/* ---------- Экран на помпе СЖО: загрузка фото или видео (водянки с экраном — только VIP) ---------- */
 $('aioFile').addEventListener('change', e => {
     const f = e.target.files[0];
     e.target.value = '';
@@ -2097,7 +2000,7 @@ $('tbScreen').addEventListener('click', () => {
     modalBody.appendChild(act);
 });
 
-/* ---------- Тема и окно настроек ---------- */
+/* Тема и окно настроек */
 const THEME_KEY = 'hardwarevs-theme';
 const themeButtons = document.querySelectorAll('.theme-option');
 function applyTheme(theme) {
@@ -2119,7 +2022,6 @@ gearBtn.addEventListener('click', e => { e.stopPropagation(); setPanel(!panel.cl
 document.addEventListener('click', e => { if (!settingsBox.contains(e.target)) setPanel(false); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') setPanel(false); });
 
-/* ---------- Плавный уход на главную ---------- */
 $('back-link').addEventListener('click', e => {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
@@ -2127,18 +2029,17 @@ $('back-link').addEventListener('click', e => {
     root.classList.add('leaving');
     setTimeout(() => { window.location.href = href; }, reduceMotion ? 0 : 400);
 });
-window.addEventListener('hw-cookies', () => render());   // статус VIP изменился: обновляем замки
+window.addEventListener('hw-cookies', () => render());
 window.addEventListener('pageshow', e => { if (e.persisted) root.classList.remove('leaving'); });
 
-/* ---------- Аккаунт и сохранённые сборки (Supabase) ---------- */
+/* Аккаунт и сохранённые сборки (Supabase) */
 const AUTH = window.HW_AUTH;
 const DRAFT_KEY = 'hardwarevs-draft';
-let user = null, currentBuild = null;   // currentBuild = { id, name } открытая сохранённая сборка
+let user = null, currentBuild = null;
 
 function partsOf() { const p = {}; STEPS.forEach(s => { if (state[s.key]) p[s.key] = state[s.key].id; }); return p; }
 function totalOf() { return STEPS.reduce((t, s) => t + (state[s.key] ? (state[s.key].price || 0) : 0), 0); }
 
-// Подставляет сохранённый состав: что пропало из каталога или стало несовместимым, убирается
 function applyParts(saved) {
     const s = {}; let lost = 0;
     STEPS.forEach(st => {
@@ -2157,7 +2058,7 @@ function applyParts(saved) {
 }
 
 function goLogin() {
-    try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(partsOf())); } catch (e) {}   // чтобы сборка не пропала после входа
+    try { sessionStorage.setItem(DRAFT_KEY, JSON.stringify(partsOf())); } catch (e) {}
     window.location.href = 'login.html?next=builder.html';
 }
 function dateStr(iso) { try { return new Date(iso).toLocaleDateString('ru-RU'); } catch (e) { return ''; } }
@@ -2253,12 +2154,11 @@ if (AUTH) {
     });
 }
 
-/* ---------- Старт ---------- */
+/* Старт */
 applyTheme(root.getAttribute('data-theme') === 'light' ? 'light' : 'dark');
 resize();
 sync();
 render();
-// Вернулись со страницы входа: восстанавливаем сборку, которую собирали до этого
 try {
     const d = sessionStorage.getItem(DRAFT_KEY);
     if (d) {
@@ -2272,13 +2172,11 @@ requestAnimationFrame(frame);
 })();
 </script>
 <script>
-/* VIP больше не закрывает страницу: нужен только для водянок с экраном и фигурок.
-   Здесь только узнаём статус и сообщаем конфигуратору. */
 (function () {
     const gate = document.getElementById('vipGate');
-    if (gate) gate.hidden = true;   // экран-замок на всю страницу убран
+    if (gate) gate.hidden = true;
     const C = window.HW_COOKIES;
-    if (!C) { window.HW_CK = null; return; }   // не вошли или нет проверки: открыты только бесплатные детали
+    if (!C) { window.HW_CK = null; return; }
     C.onChange(function (w) {
         window.HW_CK = w || null;
         try { window.dispatchEvent(new Event('hw-cookies')); } catch (e) {}
